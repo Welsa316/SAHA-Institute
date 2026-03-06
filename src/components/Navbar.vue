@@ -32,7 +32,7 @@ const navLinks = [
         <!-- Logo -->
         <a href="#home" class="flex items-center gap-3 group">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="SAHA Institute"
             class="h-11 w-auto rounded transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
           />
