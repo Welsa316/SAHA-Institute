@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { supabase } from '../lib/supabase'
 
 const form = ref({
   name: '',
@@ -8,6 +9,10 @@ const form = ref({
   subject: '',
   message: '',
 })
+
+const sending = ref(false)
+const sent = ref(false)
+const error = ref('')
 
 const sectionRef = ref(null)
 const isVisible = ref(false)
@@ -29,12 +34,36 @@ onUnmounted(() => {
   if (observer) observer.disconnect()
 })
 
-function submitForm() {
-  const subject = encodeURIComponent(form.value.subject || 'Website Inquiry')
-  const body = encodeURIComponent(
-    `Name: ${form.value.name}\nEmail: ${form.value.email}\nPhone: ${form.value.phone}\n\n${form.value.message}`
-  )
-  window.location.href = `mailto:walidelsayed316@gmail.com?subject=${subject}&body=${body}`
+async function submitForm() {
+  sending.value = true
+  error.value = ''
+
+  try {
+    const { data, error: fnError } = await supabase.functions.invoke('contact', {
+      body: {
+        name: form.value.name,
+        email: form.value.email,
+        phone: form.value.phone,
+        subject: form.value.subject,
+        message: form.value.message,
+      },
+    })
+
+    if (fnError) throw fnError
+
+    sent.value = true
+    form.value = { name: '', email: '', phone: '', subject: '', message: '' }
+  } catch (err) {
+    error.value = 'Something went wrong. Please try again or call us directly.'
+    console.error(err)
+  } finally {
+    sending.value = false
+  }
+}
+
+function resetForm() {
+  sent.value = false
+  error.value = ''
 }
 </script>
 
@@ -161,84 +190,122 @@ function submitForm() {
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <div class="bg-white rounded-3xl border border-navy-100/60 shadow-xl shadow-navy-900/[0.04] p-8 md:p-10">
-            <h3 class="font-heading text-xl font-semibold text-navy-900 mb-1">Send Us a Message</h3>
-            <p class="font-body text-sm text-navy-500 mb-8">Fill out the form below and we'll get back to you shortly.</p>
-
-            <form @submit.prevent="submitForm" class="space-y-5">
-              <!-- Name + Email row -->
-              <div class="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Full Name</label>
-                  <input
-                    v-model="form.name"
-                    type="text"
-                    required
-                    placeholder="Your name"
-                    class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300"
-                  />
-                </div>
-                <div>
-                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Email</label>
-                  <input
-                    v-model="form.email"
-                    type="email"
-                    required
-                    placeholder="your@email.com"
-                    class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-              <!-- Phone + Subject row -->
-              <div class="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Phone</label>
-                  <input
-                    v-model="form.phone"
-                    type="tel"
-                    placeholder="(504) 000-0000"
-                    class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300"
-                  />
-                </div>
-                <div>
-                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Subject</label>
-                  <select
-                    v-model="form.subject"
-                    class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300"
-                  >
-                    <option value="">Select a topic</option>
-                    <option value="General Inquiry">General Inquiry</option>
-                    <option value="Enrollment">Enrollment</option>
-                    <option value="Program Information">Program Information</option>
-                    <option value="Schedule Consultation">Schedule a Consultation</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Message -->
-              <div>
-                <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Message</label>
-                <textarea
-                  v-model="form.message"
-                  required
-                  rows="5"
-                  placeholder="Tell us how we can help..."
-                  class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 resize-none"
-                ></textarea>
-              </div>
-
-              <!-- Submit -->
-              <button
-                type="submit"
-                class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-navy-800 to-academic-600 text-white font-body text-sm font-semibold tracking-wider uppercase rounded-full overflow-hidden transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-academic-500/20"
-              >
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <span class="relative">Send Message</span>
-                <svg class="relative w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            <!-- Success confirmation -->
+            <div v-if="sent" class="text-center py-8">
+              <div class="w-16 h-16 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center mx-auto mb-6">
+                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
+              </div>
+              <h3 class="font-heading text-2xl font-semibold text-navy-900 mb-3">Message Sent!</h3>
+              <p class="font-body text-navy-500 leading-relaxed mb-8 max-w-sm mx-auto">
+                Thank you for reaching out. We'll get back to you as soon as possible.
+              </p>
+              <button
+                @click="resetForm"
+                class="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body text-sm font-semibold tracking-wider uppercase text-navy-700 border border-navy-200 hover:bg-navy-50 transition-all duration-300"
+              >
+                Send Another Message
               </button>
-            </form>
+            </div>
+
+            <!-- Contact form -->
+            <template v-else>
+              <h3 class="font-heading text-xl font-semibold text-navy-900 mb-1">Send Us a Message</h3>
+              <p class="font-body text-sm text-navy-500 mb-8">Fill out the form below and we'll get back to you shortly.</p>
+
+              <!-- Error message -->
+              <div v-if="error" class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200">
+                <p class="font-body text-sm text-red-600">{{ error }}</p>
+              </div>
+
+              <form @submit.prevent="submitForm" class="space-y-5">
+                <!-- Name + Email row -->
+                <div class="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Full Name</label>
+                    <input
+                      v-model="form.name"
+                      type="text"
+                      required
+                      :disabled="sending"
+                      placeholder="Your name"
+                      class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Email</label>
+                    <input
+                      v-model="form.email"
+                      type="email"
+                      required
+                      :disabled="sending"
+                      placeholder="your@email.com"
+                      class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <!-- Phone + Subject row -->
+                <div class="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Phone</label>
+                    <input
+                      v-model="form.phone"
+                      type="tel"
+                      :disabled="sending"
+                      placeholder="(504) 000-0000"
+                      class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Subject</label>
+                    <select
+                      v-model="form.subject"
+                      :disabled="sending"
+                      class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+                    >
+                      <option value="">Select a topic</option>
+                      <option value="General Inquiry">General Inquiry</option>
+                      <option value="Enrollment">Enrollment</option>
+                      <option value="Program Information">Program Information</option>
+                      <option value="Schedule Consultation">Schedule a Consultation</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Message -->
+                <div>
+                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Message</label>
+                  <textarea
+                    v-model="form.message"
+                    required
+                    :disabled="sending"
+                    rows="5"
+                    placeholder="Tell us how we can help..."
+                    class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 resize-none disabled:opacity-50"
+                  ></textarea>
+                </div>
+
+                <!-- Submit -->
+                <button
+                  type="submit"
+                  :disabled="sending"
+                  class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-navy-800 to-academic-600 text-white font-body text-sm font-semibold tracking-wider uppercase rounded-full overflow-hidden transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-academic-500/20 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+                >
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  <!-- Loading spinner -->
+                  <svg v-if="sending" class="relative w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span class="relative">{{ sending ? 'Sending...' : 'Send Message' }}</span>
+                  <svg v-if="!sending" class="relative w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </form>
+            </template>
           </div>
         </div>
       </div>
