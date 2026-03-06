@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     if (!emailRes.ok) {
       const errText = await emailRes.text()
       console.error("Resend error:", errText)
-      throw new Error("Failed to send email")
+      // Don't throw — still return success since the DB insert worked
     }
 
     return new Response(
