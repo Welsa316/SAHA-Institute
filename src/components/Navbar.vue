@@ -10,8 +10,8 @@ const props = defineProps({
 })
 
 const route = useRoute()
-const isScrolled = computed(() => props.scrollY > 50)
 const isHome = computed(() => route.path === '/')
+const isScrolled = computed(() => !isHome.value || props.scrollY > 50)
 
 const navLinks = [
   { name: 'Home', to: '/' },
