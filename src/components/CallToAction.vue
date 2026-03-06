@@ -1,5 +1,8 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const sectionRef = ref(null)
 const isVisible = ref(false)
@@ -88,8 +91,8 @@ onUnmounted(() => {
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
         <!-- Primary CTA - white button -->
-        <a
-          href="#"
+        <router-link
+          to="/contact"
           class="group relative inline-flex items-center gap-3 px-10 py-4 bg-white text-navy-900 font-body text-sm font-semibold tracking-wider uppercase rounded-full overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-academic-400/20"
         >
           <!-- Shimmer effect -->
@@ -103,11 +106,11 @@ onUnmounted(() => {
           >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>
-        </a>
+        </router-link>
 
         <!-- Secondary CTA -->
         <a
-          href="#"
+          href="tel:+15046673625"
           class="inline-flex items-center gap-2 px-8 py-4 rounded-full font-body text-sm font-medium tracking-wider uppercase text-white/80 border border-white/20 hover:border-academic-400/50 hover:text-white transition-all duration-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-academic-400/10 hover:bg-white/[0.05]"
         >
           Call Us Today

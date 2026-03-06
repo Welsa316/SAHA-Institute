@@ -1,11 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import Navbar from './components/Navbar.vue'
-import Hero from './components/Hero.vue'
-import Intro from './components/Intro.vue'
-import Programs from './components/Programs.vue'
-import WhySaha from './components/WhySaha.vue'
-import CallToAction from './components/CallToAction.vue'
 import Footer from './components/Footer.vue'
 
 const scrollY = ref(0)
@@ -31,11 +26,7 @@ onUnmounted(() => {
     </div>
 
     <Navbar :scrollY="scrollY" />
-    <Hero />
-    <Intro />
-    <Programs />
-    <WhySaha />
-    <CallToAction />
+    <router-view />
     <Footer />
   </div>
 </template>
