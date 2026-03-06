@@ -11,7 +11,7 @@
             <img
               src="/logo.png"
               alt="SAHA Institute"
-              class="h-20 w-auto logo-sharp"
+              class="w-44 h-auto logo-sharp"
             />
           </div>
         </div>

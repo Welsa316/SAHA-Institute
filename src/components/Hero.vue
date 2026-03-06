@@ -93,7 +93,7 @@ onMounted(() => {
           <img
             src="/logo.png"
             alt="SAHA Institute For Learning"
-            class="relative mx-auto h-60 md:h-72 lg:h-80 xl:h-[22rem] w-auto drop-shadow-xl logo-sharp"
+            class="relative mx-auto w-72 md:w-96 lg:w-[28rem] xl:w-[32rem] h-auto drop-shadow-xl logo-sharp"
           />
         </div>
       </div>
