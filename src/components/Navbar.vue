@@ -23,7 +23,7 @@ const navLinks = [
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-out"
     :class="[
       isScrolled
-        ? 'bg-cream-50/80 backdrop-blur-xl shadow-[0_1px_0_0_rgba(26,43,85,0.06)]'
+        ? 'bg-white/70 backdrop-blur-2xl shadow-lg shadow-navy-900/[0.04] border-b border-white/50'
         : 'bg-transparent'
     ]"
   >
@@ -34,13 +34,13 @@ const navLinks = [
           <img
             src="/logo.jpg"
             alt="SAHA Institute"
-            class="h-10 w-auto rounded transition-transform duration-500 group-hover:scale-105"
+            class="h-11 w-auto rounded transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
           />
           <div class="hidden sm:block">
-            <span class="font-display text-sm font-semibold tracking-wide text-navy-800">
+            <span class="font-display text-sm font-bold tracking-wide gradient-text">
               SAHA
             </span>
-            <span class="block text-[10px] font-body text-navy-500 tracking-[0.2em] uppercase">
+            <span class="block text-[10px] font-body text-academic-600 tracking-[0.2em] uppercase font-medium">
               Institute
             </span>
           </div>
@@ -55,6 +55,14 @@ const navLinks = [
             class="animated-underline text-sm font-body font-medium tracking-wide text-navy-600 hover:text-navy-900 transition-colors duration-300 pb-1"
           >
             {{ link.name }}
+          </a>
+
+          <!-- Nav CTA button -->
+          <a
+            href="#contact"
+            class="px-6 py-2.5 rounded-full text-xs font-body font-semibold tracking-wider uppercase text-white bg-gradient-to-r from-navy-800 to-academic-600 hover:shadow-lg hover:shadow-academic-500/20 transition-all duration-500 hover:-translate-y-0.5"
+          >
+            Enroll Now
           </a>
         </div>
 
