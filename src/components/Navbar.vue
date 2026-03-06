@@ -34,7 +34,7 @@ const navLinks = [
           <img
             src="/logo.png"
             alt="SAHA Institute"
-            class="h-12 w-auto transition-all duration-500 group-hover:scale-105 group-hover:brightness-110 logo-sharp"
+            class="w-28 h-auto transition-all duration-500 group-hover:scale-105 group-hover:brightness-110 logo-sharp"
           />
         </a>
 
