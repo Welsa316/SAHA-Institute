@@ -80,27 +80,49 @@ onMounted(() => {
 
     <!-- Content -->
     <div class="relative z-10 text-center px-6 max-w-5xl mx-auto">
-      <!-- Logo - MUCH BIGGER -->
+      <!-- Logo - LARGE & PROMINENT -->
       <div
-        class="mb-8 transition-all duration-1200 ease-out"
+        class="mb-6 transition-all duration-1200 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'"
       >
         <div class="relative inline-block">
           <!-- Glow behind logo -->
-          <div class="absolute inset-0 blur-3xl opacity-30 scale-110"
-               style="background: radial-gradient(circle, rgba(74,154,204,0.4) 0%, transparent 70%);">
+          <div class="absolute inset-0 blur-3xl opacity-30 scale-125"
+               style="background: radial-gradient(circle, rgba(74,154,204,0.5) 0%, transparent 70%);">
           </div>
           <img
             src="/logo.png"
             alt="SAHA Institute For Learning"
-            class="relative mx-auto h-44 md:h-56 lg:h-64 w-auto drop-shadow-lg"
+            class="relative mx-auto h-60 md:h-72 lg:h-80 xl:h-[22rem] w-auto drop-shadow-xl logo-sharp"
           />
         </div>
       </div>
 
+      <!-- Institute for Learning subtitle -->
+      <div
+        class="mb-4 transition-all duration-1000 delay-200 ease-out"
+        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
+      >
+        <span class="font-body text-sm md:text-base tracking-[0.35em] uppercase text-navy-500 font-medium">
+          Institute for Learning
+        </span>
+      </div>
+
+      <!-- Est. badge -->
+      <div
+        class="mb-8 transition-all duration-1000 delay-300 ease-out"
+        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
+      >
+        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-navy-100/40 border border-navy-200/30">
+          <span class="w-1 h-1 rounded-full bg-academic-500"></span>
+          <span class="font-body text-[11px] tracking-[0.3em] uppercase text-navy-400 font-medium">Est. 2020</span>
+          <span class="w-1 h-1 rounded-full bg-academic-500"></span>
+        </span>
+      </div>
+
       <!-- Decorative line with gradient -->
       <div
-        class="mx-auto mb-8 transition-all duration-1000 delay-300 ease-out flex items-center justify-center gap-3"
+        class="mx-auto mb-8 transition-all duration-1000 delay-400 ease-out flex items-center justify-center gap-3"
         :class="isVisible ? 'opacity-100' : 'opacity-0'"
       >
         <div
