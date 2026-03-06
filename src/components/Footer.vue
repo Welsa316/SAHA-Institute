@@ -7,7 +7,7 @@
       <div class="flex flex-col items-center text-center">
         <!-- Logo mark -->
         <img
-          src="/logo.jpg"
+          src="/logo.png"
           alt="SAHA Institute"
           class="h-16 w-auto rounded opacity-80 mb-6 hover:opacity-100 transition-opacity duration-300"
         />

@@ -91,7 +91,7 @@ onMounted(() => {
                style="background: radial-gradient(circle, rgba(74,154,204,0.4) 0%, transparent 70%);">
           </div>
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="SAHA Institute For Learning"
             class="relative mx-auto h-44 md:h-56 lg:h-64 w-auto drop-shadow-lg"
           />
