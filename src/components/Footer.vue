@@ -5,12 +5,16 @@
 
     <div class="relative max-w-6xl mx-auto px-6 md:px-12">
       <div class="flex flex-col items-center text-center">
-        <!-- Logo mark -->
-        <img
-          src="/logo.png"
-          alt="SAHA Institute"
-          class="h-16 w-auto rounded opacity-80 mb-6 hover:opacity-100 transition-opacity duration-300"
-        />
+        <!-- Logo mark with light background for visibility -->
+        <div class="relative mb-6">
+          <div class="bg-white/90 rounded-2xl p-4 inline-block shadow-lg shadow-white/[0.05] hover:bg-white transition-all duration-300">
+            <img
+              src="/logo.png"
+              alt="SAHA Institute"
+              class="h-20 w-auto logo-sharp"
+            />
+          </div>
+        </div>
 
         <!-- Institute name -->
         <h3 class="font-display text-base font-bold tracking-wider gradient-text-light uppercase mb-1">

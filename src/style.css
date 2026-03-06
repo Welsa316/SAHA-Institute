@@ -127,6 +127,16 @@
   mask-composite: exclude;
 }
 
+/* Logo sharpening - reduces blur on upscaled images */
+.logo-sharp {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  filter: contrast(1.02) brightness(1.01);
+}
+
 /* Number counter animation */
 @keyframes count-up {
   from { opacity: 0; transform: translateY(20px); }

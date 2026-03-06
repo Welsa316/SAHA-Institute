@@ -30,20 +30,12 @@ const navLinks = [
     <div class="max-w-7xl mx-auto px-6 md:px-12 lg:px-16">
       <div class="flex items-center justify-between h-20">
         <!-- Logo -->
-        <a href="#home" class="flex items-center gap-3 group">
+        <a href="#home" class="flex items-center group">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="SAHA Institute"
-            class="h-11 w-auto rounded transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
+            class="h-12 w-auto transition-all duration-500 group-hover:scale-105 group-hover:brightness-110 logo-sharp"
           />
-          <div class="hidden sm:block">
-            <span class="font-display text-sm font-bold tracking-wide gradient-text">
-              SAHA
-            </span>
-            <span class="block text-[10px] font-body text-academic-600 tracking-[0.2em] uppercase font-medium">
-              Institute
-            </span>
-          </div>
         </a>
 
         <!-- Nav Links -->
