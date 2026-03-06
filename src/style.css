@@ -25,7 +25,13 @@
   }
 
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-navy-800 via-academic-600 to-navy-700;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #1a2b55 0%, #4a9acc 50%, #1e3366 100%);
+  }
+
+  .gradient-text-light {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #5badd9 0%, #7bc1e6 50%, #4a9acc 100%);
   }
 
   .animated-underline {
@@ -34,11 +40,42 @@
 
   .animated-underline::after {
     content: '';
-    @apply absolute bottom-0 left-0 w-0 h-[1.5px] bg-academic-500 transition-all duration-500 ease-out;
+    @apply absolute bottom-0 left-0 w-0 h-[2px] transition-all duration-500 ease-out;
+    background: linear-gradient(90deg, #4a9acc, #1a2b55);
   }
 
   .animated-underline:hover::after {
     @apply w-full;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  .glow-navy {
+    box-shadow: 0 0 40px rgba(26, 43, 85, 0.12), 0 0 80px rgba(74, 154, 204, 0.06);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 30px rgba(91, 173, 217, 0.2), 0 0 60px rgba(74, 154, 204, 0.08);
+  }
+
+  .blob {
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  }
+
+  .blob-2 {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+
+  .mesh-gradient {
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(91, 173, 217, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(26, 43, 85, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(74, 154, 204, 0.1) 0%, transparent 50%);
   }
 }
 
@@ -58,9 +95,40 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-navy-200 rounded-full;
+  background: linear-gradient(to bottom, #4a9acc, #1a2b55);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-navy-400;
+}
+
+/* Animated gradient border */
+@keyframes border-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(135deg, #4a9acc, #1a2b55, #5badd9, #1e3366);
+  background-size: 300% 300%;
+  animation: border-flow 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Number counter animation */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
