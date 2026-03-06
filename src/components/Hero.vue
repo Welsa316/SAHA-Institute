@@ -212,7 +212,7 @@ onMounted(() => {
         </div>
         <div class="w-px h-10 bg-gradient-to-b from-transparent via-navy-200 to-transparent"></div>
         <div class="text-center">
-          <div class="font-display text-3xl md:text-4xl font-bold gradient-text">98%</div>
+          <div class="font-display text-3xl md:text-4xl font-bold gradient-text">100%</div>
           <div class="font-body text-xs text-navy-400 tracking-wider uppercase mt-1">Satisfaction Rate</div>
         </div>
       </div>
