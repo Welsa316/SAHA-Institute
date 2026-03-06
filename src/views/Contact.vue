@@ -39,17 +39,17 @@ async function submitForm() {
   error.value = ''
 
   try {
-    const { error: dbError } = await supabase
-      .from('contact_submissions')
-      .insert({
+    const { data, error: fnError } = await supabase.functions.invoke('contact', {
+      body: {
         name: form.value.name,
         email: form.value.email,
         phone: form.value.phone,
         subject: form.value.subject,
         message: form.value.message,
-      })
+      },
+    })
 
-    if (dbError) throw dbError
+    if (fnError) throw fnError
 
     sent.value = true
     form.value = { name: '', email: '', phone: '', subject: '', message: '' }
