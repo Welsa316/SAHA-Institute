@@ -26,7 +26,7 @@
           <div class="flex flex-col gap-3">
             <router-link to="/" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">Home</router-link>
             <router-link to="/#programs" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">Programs</router-link>
-            <router-link to="/#about" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">About</router-link>
+            <router-link to="/about" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">About</router-link>
             <router-link to="/contact" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">Contact</router-link>
           </div>
         </div>
@@ -36,7 +36,9 @@
           <div class="flex flex-col gap-3">
             <p class="font-body text-sm text-navy-400">1201 Vintage Drive, 70065</p>
             <a href="tel:+15046673625" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">(504) 667-3625</a>
+            <a href="tel:+15043739778" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">(504) 373-9778</a>
             <a href="mailto:sahaforlearning1675@gmail.com" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">sahaforlearning1675@gmail.com</a>
+            <p class="font-body text-sm text-navy-400">Mon–Fri, 3:15 – 9:00 PM</p>
           </div>
         </div>
       </div>

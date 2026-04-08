@@ -121,6 +121,21 @@ function resetForm() {
               <div>
                 <p class="font-body text-sm font-semibold text-navy-800">Phone</p>
                 <a href="tel:+15046673625" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors">(504) 667-3625</a>
+                <br/>
+                <a href="tel:+15043739778" class="font-body text-sm text-navy-400 hover:text-academic-600 transition-colors">(504) 373-9778</a>
+              </div>
+            </div>
+
+            <!-- Hours -->
+            <div class="flex items-start gap-4 group">
+              <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-navy-50 border border-navy-100 flex items-center justify-center text-navy-600 group-hover:bg-academic-50 group-hover:border-academic-200 group-hover:text-academic-600 transition-all duration-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-body text-sm font-semibold text-navy-800">Hours</p>
+                <p class="font-body text-sm text-navy-500">Mon–Fri, 3:15 – 9:00 PM</p>
               </div>
             </div>
 

@@ -16,7 +16,7 @@ const isScrolled = computed(() => !isHome.value || props.scrollY > 50)
 const navLinks = [
   { name: 'Home', to: '/' },
   { name: 'Programs', to: '/#programs' },
-  { name: 'About', to: '/#about' },
+  { name: 'About', to: '/about' },
   { name: 'Contact', to: '/contact' },
 ]
 </script>

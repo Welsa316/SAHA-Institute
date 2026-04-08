@@ -82,6 +82,22 @@ const features = [
           </p>
         </div>
       </div>
+
+      <!-- Link to full About page -->
+      <div
+        class="text-center mt-16 transition-all duration-700 delay-500 ease-out"
+        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
+      >
+        <router-link
+          to="/about"
+          class="inline-flex items-center gap-2 font-body text-sm font-semibold text-white/60 hover:text-white transition-colors duration-300"
+        >
+          Learn More About Us
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+        </router-link>
+      </div>
     </div>
   </section>
 </template>
