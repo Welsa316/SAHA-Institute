@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { supabase } from '../lib/supabase'
+import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 
 const form = ref({
   name: '',
@@ -14,25 +15,7 @@ const sending = ref(false)
 const sent = ref(false)
 const error = ref('')
 
-const sectionRef = ref(null)
-const isVisible = ref(false)
-let observer = null
-
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) isVisible.value = true
-      })
-    },
-    { threshold: 0.1 }
-  )
-  if (sectionRef.value) observer.observe(sectionRef.value)
-})
-
-onUnmounted(() => {
-  if (observer) observer.disconnect()
-})
+const { sectionRef, isVisible } = useIntersectionReveal(0.1)
 
 async function submitForm() {
   sending.value = true
@@ -85,13 +68,13 @@ function resetForm() {
 
     <div class="relative max-w-4xl mx-auto px-6 md:px-12 text-center">
       <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] border border-white/[0.08] mb-6">
-        <div class="w-1.5 h-1.5 rounded-full bg-academic-400 animate-pulse-soft"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-academic-400"></div>
         <span class="font-body text-xs tracking-[0.2em] uppercase text-academic-300 font-medium">Get In Touch</span>
       </div>
       <h1 class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-semibold leading-tight mb-4">
-        Contact <span class="gradient-text-light italic">Us</span>
+        Contact <span class="gradient-text-light">Us</span>
       </h1>
-      <p class="font-body text-lg md:text-xl text-navy-300 font-light max-w-lg mx-auto leading-relaxed">
+      <p class="font-body text-lg md:text-xl text-navy-300 font-normal max-w-lg mx-auto leading-relaxed">
         Ready to start your child's learning journey? We'd love to hear from you.
       </p>
     </div>

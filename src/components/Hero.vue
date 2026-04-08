@@ -11,222 +11,116 @@ onMounted(() => {
 </script>
 
 <template>
-  <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden">
-    <!-- Rich animated gradient background -->
-    <div
-      class="absolute inset-0 animate-gradient-shift"
-      style="
-        background: linear-gradient(135deg, #f0f7fc 0%, #e8f4fd 20%, #fefdfb 40%, #f0f3f9 60%, #e8f0fb 80%, #f5f0ff 100%);
-        background-size: 400% 400%;
-      "
-    ></div>
+  <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 bg-[#001B3D]">
 
-    <!-- Mesh gradient overlay for depth -->
-    <div class="absolute inset-0 mesh-gradient"></div>
-
-    <!-- Large colorful blobs -->
+    <!-- Glow — saturated blue light spreading across hero like the 21st.dev reference -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <!-- Primary blob - top right -->
+      <!-- Base ambient glow — covers entire hero -->
       <div
-        class="absolute -top-20 -right-20 w-[500px] h-[500px] blob animate-float-slow opacity-60"
-        style="background: linear-gradient(135deg, rgba(74,154,204,0.25) 0%, rgba(91,173,217,0.15) 50%, rgba(123,193,230,0.1) 100%);"
+        class="absolute inset-0"
+        style="background: radial-gradient(ellipse 100% 80% at 50% -10%, rgba(50,120,220,0.4) 0%, rgba(40,100,200,0.2) 30%, rgba(20,60,150,0.08) 55%, transparent 75%);"
       ></div>
-      <!-- Secondary blob - bottom left -->
+      <!-- Mid-layer glow — brighter blue concentration -->
       <div
-        class="absolute -bottom-32 -left-32 w-[600px] h-[600px] blob-2 animate-float-slower opacity-50"
-        style="background: linear-gradient(225deg, rgba(26,43,85,0.15) 0%, rgba(45,74,142,0.1) 50%, rgba(74,154,204,0.08) 100%);"
+        class="absolute inset-0"
+        style="background: radial-gradient(ellipse 70% 55% at 50% 5%, rgba(80,150,255,0.35) 0%, rgba(60,130,240,0.12) 45%, transparent 70%);"
       ></div>
-      <!-- Accent blob - center left -->
+      <!-- Hot spot — bright core at top center -->
       <div
-        class="absolute top-1/3 -left-16 w-72 h-72 rounded-full animate-float opacity-40"
-        style="background: radial-gradient(circle, rgba(91,173,217,0.2) 0%, transparent 70%);"
+        class="absolute inset-0"
+        style="background: radial-gradient(ellipse 35% 30% at 50% 0%, rgba(130,180,255,0.4) 0%, rgba(100,160,250,0.15) 40%, transparent 65%);"
       ></div>
-
-      <!-- Floating geometric shapes with color -->
-      <!-- Circle ring -->
+      <!-- White highlight peak -->
       <div
-        class="absolute top-[18%] right-[15%] w-20 h-20 rounded-full border-2 border-academic-300/30 animate-float-slow"
-      ></div>
-      <!-- Filled small circle -->
-      <div
-        class="absolute top-[65%] right-[20%] w-4 h-4 rounded-full bg-academic-400/40 animate-float"
-      ></div>
-      <!-- Diamond -->
-      <div
-        class="absolute top-[25%] left-[12%] w-8 h-8 rotate-45 bg-gradient-to-br from-navy-400/20 to-academic-400/20 animate-float-slower"
-      ></div>
-      <!-- Plus sign -->
-      <div class="absolute bottom-[30%] right-[8%] animate-float-slow opacity-30">
-        <div class="relative w-6 h-6">
-          <div class="absolute top-1/2 left-0 w-full h-[2px] -translate-y-1/2 bg-academic-500"></div>
-          <div class="absolute top-0 left-1/2 w-[2px] h-full -translate-x-1/2 bg-academic-500"></div>
-        </div>
-      </div>
-      <!-- Dots cluster -->
-      <div
-        class="absolute bottom-[25%] left-[8%] w-24 h-24 animate-float-slower opacity-30"
-        style="background-image: radial-gradient(circle, #4a9acc 1.5px, transparent 1.5px); background-size: 12px 12px;"
-      ></div>
-      <!-- Thin gradient line -->
-      <div
-        class="absolute top-[40%] right-[30%] w-px h-40 animate-pulse-soft"
-        style="background: linear-gradient(to bottom, transparent, rgba(74,154,204,0.3), transparent);"
-      ></div>
-      <!-- Another ring -->
-      <div
-        class="absolute bottom-[40%] left-[25%] w-12 h-12 rounded-full border border-navy-300/20 animate-float"
+        class="absolute inset-0"
+        style="background: radial-gradient(ellipse 20% 15% at 50% 0%, rgba(200,220,255,0.25) 0%, transparent 50%);"
       ></div>
     </div>
 
-    <!-- Content -->
     <div class="relative z-10 text-center px-6 max-w-5xl mx-auto">
-      <!-- Logo - LARGE & PROMINENT -->
+      <!-- Glass badge -->
       <div
-        class="mb-6 transition-all duration-1200 ease-out"
-        :class="isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'"
-      >
-        <div class="relative inline-block">
-          <!-- Glow behind logo -->
-          <div class="absolute inset-0 blur-3xl opacity-30 scale-125"
-               style="background: radial-gradient(circle, rgba(74,154,204,0.5) 0%, transparent 70%);">
-          </div>
-          <img
-            src="/logo.png"
-            alt="SAHA Institute For Learning"
-            class="relative mx-auto w-72 md:w-96 lg:w-[28rem] xl:w-[32rem] h-auto drop-shadow-xl logo-sharp"
-          />
-        </div>
-      </div>
-
-      <!-- Institute for Learning subtitle -->
-      <div
-        class="mb-4 transition-all duration-1000 delay-200 ease-out"
+        class="mb-10 transition-all duration-1000 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        <span class="font-body text-sm md:text-base tracking-[0.35em] uppercase text-navy-500 font-medium">
-          Institute for Learning
+        <span class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-body font-bold tracking-[0.3em] uppercase text-white/80 backdrop-blur-xl bg-white/[0.08] border border-white/[0.15] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_16px_rgba(0,0,0,0.1)]">
+          <span class="w-1.5 h-1.5 rounded-full bg-academic-400"></span>
+          Est. 2020 · Academic Excellence
         </span>
       </div>
 
-      <!-- Est. badge -->
-      <div
-        class="mb-8 transition-all duration-1000 delay-300 ease-out"
-        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
-      >
-        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-navy-100/40 border border-navy-200/30">
-          <span class="w-1 h-1 rounded-full bg-academic-500"></span>
-          <span class="font-body text-[11px] tracking-[0.3em] uppercase text-navy-400 font-medium">Est. 2020</span>
-          <span class="w-1 h-1 rounded-full bg-academic-500"></span>
-        </span>
-      </div>
-
-      <!-- Decorative line with gradient -->
-      <div
-        class="mx-auto mb-8 transition-all duration-1000 delay-400 ease-out flex items-center justify-center gap-3"
-        :class="isVisible ? 'opacity-100' : 'opacity-0'"
-      >
-        <div
-          class="h-[2px] rounded-full transition-all duration-1200 delay-500"
-          :class="isVisible ? 'w-12' : 'w-0'"
-          style="background: linear-gradient(90deg, transparent, #4a9acc);"
-        ></div>
-        <div class="w-2 h-2 rounded-full bg-gradient-to-br from-academic-400 to-navy-600 animate-pulse-soft"></div>
-        <div
-          class="h-[2px] rounded-full transition-all duration-1200 delay-500"
-          :class="isVisible ? 'w-12' : 'w-0'"
-          style="background: linear-gradient(90deg, #4a9acc, transparent);"
-        ></div>
-      </div>
-
-      <!-- Tagline - bigger and more colorful -->
       <h1
-        class="font-heading text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-semibold leading-[1.1] tracking-tight mb-6 transition-all duration-1000 delay-500 ease-out"
-        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
+        class="font-heading text-5xl md:text-7xl lg:text-8xl xl:text-[6.5rem] font-extrabold leading-none tracking-tight mb-8"
       >
-        <span class="text-navy-900">Where Curiosity</span><br />
-        <span class="gradient-text italic">Meets Clarity</span>
+        <span
+          class="block text-white transition-all duration-1000 delay-200 ease-out"
+          :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
+        >Where Curiosity</span>
+        <span class="block overflow-hidden">
+          <span
+            class="block gradient-text-light pb-3 transition-all duration-1000 delay-500 ease-out"
+            :class="isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'"
+          >Meets Clarity</span>
+        </span>
       </h1>
 
-      <!-- Subtitle -->
       <p
-        class="font-body text-lg md:text-xl lg:text-2xl text-navy-500 font-light max-w-2xl mx-auto mb-14 leading-relaxed transition-all duration-1000 delay-700 ease-out"
+        class="font-body text-lg md:text-xl text-white/50 font-normal max-w-xl mx-auto mb-14 leading-relaxed transition-all duration-1000 delay-700 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        Nurturing academic excellence through
-        <span class="text-academic-600 font-medium">personalized learning</span>
+        Personalized tutoring that builds deep understanding and lasting confidence.
       </p>
 
-      <!-- CTA Buttons -->
       <div
-        class="flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-1000 delay-[900ms] ease-out"
+        class="flex flex-col sm:flex-row items-center justify-center gap-5 transition-all duration-1000 delay-[900ms] ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        <!-- Primary CTA -->
-        <a
-          href="#programs"
-          class="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full font-body text-sm font-semibold tracking-wider uppercase text-white overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-navy-900/20"
+        <router-link
+          to="/#programs"
+          class="min-w-[220px] px-10 py-4 rounded-full bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors duration-300 shadow-xl shadow-black/20"
         >
-          <!-- Animated gradient background -->
-          <div class="absolute inset-0 bg-gradient-to-r from-navy-800 via-navy-700 to-academic-600 bg-[length:200%_100%] transition-all duration-700 group-hover:bg-[position:100%_0]"></div>
-          <span class="relative">Explore Programs</span>
-          <svg
-            class="relative w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </a>
-
-        <!-- Secondary CTA -->
-        <a
-          href="#contact"
-          class="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-body text-sm font-medium tracking-wider uppercase text-navy-700 border-2 border-navy-200 hover:border-academic-400 hover:text-academic-700 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-academic-500/10"
+          Explore Programs
+        </router-link>
+        <router-link
+          to="/contact"
+          class="min-w-[220px] px-10 py-4 rounded-full border-2 border-white/20 text-white/70 font-body text-sm font-bold tracking-[0.15em] uppercase hover:border-white/40 hover:text-white transition-colors duration-300"
         >
           Get in Touch
-          <svg
-            class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8m0 0l-4-4m4 4l-4 4" />
-          </svg>
-        </a>
+        </router-link>
       </div>
 
-      <!-- Stats strip -->
       <div
-        class="mt-20 flex flex-wrap items-center justify-center gap-8 md:gap-16 transition-all duration-1000 delay-[1100ms] ease-out"
+        class="mt-24 inline-flex flex-wrap items-center justify-center gap-8 md:gap-0 bg-white/[0.06] rounded-2xl px-8 md:px-14 py-7 transition-all duration-1000 delay-[1100ms] ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        <div class="text-center">
-          <div class="font-display text-3xl md:text-4xl font-bold gradient-text">5+</div>
-          <div class="font-body text-xs text-navy-400 tracking-wider uppercase mt-1">Years Teaching</div>
+        <div class="flex items-center gap-3 md:px-8">
+          <svg class="w-5 h-5 text-academic-400 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          <div>
+            <div class="font-heading text-2xl md:text-3xl font-extrabold text-white">5+</div>
+            <div class="font-body text-[10px] text-white/40 tracking-[0.15em] uppercase font-semibold">Years Teaching</div>
+          </div>
         </div>
-        <div class="w-px h-10 bg-gradient-to-b from-transparent via-navy-200 to-transparent"></div>
-        <div class="text-center">
-          <div class="font-display text-3xl md:text-4xl font-bold gradient-text">200+</div>
-          <div class="font-body text-xs text-navy-400 tracking-wider uppercase mt-1">Students Helped</div>
+        <div class="hidden md:block w-px h-12 bg-white/10"></div>
+        <div class="flex items-center gap-3 md:px-8">
+          <svg class="w-5 h-5 text-academic-400 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+          </svg>
+          <div>
+            <div class="font-heading text-2xl md:text-3xl font-extrabold text-white">200+</div>
+            <div class="font-body text-[10px] text-white/40 tracking-[0.15em] uppercase font-semibold">Students Helped</div>
+          </div>
         </div>
-        <div class="w-px h-10 bg-gradient-to-b from-transparent via-navy-200 to-transparent"></div>
-        <div class="text-center">
-          <div class="font-display text-3xl md:text-4xl font-bold gradient-text">100%</div>
-          <div class="font-body text-xs text-navy-400 tracking-wider uppercase mt-1">Satisfaction Rate</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Scroll indicator -->
-    <div
-      class="absolute bottom-8 left-1/2 -translate-x-1/2 transition-all duration-1000 delay-[1400ms] ease-out"
-      :class="isVisible ? 'opacity-100' : 'opacity-0'"
-    >
-      <div class="flex flex-col items-center gap-2">
-        <span class="text-[10px] font-body tracking-[0.3em] uppercase text-navy-400">Scroll</span>
-        <div class="w-6 h-10 rounded-full border-2 border-navy-300/40 flex justify-center pt-2">
-          <div class="w-1 h-2.5 rounded-full bg-academic-400 animate-bounce"></div>
+        <div class="hidden md:block w-px h-12 bg-white/10"></div>
+        <div class="flex items-center gap-3 md:px-8">
+          <svg class="w-5 h-5 text-academic-400 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+          </svg>
+          <div>
+            <div class="font-heading text-2xl md:text-3xl font-extrabold text-white">100%</div>
+            <div class="font-body text-[10px] text-white/40 tracking-[0.15em] uppercase font-semibold">Satisfaction</div>
+          </div>
         </div>
       </div>
     </div>

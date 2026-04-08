@@ -23,58 +23,49 @@ const navLinks = [
 
 <template>
   <nav
-    class="fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-out"
+    class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out"
     :class="[
       isScrolled
-        ? 'bg-navy-900/95 backdrop-blur-2xl shadow-lg shadow-navy-900/20 border-b border-navy-700/30'
+        ? 'bg-white/95 backdrop-blur-xl shadow-sm border-b border-navy-100'
         : 'bg-transparent'
     ]"
   >
-    <div class="max-w-7xl mx-auto px-6 md:px-12 lg:px-16">
-      <div class="flex items-center justify-between h-20">
-        <!-- Logo -->
+    <div class="mx-auto px-6 md:px-10 lg:px-14">
+      <div class="flex items-center justify-between h-24">
         <router-link to="/" class="flex items-center group">
+          <!-- Text logo on dark hero -->
+          <div v-if="!isScrolled" class="flex items-center gap-3 transition-all duration-500 group-hover:opacity-80">
+            <span class="text-[72px] font-bold tracking-[0.15em] text-academic-300 leading-none" style="font-family: 'Cormorant Garamond', serif;">SAHA</span>
+            <span class="w-px h-10 bg-white/30"></span>
+            <span class="font-body text-[13px] tracking-[0.2em] uppercase text-white/50 font-medium">Institute<br/>for Learning</span>
+          </div>
+          <!-- Image logo on scroll -->
           <img
+            v-else
             src="/logo.png"
             alt="SAHA Institute"
-            class="w-28 h-auto transition-all duration-500 group-hover:scale-105 group-hover:brightness-110 logo-sharp"
-            :class="isScrolled ? 'brightness-0 invert' : ''"
+            class="w-40 h-auto transition-all duration-500 group-hover:scale-105 logo-sharp"
           />
         </router-link>
 
-        <!-- Nav Links -->
         <div class="hidden md:flex items-center gap-10">
           <router-link
             v-for="link in navLinks"
             :key="link.name"
             :to="link.to"
-            class="animated-underline text-sm font-body font-medium tracking-wide transition-colors duration-300 pb-1"
-            :class="[
-              isScrolled
-                ? 'text-navy-200 hover:text-white'
-                : 'text-navy-600 hover:text-navy-900'
-            ]"
+            class="text-sm font-body font-medium tracking-wide transition-colors duration-300 pb-1"
+            :class="isScrolled ? 'text-navy-500 hover:text-navy-900' : 'text-white/70 hover:text-white'"
           >
             {{ link.name }}
           </router-link>
-
-          <!-- Nav CTA button -->
-          <router-link
-            to="/contact"
-            class="px-6 py-2.5 rounded-full text-xs font-body font-semibold tracking-wider uppercase transition-all duration-500 hover:-translate-y-0.5"
-            :class="[
-              isScrolled
-                ? 'text-navy-900 bg-white hover:shadow-lg hover:shadow-white/20'
-                : 'text-white bg-gradient-to-r from-navy-800 to-academic-600 hover:shadow-lg hover:shadow-academic-500/20'
-            ]"
-          >
-            Enroll Now
-          </router-link>
         </div>
 
-        <!-- Mobile menu button -->
-        <button class="md:hidden p-2 transition-colors" :class="isScrolled ? 'text-white' : 'text-navy-700 hover:text-navy-900'">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button
+          class="md:hidden p-2 transition-colors"
+          :class="isScrolled ? 'text-navy-700 hover:text-navy-900' : 'text-white/70 hover:text-white'"
+          aria-label="Open menu"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
