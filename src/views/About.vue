@@ -9,7 +9,7 @@ const tutors = [
   { name: 'Tom Ngo', role: '', initials: 'TN', photo: null },
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
   { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg' },
-  { name: 'Walid Elsayed', role: '', initials: 'WE', photo: null },
+  { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg' },
 ]
 </script>
 
