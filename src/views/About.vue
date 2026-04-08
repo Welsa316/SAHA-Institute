@@ -26,7 +26,7 @@ const tutors = [
         Our <span class="gradient-text-light">Story</span>
       </h1>
       <p class="font-body text-lg md:text-xl text-white/50 font-normal max-w-lg mx-auto leading-relaxed">
-        Built from a passion for education and a belief that every student deserves a chance to thrive.
+        How a substitute teacher's observation became a learning center serving 200+ students.
       </p>
     </div>
   </section>

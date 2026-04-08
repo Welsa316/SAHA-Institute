@@ -31,7 +31,7 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-body text-lg md:text-xl text-white/50 font-normal mb-14 max-w-lg mx-auto leading-relaxed transition-all duration-700 delay-200 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
-        Take the first step toward a brighter academic future.
+        Book a free consultation and we'll find the right program for your child.
       </p>
 
       <div

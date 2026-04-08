@@ -69,7 +69,7 @@ function closeMenu() {
         </div>
 
         <button
-          class="md:hidden p-2 transition-colors"
+          class="md:hidden p-3 -mr-2 transition-colors"
           :class="isScrolled || mobileOpen ? 'text-navy-700 hover:text-navy-900' : 'text-white/70 hover:text-white'"
           :aria-label="mobileOpen ? 'Close menu' : 'Open menu'"
           @click="toggleMenu"

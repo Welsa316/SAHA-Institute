@@ -75,7 +75,7 @@ function resetForm() {
         Contact <span class="gradient-text-light">Us</span>
       </h1>
       <p class="font-body text-lg md:text-xl text-navy-300 font-normal max-w-lg mx-auto leading-relaxed">
-        Ready to start your child's learning journey? We'd love to hear from you.
+        Questions about programs or scheduling? We typically respond within 24 hours.
       </p>
     </div>
   </section>

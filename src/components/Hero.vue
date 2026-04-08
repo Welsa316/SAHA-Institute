@@ -68,7 +68,7 @@ onMounted(() => {
         class="font-body text-lg md:text-xl text-white/50 font-normal max-w-xl mx-auto mb-14 leading-relaxed transition-all duration-1000 delay-700 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        Personalized tutoring that builds deep understanding and lasting confidence.
+        One-on-one tutoring in academics, Islamic studies, and test prep for ages 4–17.
       </p>
 
       <div

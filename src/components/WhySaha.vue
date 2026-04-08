@@ -6,21 +6,21 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.2)
 const features = [
   {
     title: 'Personalized Learning',
-    description: 'Every student receives a tailored approach that adapts to their unique strengths and goals.',
+    description: 'We match our teaching to how your child learns — no cookie-cutter lesson plans.',
     icon: 'personalized',
     number: '01',
     delay: 0,
   },
   {
     title: 'Experienced Tutors',
-    description: 'Passionate educators with deep subject expertise and a commitment to student success.',
+    description: 'Our tutors know their subjects inside out and genuinely care about each student.',
     icon: 'tutors',
     number: '02',
     delay: 150,
   },
   {
     title: 'Small Group Focus',
-    description: 'Intimate learning environments where every question matters and every student is seen.',
+    description: 'Every class is one-on-one so your child gets full attention, every session.',
     icon: 'group',
     number: '03',
     delay: 300,

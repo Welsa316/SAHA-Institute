@@ -18,9 +18,8 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-heading text-3xl md:text-4xl lg:text-5xl text-[#001B3D] leading-snug font-bold mb-10 transition-all duration-1000 delay-200 ease-out text-balance"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        Personalized tutoring for students<br class="hidden md:block" />
-        who want to
-        <span class="gradient-text font-extrabold">understand</span>, not memorize.
+        We teach students to<br class="hidden md:block" />
+        <span class="gradient-text font-extrabold">think</span>, not memorize.
       </p>
 
       <div
@@ -32,9 +31,9 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-body text-lg md:text-xl text-navy-400 font-normal max-w-2xl mx-auto leading-relaxed transition-all duration-1000 delay-500 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
-        We believe every student has the potential to thrive. Our approach builds
-        <span class="text-[#001B3D] font-semibold">deep comprehension</span> and
-        <span class="text-[#001B3D] font-semibold">lasting confidence</span>.
+        Every session is tailored to how your child learns best —
+        <span class="text-[#001B3D] font-semibold">building real skills</span> they carry
+        <span class="text-[#001B3D] font-semibold">into the classroom</span> and beyond.
       </p>
     </div>
   </section>

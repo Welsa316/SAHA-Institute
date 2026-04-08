@@ -61,7 +61,7 @@ const programs = [
           class="mt-5 font-body text-lg text-navy-400 font-normal max-w-lg mx-auto transition-all duration-700 delay-200 ease-out"
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          Each program is thoughtfully designed to unlock your child's potential
+          Academics, Quran studies, and standardized test prep — all one-on-one
         </p>
       </div>
 
