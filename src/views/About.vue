@@ -5,11 +5,11 @@ const { sectionRef: missionRef, isVisible: missionVisible } = useIntersectionRev
 const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.15)
 
 const tutors = [
-  { name: 'Anila Siddiqui', role: 'Founder & Lead Tutor', initials: 'AS', photo: null },
-  { name: 'Tom Ngo', role: 'Tutor', initials: 'TN', photo: null },
-  { name: 'Lena Tamer', role: 'Tutor', initials: 'LT', photo: '/tutors/lena-tamer.jpg' },
-  { name: 'Walid Elsayed', role: 'Tutor', initials: 'WE', photo: null },
-  { name: 'Dua Cheema', role: 'Tutor', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
+  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: null },
+  { name: 'Tom Ngo', role: '', initials: 'TN', photo: null },
+  { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg' },
+  { name: 'Walid Elsayed', role: '', initials: 'WE', photo: null },
+  { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
 ]
 </script>
 
@@ -94,11 +94,11 @@ const tutors = [
           class="font-heading text-4xl md:text-5xl text-white font-extrabold tracking-tight transition-all duration-700 delay-100 ease-out"
           :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          Meet the <span class="gradient-text-light">Tutors</span>
+          Meet the <span class="gradient-text-light">Team</span>
         </h2>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
         <div
           v-for="(tutor, index) in tutors"
           :key="tutor.name"
@@ -107,7 +107,7 @@ const tutors = [
           :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
         >
           <!-- Photo or placeholder -->
-          <div class="aspect-[3/4] min-h-[320px] md:min-h-[400px] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+          <div class="aspect-[3/4] min-h-[400px] md:min-h-[500px] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
             <img
               v-if="tutor.photo"
               :src="tutor.photo"
@@ -120,7 +120,7 @@ const tutors = [
           <!-- Liquid glass name card — floating inside the image -->
           <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
             <h3 class="font-heading text-base md:text-lg font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
-            <p class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
+            <p v-if="tutor.role" class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
           </div>
         </div>
       </div>
