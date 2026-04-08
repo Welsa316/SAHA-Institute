@@ -115,6 +115,7 @@ const programs = [
           <div class="mb-4">
             <span class="font-heading text-2xl font-extrabold text-academic-600">{{ program.price }}</span>
             <span class="font-body text-sm text-navy-400">{{ program.priceUnit }}</span>
+            <span class="block font-body text-xs text-navy-300 mt-1">{{ program.billing }}</span>
           </div>
 
           <!-- Description -->

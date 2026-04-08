@@ -98,20 +98,23 @@ const tutors = [
         </h2>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-6">
         <div
           v-for="(tutor, index) in tutors"
           :key="tutor.name"
-          class="text-center transition-all duration-700 ease-out"
+          class="relative rounded-2xl overflow-hidden transition-all duration-700 ease-out"
           :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
           :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
         >
-          <!-- Placeholder avatar -->
-          <div class="w-24 h-24 md:w-28 md:h-28 mx-auto mb-4 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
-            <span class="font-heading text-xl md:text-2xl font-bold text-white/30">{{ tutor.initials }}</span>
+          <!-- Photo placeholder with initials -->
+          <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+            <span class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
           </div>
-          <h3 class="font-heading text-base font-bold text-white mb-1">{{ tutor.name }}</h3>
-          <p class="font-body text-xs text-white/40">{{ tutor.role }}</p>
+          <!-- Liquid glass name card overlay -->
+          <div class="absolute bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-xl bg-white/[0.1] border-t border-white/[0.15] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
+            <h3 class="font-heading text-sm font-bold text-white leading-tight">{{ tutor.name }}</h3>
+            <p class="font-body text-[11px] text-white/50">{{ tutor.role }}</p>
+          </div>
         </div>
       </div>
     </div>

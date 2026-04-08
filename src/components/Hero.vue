@@ -89,8 +89,24 @@ onMounted(() => {
         </router-link>
       </div>
 
+      <!-- Phone CTA -->
       <div
-        class="mt-24 inline-flex flex-wrap items-center justify-center gap-8 md:gap-0 bg-white/[0.06] rounded-2xl px-8 md:px-14 py-7 transition-all duration-1000 delay-[1100ms] ease-out"
+        class="mt-8 transition-all duration-1000 delay-[1000ms] ease-out"
+        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
+      >
+        <a
+          href="tel:+15043739778"
+          class="inline-flex items-center gap-2 font-body text-sm text-white/50 hover:text-white transition-colors duration-300"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          Or call us: (504) 373-9778
+        </a>
+      </div>
+
+      <div
+        class="mt-16 inline-flex flex-wrap items-center justify-center gap-8 md:gap-0 bg-white/[0.06] rounded-2xl px-8 md:px-14 py-7 transition-all duration-1000 delay-[1100ms] ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
         <div class="flex items-center gap-3 md:px-8">
