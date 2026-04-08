@@ -5,11 +5,11 @@ const { sectionRef: missionRef, isVisible: missionVisible } = useIntersectionRev
 const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.15)
 
 const tutors = [
-  { name: 'Anila', role: 'Founder & Lead Tutor', initials: 'A' },
-  { name: 'Tom Ngo', role: 'Tutor', initials: 'TN' },
-  { name: 'Lena Tamer', role: 'Tutor', initials: 'LT' },
-  { name: 'Walid Elsayed', role: 'Tutor', initials: 'WE' },
-  { name: 'Dua Cheema', role: 'Tutor', initials: 'DC' },
+  { name: 'Anila', role: 'Founder & Lead Tutor', initials: 'A', photo: null },
+  { name: 'Tom Ngo', role: 'Tutor', initials: 'TN', photo: null },
+  { name: 'Lena Tamer', role: 'Tutor', initials: 'LT', photo: '/tutors/lena-tamer.jpg' },
+  { name: 'Walid Elsayed', role: 'Tutor', initials: 'WE', photo: null },
+  { name: 'Dua Cheema', role: 'Tutor', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
 ]
 </script>
 
@@ -106,14 +106,21 @@ const tutors = [
           :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
           :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
         >
-          <!-- Photo placeholder with initials -->
+          <!-- Photo or placeholder -->
           <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
-            <span class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
+            <img
+              v-if="tutor.photo"
+              :src="tutor.photo"
+              :alt="tutor.name"
+              class="w-full h-full object-cover object-top"
+              loading="lazy"
+            />
+            <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
           </div>
-          <!-- Liquid glass name card overlay -->
-          <div class="absolute bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-xl bg-white/[0.1] border-t border-white/[0.15] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
-            <h3 class="font-heading text-sm font-bold text-white leading-tight">{{ tutor.name }}</h3>
-            <p class="font-body text-[11px] text-white/50">{{ tutor.role }}</p>
+          <!-- Liquid glass name card — floating inside the image -->
+          <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-white/[0.12] border border-white/[0.2] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.3)]">
+            <h3 class="font-heading text-sm font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
+            <p class="font-body text-[11px] text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
           </div>
         </div>
       </div>
