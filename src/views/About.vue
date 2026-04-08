@@ -5,11 +5,11 @@ const { sectionRef: missionRef, isVisible: missionVisible } = useIntersectionRev
 const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.15)
 
 const tutors = [
-  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: null },
-  { name: 'Tom Ngo', role: '', initials: 'TN', photo: null },
-  { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
-  { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg' },
-  { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg' },
+  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: null, pos: 'top' },
+  { name: 'Tom Ngo', role: '', initials: 'TN', photo: null, pos: 'top' },
+  { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
+  { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg', pos: 'top' },
+  { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg', pos: '30%' },
 ]
 </script>
 
@@ -107,7 +107,8 @@ const tutors = [
                 v-if="tutor.photo"
                 :src="tutor.photo"
                 :alt="tutor.name"
-                class="w-full h-full object-cover object-top"
+                class="w-full h-full object-cover"
+              :style="{ objectPosition: `center ${tutor.pos}` }"
                 loading="lazy"
               />
               <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
@@ -133,7 +134,8 @@ const tutors = [
                 v-if="tutor.photo"
                 :src="tutor.photo"
                 :alt="tutor.name"
-                class="w-full h-full object-cover object-top"
+                class="w-full h-full object-cover"
+              :style="{ objectPosition: `center ${tutor.pos}` }"
                 loading="lazy"
               />
               <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
