@@ -66,14 +66,13 @@ const tutors = [
           class="relative transition-all duration-1000 delay-300 ease-out"
           :class="missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
-          <!-- Placeholder for future photo of learning space -->
-          <div class="aspect-[4/5] rounded-3xl bg-navy-50 border border-navy-100 flex items-center justify-center">
-            <div class="text-center px-8">
-              <svg class="w-16 h-16 text-navy-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
-              </svg>
-              <p class="font-body text-sm text-navy-300">Photo coming soon</p>
-            </div>
+          <div class="aspect-[4/5] rounded-3xl overflow-hidden bg-navy-50 border border-navy-100">
+            <img
+              src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=750&fit=crop&crop=faces"
+              alt="Students learning together"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
           </div>
         </div>
       </div>

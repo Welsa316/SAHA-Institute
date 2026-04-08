@@ -29,7 +29,7 @@ const programs = [
   {
     title: 'Test Prep',
     description: 'Targeted preparation for standardized tests with proven strategies and practice.',
-    subjects: ['AP Prep', 'ACT Prep'],
+    subjects: ['AP Prep', 'ACT Prep', 'LEAP Prep'],
     price: '$30',
     priceUnit: '/hour',
     billing: 'Biweekly or monthly',
@@ -85,7 +85,7 @@ const programs = [
         <div
           v-for="program in programs"
           :key="program.title"
-          class="group relative rounded-3xl p-8 md:p-10 bg-white border border-navy-100 hover:border-navy-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-500 ease-out cursor-pointer"
+          class="relative rounded-3xl p-8 md:p-10 bg-white border border-navy-100 transition-all duration-500 ease-out"
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'"
           :style="{ transitionDelay: isVisible ? `${program.delay + 400}ms` : '0ms' }"
         >
@@ -133,13 +133,6 @@ const programs = [
             </span>
           </div>
 
-          <!-- Learn more -->
-          <div class="flex items-center gap-2 text-sm font-body font-semibold text-navy-300 group-hover:text-navy-600 transition-colors duration-300">
-            <span>Learn More</span>
-            <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </div>
         </div>
       </div>
     </div>
