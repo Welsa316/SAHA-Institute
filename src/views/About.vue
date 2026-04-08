@@ -92,7 +92,7 @@ const tutors = [
       </div>
 
       <!-- W layout: 3 top, 2 bottom offset -->
-      <div class="max-w-5xl mx-auto">
+      <div class="max-w-6xl mx-auto">
         <!-- Top row: 3 cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6">
           <div
@@ -102,7 +102,7 @@ const tutors = [
             :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
             :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
           >
-            <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+            <div class="aspect-[2/3] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
               <img
                 v-if="tutor.photo"
                 :src="tutor.photo"
@@ -128,7 +128,7 @@ const tutors = [
             :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
             :style="{ transitionDelay: teamVisible ? `${(index + 3) * 100 + 200}ms` : '0ms' }"
           >
-            <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+            <div class="aspect-[2/3] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
               <img
                 v-if="tutor.photo"
                 :src="tutor.photo"
