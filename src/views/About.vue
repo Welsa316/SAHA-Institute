@@ -98,7 +98,7 @@ const tutors = [
         </h2>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
         <div
           v-for="(tutor, index) in tutors"
           :key="tutor.name"
@@ -107,7 +107,7 @@ const tutors = [
           :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
         >
           <!-- Photo or placeholder -->
-          <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+          <div class="aspect-[3/4] min-h-[320px] md:min-h-[400px] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
             <img
               v-if="tutor.photo"
               :src="tutor.photo"
@@ -119,8 +119,8 @@ const tutors = [
           </div>
           <!-- Liquid glass name card — floating inside the image -->
           <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
-            <h3 class="font-heading text-sm font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
-            <p class="font-body text-[11px] text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
+            <h3 class="font-heading text-base md:text-lg font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
+            <p class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
           </div>
         </div>
       </div>
