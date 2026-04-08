@@ -2,6 +2,7 @@
 import Hero from '../components/Hero.vue'
 import Intro from '../components/Intro.vue'
 import Programs from '../components/Programs.vue'
+import Events from '../components/Events.vue'
 import WhySaha from '../components/WhySaha.vue'
 import CallToAction from '../components/CallToAction.vue'
 </script>
@@ -10,6 +11,7 @@ import CallToAction from '../components/CallToAction.vue'
   <Hero />
   <Intro />
   <Programs />
+  <Events />
   <WhySaha />
   <CallToAction />
 </template>
