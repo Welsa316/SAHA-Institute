@@ -7,9 +7,9 @@ const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.
 const tutors = [
   { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: null },
   { name: 'Tom Ngo', role: '', initials: 'TN', photo: null },
+  { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
   { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg' },
   { name: 'Walid Elsayed', role: '', initials: 'WE', photo: null },
-  { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg' },
 ]
 </script>
 
@@ -83,44 +83,65 @@ const tutors = [
   <section ref="teamRef" class="relative py-24 md:py-32 overflow-hidden bg-navy-950">
     <div class="max-w-6xl mx-auto px-6 md:px-12">
       <div class="text-center mb-16">
-        <div
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] mb-6 transition-all duration-700 ease-out"
-          :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
-        >
-          <div class="w-1.5 h-1.5 rounded-full bg-academic-400"></div>
-          <span class="font-body text-[10px] tracking-[0.3em] uppercase text-white/70 font-bold">Our Team</span>
-        </div>
         <h2
-          class="font-heading text-4xl md:text-5xl text-white font-extrabold tracking-tight transition-all duration-700 delay-100 ease-out"
+          class="font-heading text-5xl md:text-6xl lg:text-7xl text-white font-extrabold tracking-tight transition-all duration-700 ease-out"
           :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
           Meet the <span class="gradient-text-light">Team</span>
         </h2>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-        <div
-          v-for="(tutor, index) in tutors"
-          :key="tutor.name"
-          class="relative rounded-2xl overflow-hidden transition-all duration-700 ease-out"
-          :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
-          :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
-        >
-          <!-- Photo or placeholder -->
-          <div class="aspect-[3/4] min-h-[400px] md:min-h-[500px] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
-            <img
-              v-if="tutor.photo"
-              :src="tutor.photo"
-              :alt="tutor.name"
-              class="w-full h-full object-cover object-top"
-              loading="lazy"
-            />
-            <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
+      <!-- W layout: 3 top, 2 bottom offset -->
+      <div class="max-w-5xl mx-auto">
+        <!-- Top row: 3 cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6">
+          <div
+            v-for="(tutor, index) in tutors.slice(0, 3)"
+            :key="tutor.name"
+            class="relative rounded-2xl overflow-hidden transition-all duration-700 ease-out"
+            :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
+            :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
+          >
+            <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+              <img
+                v-if="tutor.photo"
+                :src="tutor.photo"
+                :alt="tutor.name"
+                class="w-full h-full object-cover object-top"
+                loading="lazy"
+              />
+              <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
+            </div>
+            <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
+              <h3 class="font-heading text-base md:text-lg font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
+              <p v-if="tutor.role" class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
+            </div>
           </div>
-          <!-- Liquid glass name card — floating inside the image -->
-          <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
-            <h3 class="font-heading text-base md:text-lg font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
-            <p v-if="tutor.role" class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
+        </div>
+
+        <!-- Bottom row: 2 cards offset between top cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6 mt-5 md:mt-6 sm:px-[calc(100%/6)]">
+          <div
+            v-for="(tutor, index) in tutors.slice(3, 5)"
+            :key="tutor.name"
+            class="relative rounded-2xl overflow-hidden transition-all duration-700 ease-out"
+            :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
+            :style="{ transitionDelay: teamVisible ? `${(index + 3) * 100 + 200}ms` : '0ms' }"
+          >
+            <div class="aspect-[3/4] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
+              <img
+                v-if="tutor.photo"
+                :src="tutor.photo"
+                :alt="tutor.name"
+                class="w-full h-full object-cover object-top"
+                loading="lazy"
+              />
+              <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
+            </div>
+            <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
+              <h3 class="font-heading text-base md:text-lg font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
+              <p v-if="tutor.role" class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
+            </div>
           </div>
         </div>
       </div>
