@@ -33,8 +33,8 @@ const tutors = [
 
   <!-- Mission Section -->
   <section ref="missionRef" class="relative py-24 md:py-32 overflow-hidden">
-    <div class="max-w-4xl mx-auto px-6 md:px-12">
-      <div class="grid md:grid-cols-2 gap-16 items-center">
+    <div class="max-w-6xl mx-auto px-6 md:px-12">
+      <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
         <div
           class="transition-all duration-1000 ease-out"
           :class="missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
@@ -43,18 +43,18 @@ const tutors = [
             <div class="w-1.5 h-1.5 rounded-full bg-academic-500"></div>
             <span class="font-body text-[10px] tracking-[0.3em] uppercase text-navy-600 font-bold">Our Mission</span>
           </div>
-          <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-[#001B3D] tracking-tight mb-6">
+          <h2 class="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#001B3D] tracking-tight mb-8">
             Where it all <span class="gradient-text">began</span>
           </h2>
           <div class="space-y-5 font-body text-navy-500 leading-relaxed">
             <p>
-              SAHA Institute for Learning was born from a simple but powerful observation. While working as a substitute teacher at ISGNO, our founder Anila saw students brimming with potential — bright, curious minds eager to learn.
+              SAHA Institute for Learning was born from a simple but powerful observation. While working as a substitute teacher at ISGNO, our founder Anila saw students brimming with potential. Bright, curious minds eager to learn.
             </p>
             <p>
               But she also saw the barriers. Many families faced financial hardships that made accessing quality tutoring difficult. The gap between potential and opportunity was clear.
             </p>
             <p>
-              In 2020, Anila decided to bridge that gap. She founded SAHA to create a <span class="text-[#001B3D] font-semibold">comfortable, supportive space</span> where every student — regardless of background — could receive the personalized attention they deserve.
+              In 2020, Anila decided to bridge that gap. She founded SAHA to create a <span class="text-[#001B3D] font-semibold">comfortable, supportive space</span> where every student, regardless of background, could receive the personalized attention they deserve.
             </p>
             <p>
               Today, SAHA serves students ages 4 through 17 across academics, Islamic studies, and standardized test preparation. Every class is one-on-one, because we believe every student's journey is unique.
@@ -66,9 +66,9 @@ const tutors = [
           class="relative transition-all duration-1000 delay-300 ease-out"
           :class="missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
-          <div class="aspect-[4/5] rounded-3xl overflow-hidden bg-navy-50 border border-navy-100">
+          <div class="aspect-[3/4] md:aspect-auto md:h-full md:min-h-[550px] rounded-3xl overflow-hidden bg-navy-50 border border-navy-100">
             <img
-              src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=750&fit=crop&crop=faces"
+              src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=1000&fit=crop&crop=faces"
               alt="Students learning together"
               class="w-full h-full object-cover"
               loading="lazy"
