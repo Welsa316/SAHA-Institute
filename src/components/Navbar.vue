@@ -41,9 +41,15 @@ function closeMenu() {
     ]"
   >
     <div class="mx-auto px-6 md:px-10 lg:px-14">
-      <div class="flex items-center justify-between h-24">
-        <router-link to="/" class="flex items-center group" @click="closeMenu">
-          <div v-if="!isScrolled && !mobileOpen" class="flex items-center gap-3 transition-all duration-500 group-hover:opacity-80">
+      <div class="flex items-center justify-between h-24 relative">
+        <router-link to="/" class="flex items-center group" :class="!isScrolled && !mobileOpen ? 'md:flex-none flex-1 justify-center md:justify-start' : ''" @click="closeMenu">
+          <!-- Mobile: stacked centered layout -->
+          <div v-if="!isScrolled && !mobileOpen" class="md:hidden flex flex-col items-center transition-all duration-500 group-hover:opacity-80">
+            <span class="text-[48px] font-bold tracking-[0.15em] text-academic-300 leading-none" style="font-family: 'Cormorant Garamond', serif;">SAHA</span>
+            <span class="font-body text-[9px] tracking-[0.25em] uppercase text-white/50 font-medium mt-1">Institute for Learning</span>
+          </div>
+          <!-- Desktop: inline layout -->
+          <div v-if="!isScrolled && !mobileOpen" class="hidden md:flex items-center gap-3 transition-all duration-500 group-hover:opacity-80">
             <span class="text-[72px] font-bold tracking-[0.15em] text-academic-300 leading-none" style="font-family: 'Cormorant Garamond', serif;">SAHA</span>
             <span class="w-px h-10 bg-white/30"></span>
             <span class="font-body text-[13px] tracking-[0.2em] uppercase text-white/50 font-medium">Institute<br/>for Learning</span>
@@ -69,7 +75,7 @@ function closeMenu() {
         </div>
 
         <button
-          class="md:hidden p-3 -mr-2 transition-colors"
+          class="md:hidden p-3 absolute right-6 transition-colors"
           :class="isScrolled || mobileOpen ? 'text-navy-700 hover:text-navy-900' : 'text-white/70 hover:text-white'"
           :aria-label="mobileOpen ? 'Close menu' : 'Open menu'"
           @click="toggleMenu"

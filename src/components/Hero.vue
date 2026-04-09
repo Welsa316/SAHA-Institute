@@ -14,7 +14,7 @@ onMounted(() => {
   <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 bg-[#001B3D]">
 
     <!-- Glow — saturated blue light spreading across hero like the 21st.dev reference -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
       <!-- Base ambient glow — covers entire hero -->
       <div
         class="absolute inset-0"
