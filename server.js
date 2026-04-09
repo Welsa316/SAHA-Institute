@@ -36,7 +36,7 @@ app.post('/api/contact', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SAHA Institute <onboarding@resend.dev>',
+        from: 'SAHA Institute <contact@sahainstituteforlearning.com>',
         to: [contactEmail],
         subject: `New Contact: ${subject || 'Website Inquiry'} — from ${name}`,
         html: `
