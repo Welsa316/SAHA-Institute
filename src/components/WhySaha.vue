@@ -43,7 +43,7 @@ const features = [
           class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-extrabold tracking-tight transition-all duration-700 delay-100 ease-out"
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          The <span class="gradient-text-light">difference</span> is<br class="hidden md:block" /> in the details
+          The <span class="gradient-text-light">difference</span> is in the details
         </h2>
       </div>
 

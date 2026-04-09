@@ -18,7 +18,7 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-heading text-3xl md:text-4xl lg:text-5xl text-[#001B3D] leading-snug font-bold mb-10 transition-all duration-1000 delay-200 ease-out text-balance"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        We teach students to<br class="hidden md:block" />
+        We teach students to
         <span class="gradient-text font-extrabold">think</span>, not memorize.
       </p>
 

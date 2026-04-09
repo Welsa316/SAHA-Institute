@@ -23,7 +23,7 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-extrabold tracking-tight leading-tight mb-6 transition-all duration-700 delay-100 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        Ready to help your child<br class="hidden md:block" />
+        Ready to help your child
         <span class="gradient-text-light">succeed</span>?
       </h2>
 
