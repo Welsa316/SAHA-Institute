@@ -6,7 +6,7 @@ const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.
 
 const tutors = [
   { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: null, pos: 'top' },
-  { name: 'Tom Ngo', role: '', initials: 'TN', photo: null, pos: 'top' },
+  { name: 'Tom Ngo', role: '', initials: 'TN', photo: '/tutors/tom-ngo.jpg', pos: 'top' },
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
   { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg', pos: 'top' },
   { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg', pos: '0%' },
