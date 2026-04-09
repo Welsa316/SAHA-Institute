@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue'
-import { supabase } from '../lib/supabase'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 
 const form = ref({
@@ -22,17 +21,22 @@ async function submitForm() {
   error.value = ''
 
   try {
-    const { data, error: fnError } = await supabase.functions.invoke('contact', {
-      body: {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         name: form.value.name,
         email: form.value.email,
         phone: form.value.phone,
         subject: form.value.subject,
         message: form.value.message,
-      },
+      }),
     })
 
-    if (fnError) throw fnError
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Failed to send message')
+    }
 
     sent.value = true
     form.value = { name: '', email: '', phone: '', subject: '', message: '' }
