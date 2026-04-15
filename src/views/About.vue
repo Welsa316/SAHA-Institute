@@ -1,5 +1,8 @@
 <script setup>
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
+import { useI18n } from '../composables/useI18n'
+
+const { t } = useI18n()
 
 const { sectionRef: missionRef, isVisible: missionVisible } = useIntersectionReveal(0.2)
 const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.15)
@@ -21,13 +24,13 @@ const tutors = [
     <div class="relative max-w-4xl mx-auto px-6 md:px-12 text-center">
       <div class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] mb-6">
         <div class="w-1.5 h-1.5 rounded-full bg-academic-400"></div>
-        <span class="font-body text-[10px] tracking-[0.3em] uppercase text-white/60 font-bold">About Us</span>
+        <span class="font-body text-[10px] tracking-[0.3em] uppercase text-white/60 font-bold">{{ t('about.badge') }}</span>
       </div>
       <h1 class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-extrabold tracking-tight leading-tight mb-4">
-        Our <span class="gradient-text-light">Story</span>
+        {{ t('about.heroHeading') }} <span class="gradient-text-light">{{ t('about.heroHighlight') }}</span>
       </h1>
       <p class="font-body text-lg md:text-xl text-white/50 font-normal max-w-lg mx-auto leading-relaxed">
-        How a substitute teacher's observation became a learning center serving 200+ students.
+        {{ t('about.heroSubtitle') }}
       </p>
     </div>
   </section>
@@ -42,23 +45,23 @@ const tutors = [
         >
           <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy-50 border border-navy-100 mb-6">
             <div class="w-1.5 h-1.5 rounded-full bg-academic-500"></div>
-            <span class="font-body text-[10px] tracking-[0.3em] uppercase text-navy-600 font-bold">Our Mission</span>
+            <span class="font-body text-[10px] tracking-[0.3em] uppercase text-navy-600 font-bold">{{ t('about.missionBadge') }}</span>
           </div>
           <h2 class="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#001B3D] tracking-tight mb-8">
-            Where it all <span class="gradient-text">began</span>
+            {{ t('about.missionHeading') }} <span class="gradient-text">{{ t('about.missionHighlight') }}</span>
           </h2>
           <div class="space-y-5 font-body text-navy-500 leading-relaxed">
             <p>
-              SAHA Institute for Learning was born from a simple but powerful observation. While working as a substitute teacher at ISGNO, our founder Anila saw students brimming with potential. Bright, curious minds eager to learn.
+              {{ t('about.missionP1') }}
             </p>
             <p>
-              But she also saw the barriers. Many families faced financial hardships that made accessing quality tutoring difficult. The gap between potential and opportunity was clear.
+              {{ t('about.missionP2') }}
             </p>
             <p>
-              In 2020, Anila decided to bridge that gap. She founded SAHA to create a <span class="text-[#001B3D] font-semibold">comfortable, supportive space</span> where every student, regardless of background, could receive the personalized attention they deserve.
+              {{ t('about.missionP3Start') }} <span class="text-[#001B3D] font-semibold">{{ t('about.missionP3Bold') }}</span> {{ t('about.missionP3End') }}
             </p>
             <p>
-              Today, SAHA serves students ages 4 through 17 across academics, Islamic studies, and standardized test preparation. Every class is one-on-one, because we believe every student's journey is unique.
+              {{ t('about.missionP4') }}
             </p>
           </div>
         </div>
@@ -88,7 +91,7 @@ const tutors = [
           class="font-heading text-5xl md:text-6xl lg:text-7xl text-white font-extrabold tracking-tight transition-all duration-700 ease-out"
           :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          Meet the <span class="gradient-text-light">Team</span>
+          {{ t('about.teamHeading') }} <span class="gradient-text-light">{{ t('about.teamHighlight') }}</span>
         </h2>
       </div>
 
@@ -127,16 +130,16 @@ const tutors = [
   <section class="relative py-20 md:py-28 overflow-hidden">
     <div class="max-w-3xl mx-auto px-6 md:px-12 text-center">
       <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-[#001B3D] tracking-tight mb-6">
-        Ready to get started?
+        {{ t('about.ctaHeading') }}
       </h2>
       <p class="font-body text-lg text-navy-400 mb-10 max-w-md mx-auto">
-        Schedule a consultation and let us find the right program for your child.
+        {{ t('about.ctaSubtitle') }}
       </p>
       <router-link
         to="/contact"
         class="inline-flex px-10 py-4 rounded-full bg-[#001B3D] text-white font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-navy-800 transition-colors duration-300 shadow-xl shadow-navy-900/15"
       >
-        Contact Us
+        {{ t('about.ctaButton') }}
       </router-link>
     </div>
   </section>

@@ -1,4 +1,7 @@
 <script setup>
+import { useI18n } from '../composables/useI18n'
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -14,31 +17,31 @@
             class="w-36 h-auto brightness-0 invert opacity-90 mb-4 logo-sharp"
           />
           <h3 class="font-heading text-sm font-bold text-white tracking-[0.15em] uppercase mb-1">
-            SAHA Institute For Learning
+            {{ t('footer.brand') }}
           </h3>
           <p class="font-body text-xs text-navy-500 tracking-[0.3em] uppercase">
-            Est. 2020
+            {{ t('footer.est') }}
           </p>
         </div>
 
         <div class="text-center md:text-left">
-          <h4 class="font-heading text-xs font-bold text-white tracking-[0.2em] uppercase mb-5">Quick Links</h4>
+          <h4 class="font-heading text-xs font-bold text-white tracking-[0.2em] uppercase mb-5">{{ t('footer.quickLinks') }}</h4>
           <div class="flex flex-col gap-3">
-            <router-link to="/" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">Home</router-link>
-            <router-link to="/#programs" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">Programs</router-link>
-            <router-link to="/about" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">About</router-link>
-            <router-link to="/contact" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">Contact</router-link>
+            <router-link to="/" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">{{ t('nav.home') }}</router-link>
+            <router-link to="/#programs" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">{{ t('nav.programs') }}</router-link>
+            <router-link to="/about" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">{{ t('nav.about') }}</router-link>
+            <router-link to="/contact" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">{{ t('nav.contact') }}</router-link>
           </div>
         </div>
 
         <div class="text-center md:text-left">
-          <h4 class="font-heading text-xs font-bold text-white tracking-[0.2em] uppercase mb-5">Contact</h4>
+          <h4 class="font-heading text-xs font-bold text-white tracking-[0.2em] uppercase mb-5">{{ t('footer.contactTitle') }}</h4>
           <div class="flex flex-col gap-3">
-            <p class="font-body text-sm text-navy-400">1201 Vintage Drive, 70065</p>
+            <p class="font-body text-sm text-navy-400">{{ t('footer.address') }}</p>
             <a href="tel:+15046673625" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">(504) 667-3625</a>
             <a href="tel:+15043739778" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">(504) 373-9778</a>
             <a href="mailto:sahaforlearning1675@gmail.com" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300">sahaforlearning1675@gmail.com</a>
-            <p class="font-body text-sm text-navy-400">Mon–Fri, 3:15 – 9:00 PM</p>
+            <p class="font-body text-sm text-navy-400">{{ t('footer.hours') }}</p>
           </div>
         </div>
       </div>
@@ -47,7 +50,7 @@
 
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
         <p class="font-body text-[11px] text-navy-600 tracking-wider">
-          &copy; 2026 SAHA Institute For Learning. All rights reserved.
+          {{ t('footer.copyright') }}
         </p>
 
         <div class="flex items-center gap-3">

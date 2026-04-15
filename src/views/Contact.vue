@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
+import { useI18n } from '../composables/useI18n'
+
+const { t } = useI18n()
 
 const form = ref({
   name: '',
@@ -41,7 +44,7 @@ async function submitForm() {
     sent.value = true
     form.value = { name: '', email: '', phone: '', subject: '', message: '' }
   } catch (err) {
-    error.value = 'Something went wrong. Please try again or call us directly.'
+    error.value = t('contact.errorMessage')
     console.error(err)
   } finally {
     sending.value = false
@@ -73,13 +76,13 @@ function resetForm() {
     <div class="relative max-w-4xl mx-auto px-6 md:px-12 text-center">
       <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] border border-white/[0.08] mb-6">
         <div class="w-1.5 h-1.5 rounded-full bg-academic-400"></div>
-        <span class="font-body text-xs tracking-[0.2em] uppercase text-academic-300 font-medium">Get In Touch</span>
+        <span class="font-body text-xs tracking-[0.2em] uppercase text-academic-300 font-medium">{{ t('contact.badge') }}</span>
       </div>
       <h1 class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-semibold leading-tight mb-4">
-        Contact <span class="gradient-text-light">Us</span>
+        {{ t('contact.heading') }} <span class="gradient-text-light">{{ t('contact.headingHighlight') }}</span>
       </h1>
       <p class="font-body text-lg md:text-xl text-navy-300 font-normal max-w-lg mx-auto leading-relaxed">
-        Questions about programs or scheduling? We typically respond within 24 hours.
+        {{ t('contact.subtitle') }}
       </p>
     </div>
   </section>
@@ -94,10 +97,10 @@ function resetForm() {
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <h2 class="font-heading text-2xl md:text-3xl text-navy-900 font-semibold mb-6">
-            Let's Start a Conversation
+            {{ t('contact.conversationHeading') }}
           </h2>
           <p class="font-body text-navy-600 leading-relaxed mb-10">
-            Whether you have questions about our programs, want to schedule a consultation, or are ready to enroll — reach out anytime.
+            {{ t('contact.conversationSubtitle') }}
           </p>
 
           <!-- Contact details -->
@@ -110,7 +113,7 @@ function resetForm() {
                 </svg>
               </div>
               <div>
-                <p class="font-body text-sm font-semibold text-navy-800">Address</p>
+                <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.addressLabel') }}</p>
                 <p class="font-body text-sm text-navy-500 leading-relaxed">1201 Vintage Drive, 70065</p>
               </div>
             </div>
@@ -123,7 +126,7 @@ function resetForm() {
                 </svg>
               </div>
               <div>
-                <p class="font-body text-sm font-semibold text-navy-800">Phone</p>
+                <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.phoneLabel') }}</p>
                 <a href="tel:+15046673625" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors">(504) 667-3625</a>
                 <br/>
                 <a href="tel:+15043739778" class="font-body text-sm text-navy-400 hover:text-academic-600 transition-colors">(504) 373-9778</a>
@@ -138,8 +141,8 @@ function resetForm() {
                 </svg>
               </div>
               <div>
-                <p class="font-body text-sm font-semibold text-navy-800">Hours</p>
-                <p class="font-body text-sm text-navy-500">Mon–Fri, 3:15 – 9:00 PM</p>
+                <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.hoursLabel') }}</p>
+                <p class="font-body text-sm text-navy-500">{{ t('footer.hours') }}</p>
               </div>
             </div>
 
@@ -151,7 +154,7 @@ function resetForm() {
                 </svg>
               </div>
               <div>
-                <p class="font-body text-sm font-semibold text-navy-800">Email</p>
+                <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.emailLabel') }}</p>
                 <a href="mailto:sahaforlearning1675@gmail.com" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors">sahaforlearning1675@gmail.com</a>
               </div>
             </div>
@@ -186,22 +189,22 @@ function resetForm() {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 class="font-heading text-2xl font-semibold text-navy-900 mb-3">Message Sent!</h3>
+              <h3 class="font-heading text-2xl font-semibold text-navy-900 mb-3">{{ t('contact.successHeading') }}</h3>
               <p class="font-body text-navy-500 leading-relaxed mb-8 max-w-sm mx-auto">
-                Thank you for reaching out. We'll get back to you as soon as possible.
+                {{ t('contact.successBody') }}
               </p>
               <button
                 @click="resetForm"
                 class="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body text-sm font-semibold tracking-wider uppercase text-navy-700 border border-navy-200 hover:bg-navy-50 transition-all duration-300"
               >
-                Send Another Message
+                {{ t('contact.sendAnother') }}
               </button>
             </div>
 
             <!-- Contact form -->
             <template v-else>
-              <h3 class="font-heading text-xl font-semibold text-navy-900 mb-1">Send Us a Message</h3>
-              <p class="font-body text-sm text-navy-500 mb-8">Fill out the form below and we'll get back to you shortly.</p>
+              <h3 class="font-heading text-xl font-semibold text-navy-900 mb-1">{{ t('contact.formHeading') }}</h3>
+              <p class="font-body text-sm text-navy-500 mb-8">{{ t('contact.formSubtitle') }}</p>
 
               <!-- Error message -->
               <div v-if="error" class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200">
@@ -212,24 +215,24 @@ function resetForm() {
                 <!-- Name + Email row -->
                 <div class="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Full Name</label>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.nameLabel') }}</label>
                     <input
                       v-model="form.name"
                       type="text"
                       required
                       :disabled="sending"
-                      placeholder="Your name"
+                      :placeholder="t('contact.namePlaceholder')"
                       class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
                     />
                   </div>
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Email</label>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.emailFieldLabel') }}</label>
                     <input
                       v-model="form.email"
                       type="email"
                       required
                       :disabled="sending"
-                      placeholder="your@email.com"
+                      :placeholder="t('contact.emailPlaceholder')"
                       class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
                     />
                   </div>
@@ -238,40 +241,37 @@ function resetForm() {
                 <!-- Phone + Subject row -->
                 <div class="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Phone</label>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.phoneFieldLabel') }}</label>
                     <input
                       v-model="form.phone"
                       type="tel"
                       :disabled="sending"
-                      placeholder="(504) 000-0000"
+                      :placeholder="t('contact.phonePlaceholder')"
                       class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
                     />
                   </div>
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Subject</label>
+                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.subjectLabel') }}</label>
                     <select
                       v-model="form.subject"
                       :disabled="sending"
                       class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
                     >
-                      <option value="">Select a topic</option>
-                      <option value="General Inquiry">General Inquiry</option>
-                      <option value="Enrollment">Enrollment</option>
-                      <option value="Program Information">Program Information</option>
-                      <option value="Schedule Consultation">Schedule a Consultation</option>
+                      <option value="">{{ t('contact.subjectDefault') }}</option>
+                      <option v-for="(option, idx) in t('contact.subjectOptions')" :key="idx" :value="option">{{ option }}</option>
                     </select>
                   </div>
                 </div>
 
                 <!-- Message -->
                 <div>
-                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">Message</label>
+                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.messageLabel') }}</label>
                   <textarea
                     v-model="form.message"
                     required
                     :disabled="sending"
                     rows="5"
-                    placeholder="Tell us how we can help..."
+                    :placeholder="t('contact.messagePlaceholder')"
                     class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 resize-none disabled:opacity-50"
                   ></textarea>
                 </div>
@@ -288,7 +288,7 @@ function resetForm() {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span class="relative">{{ sending ? 'Sending...' : 'Send Message' }}</span>
+                  <span class="relative">{{ sending ? t('contact.sending') : t('contact.sendMessage') }}</span>
                   <svg v-if="!sending" class="relative w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                   </svg>
