@@ -1,31 +1,23 @@
 <script setup>
+import { computed } from 'vue'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
+import { useI18n } from '../composables/useI18n'
 
 const { sectionRef, isVisible } = useIntersectionReveal(0.2)
+const { t } = useI18n()
 
-const features = [
-  {
-    title: 'Personalized Learning',
-    description: 'We match our teaching to how your child learns — no cookie-cutter lesson plans.',
-    icon: 'personalized',
-    number: '01',
-    delay: 0,
-  },
-  {
-    title: 'Experienced Tutors',
-    description: 'Our tutors know their subjects inside out and genuinely care about each student.',
-    icon: 'tutors',
-    number: '02',
-    delay: 150,
-  },
-  {
-    title: 'Small Group Focus',
-    description: 'Every class is one-on-one so your child gets full attention, every session.',
-    icon: 'group',
-    number: '03',
-    delay: 300,
-  },
+const featureMeta = [
+  { icon: 'personalized', number: '01', delay: 0 },
+  { icon: 'tutors', number: '02', delay: 150 },
+  { icon: 'group', number: '03', delay: 300 },
 ]
+
+const features = computed(() =>
+  t('whySaha.features').map((item, i) => ({
+    ...item,
+    ...featureMeta[i],
+  }))
+)
 </script>
 
 <template>
@@ -37,13 +29,13 @@ const features = [
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
           <div class="w-1.5 h-1.5 rounded-full bg-academic-400"></div>
-          <span class="font-body text-[10px] tracking-[0.3em] uppercase text-white/70 font-bold">Why SAHA</span>
+          <span class="font-body text-[10px] tracking-[0.3em] uppercase text-white/70 font-bold">{{ t('whySaha.badge') }}</span>
         </div>
         <h2
           class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-extrabold tracking-tight transition-all duration-700 delay-100 ease-out"
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          The <span class="gradient-text-light">difference</span> is in the details
+          {{ t('whySaha.heading') }} <span class="gradient-text-light">{{ t('whySaha.headingHighlight') }}</span> {{ t('whySaha.headingEnd') }}
         </h2>
       </div>
 
@@ -92,7 +84,7 @@ const features = [
           to="/about"
           class="inline-flex items-center gap-2 font-body text-sm font-semibold text-white/60 hover:text-white transition-colors duration-300"
         >
-          Learn More About Us
+          {{ t('whySaha.learnMore') }}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>

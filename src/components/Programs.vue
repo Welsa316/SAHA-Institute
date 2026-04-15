@@ -1,43 +1,23 @@
 <script setup>
+import { computed } from 'vue'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
+import { useI18n } from '../composables/useI18n'
 
 const { sectionRef, isVisible } = useIntersectionReveal(0.15)
+const { t } = useI18n()
 
-const programs = [
-  {
-    title: 'Academics',
-    description: 'Mathematics, Science, Reading & Writing — building strong foundations with personalized attention.',
-    subjects: ['Mathematics', 'Science', 'Reading & Writing'],
-    price: '$30',
-    priceUnit: '/hour',
-    billing: 'Biweekly or monthly',
-    icon: 'academics',
-    iconBg: 'from-blue-500 to-indigo-600',
-    delay: 0,
-  },
-  {
-    title: 'Islamic Studies',
-    description: 'Quran recitation, Tajwid, and memorization in a supportive one-on-one environment.',
-    subjects: ['Quran Recitation', 'Tajwid', 'Memorization'],
-    price: '$250',
-    priceUnit: '/month',
-    billing: 'Monthly',
-    icon: 'islamic',
-    iconBg: 'from-emerald-500 to-teal-600',
-    delay: 200,
-  },
-  {
-    title: 'Test Prep',
-    description: 'Targeted preparation for standardized tests with proven strategies and practice.',
-    subjects: ['AP Prep', 'ACT Prep', 'LEAP Prep'],
-    price: '$30',
-    priceUnit: '/hour',
-    billing: 'Biweekly or monthly',
-    icon: 'testprep',
-    iconBg: 'from-amber-500 to-orange-600',
-    delay: 400,
-  },
+const iconData = [
+  { icon: 'academics', iconBg: 'from-blue-500 to-indigo-600', delay: 0 },
+  { icon: 'islamic', iconBg: 'from-emerald-500 to-teal-600', delay: 200 },
+  { icon: 'testprep', iconBg: 'from-amber-500 to-orange-600', delay: 400 },
 ]
+
+const programs = computed(() =>
+  t('programs.items').map((item, i) => ({
+    ...item,
+    ...iconData[i],
+  }))
+)
 </script>
 
 <template>
@@ -49,19 +29,19 @@ const programs = [
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
           <div class="w-1.5 h-1.5 rounded-full bg-academic-500"></div>
-          <span class="font-body text-[10px] tracking-[0.3em] uppercase text-navy-600 font-bold">Our Programs</span>
+          <span class="font-body text-[10px] tracking-[0.3em] uppercase text-navy-600 font-bold">{{ t('programs.badge') }}</span>
         </div>
         <h2
           class="font-heading text-4xl md:text-5xl lg:text-6xl text-[#001B3D] font-extrabold tracking-tight transition-all duration-700 delay-100 ease-out"
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          Crafted for <span class="gradient-text">growth</span>
+          {{ t('programs.heading') }} <span class="gradient-text">{{ t('programs.headingHighlight') }}</span>
         </h2>
         <p
           class="mt-5 font-body text-lg text-navy-400 font-normal max-w-lg mx-auto transition-all duration-700 delay-200 ease-out"
           :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
         >
-          Academics, Quran studies, and standardized test prep — all one-on-one
+          {{ t('programs.subtitle') }}
         </p>
       </div>
 
@@ -72,11 +52,11 @@ const programs = [
       >
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-navy-100 text-xs font-body font-semibold text-navy-600">
           <svg class="w-4 h-4 text-academic-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-          Ages 4–17 · Pre-K through High School
+          {{ t('programs.ageBadge') }}
         </span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-navy-100 text-xs font-body font-semibold text-navy-600">
           <svg class="w-4 h-4 text-academic-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          All classes are one-on-one
+          {{ t('programs.oneOnOne') }}
         </span>
       </div>
 
