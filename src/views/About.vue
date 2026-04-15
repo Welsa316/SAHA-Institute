@@ -5,9 +5,10 @@ const { sectionRef: missionRef, isVisible: missionVisible } = useIntersectionRev
 const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.15)
 
 const tutors = [
-  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: null, pos: 'top' },
+  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: '/tutors/anila-siddiqui.jpeg', pos: '20%' },
   { name: 'Tom Ngo', role: '', initials: 'TN', photo: '/tutors/tom-ngo.jpg', pos: 'top' },
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
+  { name: 'Aisha Siddiqui', role: '', initials: 'AS', photo: null, pos: 'top' },
   { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg', pos: 'top' },
   { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg', pos: '0%' },
 ]
@@ -91,12 +92,11 @@ const tutors = [
         </h2>
       </div>
 
-      <!-- W layout: 3 top, 2 bottom offset -->
+      <!-- 3x2 grid -->
       <div class="max-w-6xl mx-auto">
-        <!-- Top row: 3 cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           <div
-            v-for="(tutor, index) in tutors.slice(0, 3)"
+            v-for="(tutor, index) in tutors"
             :key="tutor.name"
             class="relative rounded-2xl overflow-hidden transition-all duration-700 ease-out"
             :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
@@ -108,34 +108,7 @@ const tutors = [
                 :src="tutor.photo"
                 :alt="tutor.name"
                 class="w-full h-full object-cover"
-              :style="{ objectPosition: `center ${tutor.pos}` }"
-                loading="lazy"
-              />
-              <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
-            </div>
-            <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
-              <h3 class="font-heading text-base md:text-lg font-bold text-white leading-tight drop-shadow-sm">{{ tutor.name }}</h3>
-              <p v-if="tutor.role" class="font-body text-xs text-white/60 drop-shadow-sm">{{ tutor.role }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom row: 2 cards offset between top cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6 mt-5 md:mt-6 sm:px-[calc(100%/6)]">
-          <div
-            v-for="(tutor, index) in tutors.slice(3, 5)"
-            :key="tutor.name"
-            class="relative rounded-2xl overflow-hidden transition-all duration-700 ease-out"
-            :class="teamVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
-            :style="{ transitionDelay: teamVisible ? `${(index + 3) * 100 + 200}ms` : '0ms' }"
-          >
-            <div class="aspect-[2/3] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
-              <img
-                v-if="tutor.photo"
-                :src="tutor.photo"
-                :alt="tutor.name"
-                class="w-full h-full object-cover"
-              :style="{ objectPosition: `center ${tutor.pos}` }"
+                :style="{ objectPosition: `center ${tutor.pos}` }"
                 loading="lazy"
               />
               <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
