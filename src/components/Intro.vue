@@ -1,7 +1,9 @@
 <script setup>
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
+import { useI18n } from '../composables/useI18n'
 
 const { sectionRef, isVisible } = useIntersectionReveal(0.3)
+const { t } = useI18n()
 </script>
 
 <template>
@@ -18,8 +20,8 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-heading text-3xl md:text-4xl lg:text-5xl text-[#001B3D] leading-snug font-bold mb-10 transition-all duration-1000 delay-200 ease-out text-balance"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
-        We teach students to
-        <span class="gradient-text font-extrabold">think</span>, not memorize.
+        {{ t('intro.heading') }}
+        <span class="gradient-text font-extrabold">{{ t('intro.headingHighlight') }}</span>{{ t('intro.headingEnd') }}
       </p>
 
       <div
@@ -31,9 +33,9 @@ const { sectionRef, isVisible } = useIntersectionReveal(0.3)
         class="font-body text-lg md:text-xl text-navy-400 font-normal max-w-2xl mx-auto leading-relaxed transition-all duration-1000 delay-500 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
-        Every session is tailored to how your child learns best —
-        <span class="text-[#001B3D] font-semibold">building real skills</span> they carry
-        <span class="text-[#001B3D] font-semibold">into the classroom</span> and beyond.
+        {{ t('intro.body') }}
+        <span class="text-[#001B3D] font-semibold">{{ t('intro.bodyHighlight1') }}</span> {{ t('intro.bodyMid') }}
+        <span class="text-[#001B3D] font-semibold">{{ t('intro.bodyHighlight2') }}</span> {{ t('intro.bodyEnd') }}
       </p>
     </div>
   </section>
