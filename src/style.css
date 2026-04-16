@@ -71,6 +71,70 @@ html[dir="rtl"] h4 {
   font-family: 'Noto Nastaliq Urdu', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
+/* Nastaliq font needs much more vertical breathing room —
+   it has tall ascenders and deep descenders that break tight layouts */
+html[dir="rtl"] h1 {
+  line-height: 2.5 !important;
+  padding: 0.5em 0;
+}
+
+html[dir="rtl"] h2 {
+  line-height: 2.2 !important;
+  padding: 0.3em 0;
+}
+
+html[dir="rtl"] h3,
+html[dir="rtl"] h4 {
+  line-height: 2 !important;
+}
+
+/* Force heading spans to block-level with proper spacing */
+html[dir="rtl"] h1 span,
+html[dir="rtl"] h2 span {
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+}
+
+/* Reduce the massive h1 font size on mobile for Urdu */
+html[dir="rtl"] h1.text-5xl {
+  font-size: 2rem !important;
+}
+
+@media (min-width: 768px) {
+  html[dir="rtl"] h1 {
+    font-size: 3rem !important;
+  }
+}
+
+html[dir="rtl"] p,
+html[dir="rtl"] span,
+html[dir="rtl"] a,
+html[dir="rtl"] button,
+html[dir="rtl"] li {
+  line-height: 1.8;
+}
+
+/* Disable slide-down animation on Urdu headline — overflow-hidden clips Nastaliq */
+html[dir="rtl"] .overflow-hidden {
+  overflow: visible !important;
+}
+
+/* Remove letter-spacing tracking for Urdu — doesn't work with Nastaliq script */
+html[dir="rtl"] [class*="tracking-"] {
+  letter-spacing: normal !important;
+}
+
+/* Urdu doesn't use uppercase — remove transformations */
+html[dir="rtl"] [class*="uppercase"],
+html[dir="rtl"] .uppercase {
+  text-transform: none !important;
+}
+
+/* Container sizing for longer/taller Urdu text */
+html[dir="rtl"] .max-w-xl {
+  max-width: 42rem;
+}
+
 /* Logo sharpening */
 .logo-sharp {
   image-rendering: -webkit-optimize-contrast;
