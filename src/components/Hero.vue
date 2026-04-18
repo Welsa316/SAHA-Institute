@@ -67,7 +67,7 @@ onMounted(() => {
       </h1>
 
       <p
-        class="font-body text-lg md:text-xl text-white/50 font-normal max-w-xl mx-auto mb-14 leading-relaxed transition-all duration-1000 delay-700 ease-out"
+        class="font-body text-lg md:text-xl text-white/70 font-normal max-w-xl mx-auto mb-14 leading-relaxed transition-all duration-1000 delay-700 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
       >
         {{ t('hero.subtitle') }}
@@ -79,13 +79,13 @@ onMounted(() => {
       >
         <router-link
           to="/#programs"
-          class="min-w-[220px] px-10 py-4 rounded-full bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors duration-300 shadow-xl shadow-black/20"
+          class="min-w-[220px] px-10 py-4 rounded-full bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors duration-300 shadow-xl shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           {{ t('hero.cta1') }}
         </router-link>
         <router-link
           to="/contact"
-          class="min-w-[220px] px-10 py-4 rounded-full border-2 border-white/20 text-white/70 font-body text-sm font-bold tracking-[0.15em] uppercase hover:border-white/40 hover:text-white transition-colors duration-300"
+          class="min-w-[220px] px-10 py-4 rounded-full border-2 border-white/20 text-white/70 font-body text-sm font-bold tracking-[0.15em] uppercase hover:border-white/40 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           {{ t('hero.cta2') }}
         </router-link>
@@ -98,7 +98,7 @@ onMounted(() => {
       >
         <a
           href="tel:+15043739778"
-          class="inline-flex items-center gap-2 font-body text-sm text-white/50 hover:text-white transition-colors duration-300"
+          class="inline-flex items-center gap-2 font-body text-sm text-white/70 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -117,7 +117,7 @@ onMounted(() => {
           </svg>
           <div>
             <div class="font-heading text-2xl md:text-3xl font-extrabold text-white">{{ t('hero.stat1Value') }}</div>
-            <div class="font-body text-[10px] text-white/40 tracking-[0.15em] uppercase font-semibold">{{ t('hero.stat1Label') }}</div>
+            <div class="font-body text-[10px] text-white/60 tracking-[0.15em] uppercase font-semibold">{{ t('hero.stat1Label') }}</div>
           </div>
         </div>
         <div class="hidden md:block w-px h-12 bg-white/10"></div>
@@ -127,7 +127,7 @@ onMounted(() => {
           </svg>
           <div>
             <div class="font-heading text-2xl md:text-3xl font-extrabold text-white">{{ t('hero.stat2Value') }}</div>
-            <div class="font-body text-[10px] text-white/40 tracking-[0.15em] uppercase font-semibold">{{ t('hero.stat2Label') }}</div>
+            <div class="font-body text-[10px] text-white/60 tracking-[0.15em] uppercase font-semibold">{{ t('hero.stat2Label') }}</div>
           </div>
         </div>
         <div class="hidden md:block w-px h-12 bg-white/10"></div>
@@ -137,7 +137,7 @@ onMounted(() => {
           </svg>
           <div>
             <div class="font-heading text-2xl md:text-3xl font-extrabold text-white">{{ t('hero.stat3Value') }}</div>
-            <div class="font-body text-[10px] text-white/40 tracking-[0.15em] uppercase font-semibold">{{ t('hero.stat3Label') }}</div>
+            <div class="font-body text-[10px] text-white/60 tracking-[0.15em] uppercase font-semibold">{{ t('hero.stat3Label') }}</div>
           </div>
         </div>
       </div>

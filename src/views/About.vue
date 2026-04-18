@@ -29,7 +29,7 @@ const tutors = [
       <h1 class="font-heading text-4xl md:text-5xl lg:text-6xl text-white font-extrabold tracking-tight leading-tight mb-4">
         {{ t('about.heroHeading') }} <span class="gradient-text-light">{{ t('about.heroHighlight') }}</span>
       </h1>
-      <p class="font-body text-lg md:text-xl text-white/50 font-normal max-w-lg mx-auto leading-relaxed">
+      <p class="font-body text-lg md:text-xl text-white/70 font-normal max-w-lg mx-auto leading-relaxed">
         {{ t('about.heroSubtitle') }}
       </p>
     </div>
@@ -137,7 +137,7 @@ const tutors = [
       </p>
       <router-link
         to="/contact"
-        class="inline-flex px-10 py-4 rounded-full bg-[#001B3D] text-white font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-navy-800 transition-colors duration-300 shadow-xl shadow-navy-900/15"
+        class="inline-flex px-10 py-4 rounded-full bg-[#001B3D] text-white font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-navy-800 transition-colors duration-300 shadow-xl shadow-navy-900/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
       >
         {{ t('about.ctaButton') }}
       </router-link>

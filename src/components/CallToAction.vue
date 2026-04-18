@@ -30,7 +30,7 @@ const { t } = useI18n()
       </h2>
 
       <p
-        class="font-body text-lg md:text-xl text-white/50 font-normal mb-14 max-w-lg mx-auto leading-relaxed transition-all duration-700 delay-200 ease-out"
+        class="font-body text-lg md:text-xl text-white/70 font-normal mb-14 max-w-lg mx-auto leading-relaxed transition-all duration-700 delay-200 ease-out"
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
         {{ t('cta.subtitle') }}
@@ -42,13 +42,13 @@ const { t } = useI18n()
       >
         <router-link
           to="/contact"
-          class="min-w-[240px] px-10 py-4 bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase rounded-full hover:bg-navy-50 transition-colors duration-300"
+          class="min-w-[240px] px-10 py-4 bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase rounded-full hover:bg-navy-50 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           {{ t('cta.button1') }}
         </router-link>
         <a
           href="tel:+15046673625"
-          class="min-w-[200px] px-8 py-4 rounded-full font-body text-sm font-bold tracking-[0.15em] uppercase text-white/70 border-2 border-white/15 hover:border-white/30 hover:text-white transition-colors duration-300"
+          class="min-w-[200px] px-8 py-4 rounded-full font-body text-sm font-bold tracking-[0.15em] uppercase text-white/70 border-2 border-white/15 hover:border-white/30 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           {{ t('cta.button2') }}
         </a>

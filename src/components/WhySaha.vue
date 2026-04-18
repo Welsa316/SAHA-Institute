@@ -69,7 +69,7 @@ const features = computed(() =>
             {{ feature.title }}
           </h3>
 
-          <p class="font-body text-sm text-white/50 font-normal leading-relaxed">
+          <p class="font-body text-sm text-white/70 font-normal leading-relaxed">
             {{ feature.description }}
           </p>
         </div>

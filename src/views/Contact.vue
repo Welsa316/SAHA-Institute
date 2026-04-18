@@ -195,7 +195,7 @@ function resetForm() {
               </p>
               <button
                 @click="resetForm"
-                class="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body text-sm font-semibold tracking-wider uppercase text-navy-700 border border-navy-200 hover:bg-navy-50 transition-all duration-300"
+                class="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body text-sm font-semibold tracking-wider uppercase text-navy-700 border border-navy-200 hover:bg-navy-50 transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
               >
                 {{ t('contact.sendAnother') }}
               </button>
@@ -215,8 +215,9 @@ function resetForm() {
                 <!-- Name + Email row -->
                 <div class="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.nameLabel') }}</label>
+                    <label for="contact-name" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.nameLabel') }}</label>
                     <input
+                      id="contact-name"
                       v-model="form.name"
                       type="text"
                       required
@@ -226,8 +227,9 @@ function resetForm() {
                     />
                   </div>
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.emailFieldLabel') }}</label>
+                    <label for="contact-email" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.emailFieldLabel') }}</label>
                     <input
+                      id="contact-email"
                       v-model="form.email"
                       type="email"
                       required
@@ -241,8 +243,9 @@ function resetForm() {
                 <!-- Phone + Subject row -->
                 <div class="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.phoneFieldLabel') }}</label>
+                    <label for="contact-phone" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.phoneFieldLabel') }}</label>
                     <input
+                      id="contact-phone"
                       v-model="form.phone"
                       type="tel"
                       :disabled="sending"
@@ -251,8 +254,9 @@ function resetForm() {
                     />
                   </div>
                   <div>
-                    <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.subjectLabel') }}</label>
+                    <label for="contact-subject" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.subjectLabel') }}</label>
                     <select
+                      id="contact-subject"
                       v-model="form.subject"
                       :disabled="sending"
                       class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
@@ -265,8 +269,9 @@ function resetForm() {
 
                 <!-- Message -->
                 <div>
-                  <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.messageLabel') }}</label>
+                  <label for="contact-message" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.messageLabel') }}</label>
                   <textarea
+                    id="contact-message"
                     v-model="form.message"
                     required
                     :disabled="sending"
@@ -280,7 +285,7 @@ function resetForm() {
                 <button
                   type="submit"
                   :disabled="sending"
-                  class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-navy-800 to-academic-600 text-white font-body text-sm font-semibold tracking-wider uppercase rounded-full overflow-hidden transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-academic-500/20 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+                  class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-navy-800 to-academic-600 text-white font-body text-sm font-semibold tracking-wider uppercase rounded-full overflow-hidden transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-academic-500/20 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
                 >
                   <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <!-- Loading spinner -->
