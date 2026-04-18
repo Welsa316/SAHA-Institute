@@ -21,6 +21,8 @@ const { t } = useI18n()
             <img
               src="/summer-camp-2026.jpg"
               alt="SAHA Summer Camp & STEM 2026 flyer"
+              width="532"
+              height="751"
               class="w-full h-auto"
               loading="lazy"
             />

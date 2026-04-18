@@ -8,7 +8,7 @@ const { sectionRef: missionRef, isVisible: missionVisible } = useIntersectionRev
 const { sectionRef: teamRef, isVisible: teamVisible } = useIntersectionReveal(0.15)
 
 const tutors = [
-  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: '/tutors/anila-siddiqui.jpeg', pos: '20%' },
+  { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: '/tutors/anila-siddiqui.jpg', pos: '20%' },
   { name: 'Tom Ngo', role: '', initials: 'TN', photo: '/tutors/tom-ngo.jpg', pos: 'top' },
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
   { name: 'Aisha Siddiqui', role: '', initials: 'AS', photo: null, pos: 'top' },
@@ -74,6 +74,8 @@ const tutors = [
             <img
               src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=1000&fit=crop&crop=faces"
               alt="Students learning together"
+              width="800"
+              height="1000"
               class="w-full h-full object-cover"
               loading="lazy"
             />
@@ -110,6 +112,8 @@ const tutors = [
                 v-if="tutor.photo"
                 :src="tutor.photo"
                 :alt="tutor.name"
+                width="600"
+                height="900"
                 class="w-full h-full object-cover"
                 :style="{ objectPosition: `center ${tutor.pos}` }"
                 loading="lazy"
