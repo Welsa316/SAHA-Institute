@@ -44,12 +44,19 @@ function closeMenu() {
     ]"
   >
     <div class="mx-auto px-6 md:px-10 lg:px-14">
-      <div class="flex items-center justify-between h-24 relative">
+      <div class="flex items-center justify-between h-20 md:h-24 relative">
         <router-link to="/" class="flex items-center group" :class="!isScrolled && !mobileOpen ? 'md:flex-none flex-1 justify-center md:justify-start' : ''" @click="closeMenu">
           <!-- Mobile: stacked centered layout -->
-          <div v-if="!isScrolled && !mobileOpen" class="md:hidden flex flex-col items-center transition-all duration-500 group-hover:opacity-80">
-            <span class="text-[48px] font-bold tracking-[0.15em] text-academic-300 leading-none" style="font-family: 'Cormorant Garamond', serif;">{{ t('nav.saha') }}</span>
-            <span class="font-body text-[9px] tracking-[0.25em] uppercase text-white/50 font-medium mt-1">{{ t('nav.tagline') }}</span>
+          <div v-if="!isScrolled && !mobileOpen" class="md:hidden flex flex-col items-center transition-all duration-500 group-hover:opacity-80 max-w-[65%]">
+            <span
+              class="font-bold tracking-[0.15em] text-academic-300 leading-none whitespace-nowrap"
+              :class="isRTL ? 'text-[32px]' : 'text-[40px]'"
+              style="font-family: 'Cormorant Garamond', serif;"
+            >{{ t('nav.saha') }}</span>
+            <span
+              class="font-body font-medium mt-1 whitespace-nowrap"
+              :class="isRTL ? 'text-[11px] text-white/60' : 'text-[9px] tracking-[0.25em] uppercase text-white/50'"
+            >{{ t('nav.tagline') }}</span>
           </div>
           <!-- Desktop: inline layout -->
           <div v-if="!isScrolled && !mobileOpen" class="hidden md:flex items-center gap-3 transition-all duration-500 group-hover:opacity-80">
