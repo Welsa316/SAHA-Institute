@@ -38,13 +38,13 @@ export default {
     badge: 'Our Programs',
     heading: 'Crafted for',
     headingHighlight: 'growth',
-    subtitle: 'Academics, Quran studies, and standardized test prep — all one-on-one',
+    subtitle: 'Academics, Quran studies, and standardized test prep. All one-on-one.',
     ageBadge: 'Ages 4–17 · Pre-K through High School',
     oneOnOne: 'All classes are one-on-one',
     items: [
       {
         title: 'Academics',
-        description: 'Mathematics, Science, Reading & Writing — building strong foundations with personalized attention.',
+        description: 'Mathematics, Science, Reading & Writing. Building strong foundations with personalized attention.',
         subjects: ['Mathematics', 'Science', 'Reading & Writing'],
         price: '$30',
         priceUnit: '/hour',
@@ -92,7 +92,7 @@ export default {
     features: [
       {
         title: 'Personalized Learning',
-        description: 'We match our teaching to how your child learns — no cookie-cutter lesson plans.',
+        description: 'We match our teaching to how your child learns. No cookie-cutter lesson plans.',
       },
       {
         title: 'Experienced Tutors',
@@ -147,7 +147,7 @@ export default {
     headingHighlight: 'Us',
     subtitle: 'Questions about programs or scheduling? We typically respond within 24 hours.',
     conversationHeading: 'Let\'s Start a Conversation',
-    conversationSubtitle: 'Whether you have questions about our programs, want to schedule a consultation, or are ready to enroll — reach out anytime.',
+    conversationSubtitle: 'Whether you have questions about our programs, want to schedule a consultation, or are ready to enroll, reach out anytime.',
     addressLabel: 'Address',
     phoneLabel: 'Phone',
     hoursLabel: 'Hours',
