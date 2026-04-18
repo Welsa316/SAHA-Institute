@@ -92,8 +92,11 @@ function closeMenu() {
         </div>
 
         <button
-          class="md:hidden p-3 absolute right-6 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
-          :class="isScrolled || mobileOpen ? 'text-navy-700 hover:text-navy-900' : 'text-white/70 hover:text-white'"
+          class="md:hidden p-3 absolute transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+          :class="[
+            isScrolled || mobileOpen ? 'text-navy-700 hover:text-navy-900' : 'text-white/70 hover:text-white',
+            isRTL ? 'left-6' : 'right-6'
+          ]"
           :aria-label="mobileOpen ? t('nav.closeMenu') : t('nav.openMenu')"
           @click="toggleMenu"
         >
