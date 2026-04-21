@@ -11,7 +11,7 @@ const tutors = [
   { name: 'Anila Siddiqui', role: 'Founder', initials: 'AS', photo: '/tutors/anila-siddiqui.jpg', pos: '20%' },
   { name: 'Tom Ngo', role: '', initials: 'TN', photo: '/tutors/tom-ngo.jpg', pos: 'top' },
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
-  { name: 'Aisha Siddiqui', role: '', initials: 'AS', photo: null, pos: 'top' },
+  { name: 'Aisha Siddiqui', role: '', initials: 'AS', photo: '/tutors/aisha-siddiqui.jpg', pos: 'top' },
   { name: 'Lena Hussein', role: '', initials: 'LH', photo: '/tutors/lena-hussein.jpg', pos: 'top' },
   { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg', pos: '0%' },
 ]
