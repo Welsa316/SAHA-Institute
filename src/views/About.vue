@@ -12,7 +12,7 @@ const tutors = [
   { name: 'Tom Ngo', role: '', initials: 'TN', photo: '/tutors/tom-ngo.jpg', pos: 'top' },
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
   { name: 'Aisha Siddiqui', role: '', initials: 'AS', photo: null, pos: 'top' },
-  { name: 'Lena Tamer', role: '', initials: 'LT', photo: '/tutors/lena-tamer.jpg', pos: 'top' },
+  { name: 'Lena Hussein', role: '', initials: 'LH', photo: '/tutors/lena-hussein.jpg', pos: 'top' },
   { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg', pos: '0%' },
 ]
 </script>
