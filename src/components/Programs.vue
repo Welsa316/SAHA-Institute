@@ -91,8 +91,8 @@ const programs = computed(() =>
             {{ program.title }}
           </h3>
 
-          <!-- Price -->
-          <div class="mb-4">
+          <!-- Price (single tier) -->
+          <div v-if="!program.tiers" class="mb-4">
             <span class="font-heading text-2xl font-extrabold text-academic-600">{{ program.price }}</span>
             <span class="font-body text-sm text-navy-400">{{ program.priceUnit }}</span>
             <span class="block font-body text-xs text-navy-300 mt-1">{{ program.billing }}</span>
@@ -103,8 +103,8 @@ const programs = computed(() =>
             {{ program.description }}
           </p>
 
-          <!-- Subjects list -->
-          <div class="flex flex-wrap gap-2 mb-6">
+          <!-- Subjects list (single tier) -->
+          <div v-if="!program.tiers" class="flex flex-wrap gap-2 mb-6">
             <span
               v-for="subject in program.subjects"
               :key="subject"
@@ -112,6 +112,34 @@ const programs = computed(() =>
             >
               {{ subject }}
             </span>
+          </div>
+
+          <!-- Tiered pricing (multiple tiers) -->
+          <div v-if="program.tiers" class="space-y-4 mb-2">
+            <div
+              v-for="(tier, ti) in program.tiers"
+              :key="ti"
+              class="rounded-2xl border border-navy-100 bg-navy-50/40 p-4"
+            >
+              <div v-if="tier.label" class="font-heading text-sm font-bold text-[#001B3D]">
+                {{ tier.label }}
+                <span v-if="tier.sublabel" class="font-body text-xs font-normal text-navy-400">— {{ tier.sublabel }}</span>
+              </div>
+              <div class="flex items-baseline gap-1">
+                <span class="font-heading text-xl font-extrabold text-academic-600">{{ tier.price }}</span>
+                <span class="font-body text-sm text-navy-400">{{ tier.priceUnit }}</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  v-for="subject in tier.subjects"
+                  :key="subject"
+                  class="px-2.5 py-0.5 rounded-full bg-white border border-navy-100 text-[10px] font-body font-semibold text-navy-600"
+                >
+                  {{ subject }}
+                </span>
+              </div>
+            </div>
+            <p class="font-body text-xs text-navy-300">{{ program.billing }}</p>
           </div>
 
         </div>

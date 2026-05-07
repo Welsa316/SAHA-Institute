@@ -24,6 +24,15 @@ const routes = [
     },
   },
   {
+    path: '/summer-camp',
+    name: 'SummerCamp',
+    component: () => import('../views/SummerCamp.vue'),
+    meta: {
+      title: `Summer Camp & STEM 2026 | ${BASE_TITLE}`,
+      description: 'Full-month summer camp June 1-30 for ages 4-17. STEM block for ages 9-17. Daily schedule, weekly lunch menus, and pricing.',
+    },
+  },
+  {
     path: '/contact',
     name: 'Contact',
     component: () => import('../views/Contact.vue'),
