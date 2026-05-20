@@ -19,8 +19,9 @@ export const workshopSignupCreateSchema = z.object({
 
 // Teacher-side update. Every field is optional — partial updates allowed.
 // `paidUntil` accepts an ISO date string (yyyy-mm-dd) or null.
+// `contacted` was removed in migration 0002 — parents aren't contacted as a
+// follow-up step, so there's no flag for it.
 export const workshopSignupUpdateSchema = z.object({
-  contacted: z.boolean().optional(),
   paid: z.boolean().optional(),
   paidUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),

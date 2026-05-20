@@ -12,17 +12,25 @@ import { requireAuth } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { escapeHtml, sendEmail } from '../lib/email.js'
 import { logger } from '../lib/log.js'
+import { SESSION_COOKIE_NAME, verifySession } from '../lib/auth.js'
 
 export const workshopSignupsRouter: Router = Router()
 
 // Public form is rate-limited to slow spam without inconveniencing real parents.
-// 5 submissions per IP per hour matches the spec.
+// 5 submissions per IP per hour matches the spec. Authenticated admin requests
+// skip the limiter — Anila adds signups manually from the dashboard and would
+// otherwise hit the cap doing batch entry off a paper list.
 const publicLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many signups from this address. Please try again in an hour or call us.' },
+  skip: (req) => {
+    const token = (req as { cookies?: Record<string, string> }).cookies?.[SESSION_COOKIE_NAME]
+    if (!token) return false
+    return verifySession(token) !== null
+  },
 })
 
 const ADMIN_PATH = '/admin/workshop-signups'
@@ -73,9 +81,13 @@ function buildSignupEmail(args: {
   `
 }
 
-// POST /api/workshop-signups — public.
-// Creates a row, then fires a Resend email to the admin. Email failure does NOT block the
-// response — the parent gets a 200 and the row is safely persisted either way.
+// POST /api/workshop-signups — public OR admin (rate limit auto-skipped above
+// when the request carries a valid admin session cookie).
+// Creates a row, then fires a Resend notification email to the admin IF the
+// submission came from a parent. Admin manual additions skip the email so
+// Anila isn't pinged about signups she just typed in herself.
+// Email failure does NOT block the response — the row is safely persisted
+// either way.
 workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
   try {
     const input = workshopSignupCreateSchema.parse(req.body)
@@ -90,23 +102,28 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
       })
       .returning()
 
-    logger.info('signup', 'created', { id: row.id, workshops: input.workshops.length })
+    const adminToken = (req as { cookies?: Record<string, string> }).cookies?.[SESSION_COOKIE_NAME]
+    const isAdmin = adminToken ? verifySession(adminToken) !== null : false
 
-    // Fire-and-forget email — don't make the parent wait on Resend latency.
-    const siteOrigin = process.env.SITE_ORIGIN ?? 'https://sahainstituteforlearning.com'
-    const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning1675@gmail.com'
-    void sendEmail({
-      to: [adminEmail],
-      subject: `New Workshop Signup — ${input.studentName}`,
-      html: buildSignupEmail({
-        parentName: input.parentName,
-        studentName: input.studentName,
-        workshops: input.workshops,
-        additionalNotes: input.additionalNotes,
-        submittedAt: row.createdAt,
-        adminUrl: `${siteOrigin}${ADMIN_PATH}`,
-      }),
-    })
+    logger.info('signup', 'created', { id: row.id, workshops: input.workshops.length, source: isAdmin ? 'admin' : 'public' })
+
+    if (!isAdmin) {
+      // Fire-and-forget email — don't make the parent wait on Resend latency.
+      const siteOrigin = process.env.SITE_ORIGIN ?? 'https://sahainstituteforlearning.com'
+      const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning1675@gmail.com'
+      void sendEmail({
+        to: [adminEmail],
+        subject: `New Workshop Signup — ${input.studentName}`,
+        html: buildSignupEmail({
+          parentName: input.parentName,
+          studentName: input.studentName,
+          workshops: input.workshops,
+          additionalNotes: input.additionalNotes,
+          submittedAt: row.createdAt,
+          adminUrl: `${siteOrigin}${ADMIN_PATH}`,
+        }),
+      })
+    }
 
     res.status(201).json({ ok: true, id: row.id })
   } catch (err) {

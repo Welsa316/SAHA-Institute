@@ -1,0 +1,1 @@
+ALTER TABLE "workshop_signups" DROP COLUMN "contacted";

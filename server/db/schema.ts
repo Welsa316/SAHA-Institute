@@ -19,8 +19,9 @@ export const users = pgTable('users', {
 })
 
 // ---------- workshop_signups ----------
-// Parents submit themselves via the public form. The teacher works the list from the admin dashboard:
-// marks contacted, marks paid, records paid_until, leaves a note.
+// Parents submit themselves via the public form, OR Anila adds them manually
+// from the admin dashboard. Either way, the row IS the signup — there is no
+// follow-up "contact" step, so we don't track a contacted flag.
 
 export const workshopSignups = pgTable('workshop_signups', {
   id: serial('id').primaryKey(),
@@ -29,7 +30,9 @@ export const workshopSignups = pgTable('workshop_signups', {
   // Postgres text[] — stored as the workshop IDs/names selected on the form.
   workshops: text('workshops').array().notNull().default([]),
   additionalNotes: text('additional_notes'),
-  contacted: boolean('contacted').notNull().default(false),
+  // `contacted` lived here briefly. Removed in migration 0002 because parents
+  // aren't contacted as a separate follow-up step — submitting the form (or
+  // being added manually) IS the signup.
   paid: boolean('paid').notNull().default(false),
   paidUntil: date('paid_until'),
   notes: text('notes'), // teacher-side notes (distinct from additional_notes which came from the parent)
