@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
+import { useAdminAuth } from '../composables/useAdminAuth.js'
 
 const BASE_TITLE = 'SAHA Institute For Learning'
 const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep for ages 4 to 17.'
 
 const routes = [
+  // ---------- Public site ----------
   {
     path: '/',
     name: 'Home',
@@ -33,6 +35,15 @@ const routes = [
     },
   },
   {
+    path: '/signup',
+    name: 'Signup',
+    component: () => import('../views/SignupView.vue'),
+    meta: {
+      title: `Workshop Signup | ${BASE_TITLE}`,
+      description: 'Sign your student up for SAHA Institute workshops. Mrs. Anila will follow up to confirm.',
+    },
+  },
+  {
     path: '/contact',
     name: 'Contact',
     component: () => import('../views/Contact.vue'),
@@ -40,6 +51,47 @@ const routes = [
       title: `Contact | ${BASE_TITLE}`,
       description: 'Get in touch with SAHA Institute. Call (504) 667-3625 or send a message — we typically respond within 24 hours.',
     },
+  },
+
+  // ---------- Admin ----------
+  // Every /admin route renders inside the AdminLayout, which provides the sidebar.
+  // The `admin: true` meta flag tells App.vue to hide the public Navbar / Footer /
+  // floating widgets. The `requiresAuth` flag is enforced by beforeEach below.
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: () => import('../views/admin/LoginView.vue'),
+    meta: {
+      admin: true,
+      title: `Admin Login | ${BASE_TITLE}`,
+      noindex: true,
+    },
+  },
+  {
+    path: '/admin',
+    component: () => import('../components/admin/AdminLayout.vue'),
+    meta: { admin: true, requiresAuth: true, noindex: true },
+    redirect: '/admin/workshop-signups',
+    children: [
+      {
+        path: 'workshop-signups',
+        name: 'AdminWorkshopSignups',
+        component: () => import('../views/admin/WorkshopSignupsView.vue'),
+        meta: { admin: true, requiresAuth: true, title: `Workshop Signups | ${BASE_TITLE}` },
+      },
+      {
+        path: 'summer-camp',
+        name: 'AdminSummerCamp',
+        component: () => import('../views/admin/SummerCampView.vue'),
+        meta: { admin: true, requiresAuth: true, title: `Summer Camp | ${BASE_TITLE}` },
+      },
+      {
+        path: 'stem-program',
+        name: 'AdminStemProgram',
+        component: () => import('../views/admin/StemProgramView.vue'),
+        meta: { admin: true, requiresAuth: true, title: `STEM Program | ${BASE_TITLE}` },
+      },
+    ],
   },
 ]
 
@@ -55,7 +107,20 @@ const router = createRouter({
   },
 })
 
-// Update document title and meta description on route change
+// Auth guard for /admin/* (except /admin/login).
+// We hit /api/auth/me only once per session — `ensureChecked` is a no-op after first call.
+router.beforeEach(async (to) => {
+  if (!to.meta?.requiresAuth) return true
+
+  const { isAuthenticated, ensureChecked } = useAdminAuth()
+  await ensureChecked()
+  if (!isAuthenticated.value) {
+    return { name: 'AdminLogin', query: { next: to.fullPath } }
+  }
+  return true
+})
+
+// Title + description sync on route change.
 router.afterEach((to) => {
   if (to.meta?.title) {
     document.title = to.meta.title
@@ -68,6 +133,18 @@ router.afterEach((to) => {
       document.head.appendChild(desc)
     }
     desc.setAttribute('content', to.meta.description)
+  }
+  // Admin routes shouldn't be indexed.
+  let robots = document.querySelector('meta[name="robots"]')
+  if (to.meta?.noindex) {
+    if (!robots) {
+      robots = document.createElement('meta')
+      robots.setAttribute('name', 'robots')
+      document.head.appendChild(robots)
+    }
+    robots.setAttribute('content', 'noindex, nofollow')
+  } else if (robots) {
+    robots.remove()
   }
 })
 
