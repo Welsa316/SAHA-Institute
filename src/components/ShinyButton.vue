@@ -1,32 +1,53 @@
 <script setup>
 import { useRouter } from 'vue-router'
 
-// Vue 3 port of the React "ShinyButton" — a CTA pill with a slow shimmer sweeping
-// diagonally across the label and a thin glowing border.
+// SAHA's primary CTA button. Solid amber fill with deep-navy text so it reads
+// against both surfaces it has to live on: the dark hero (where the navbar is
+// transparent) and the scrolled white navbar. A previous take used a ghost /
+// border-only style with academic-blue text — that blended into both contexts.
+// This one doesn't.
 //
-// The original used framer-motion to animate the --x custom property between 100%
-// and -100% on a loop. We don't need an animation library for that — pure CSS
-// keyframes drive the same shimmer with no JS overhead, and behave correctly when
-// the button mounts/unmounts during route changes.
+// The "shiny" effect is a fast white sweep across the label plus a tracer pulse
+// on the border ring. `--x` is the animated value; both layers read it so the
+// sweep stays in lock-step. `@property --x` registers the custom property so
+// browsers actually interpolate it — otherwise CSS treats it as discrete and
+// the sweep jumps between keyframes instead of gliding.
 //
 // Props:
-//   to     — vue-router target. Click navigates there. If omitted the button still
-//            fires a `click` event so callers can wire their own handler.
-//   label  — display text (also accepts a default slot — slot takes precedence).
-//   class  — passed through to the root for sizing/positioning tweaks.
+//   to     — vue-router target. Click navigates there.
+//   label  — display text (also accepts a default slot — slot wins if both set).
+//   size   — 'sm' | 'md' | 'lg' (default 'md'). Adjusts padding + text size
+//            without changing the shimmer geometry.
 
 const props = defineProps({
   to: { type: [String, Object], default: null },
   label: { type: String, default: '' },
+  size: {
+    type: String,
+    default: 'md',
+    validator: (v) => ['sm', 'md', 'lg'].includes(v),
+  },
 })
+
+const emit = defineEmits(['click'])
 
 const router = useRouter()
 
 function handleClick(event) {
+  emit('click', event)
+  // Caller can preventDefault to suppress navigation — used when the button
+  // opens a modal instead of routing.
+  if (event.defaultPrevented) return
   if (props.to) {
     event.preventDefault()
     router.push(props.to)
   }
+}
+
+const sizeClasses = {
+  sm: 'px-5 py-2 text-[10px]',
+  md: 'px-7 py-3 text-[11px]',
+  lg: 'px-9 py-4 text-[12px]',
 }
 </script>
 
@@ -34,26 +55,27 @@ function handleClick(event) {
   <button
     type="button"
     @click="handleClick"
-    class="shiny-button group relative rounded-full px-6 py-2.5 font-body font-semibold backdrop-blur-xl transition-shadow duration-300 ease-in-out hover:shadow-lg hover:shadow-academic-500/20 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+    :class="['shiny-button group', sizeClasses[size]]"
+    class="relative overflow-hidden rounded-full font-body font-bold tracking-[0.18em] uppercase text-navy-950 bg-amber-400 transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:bg-amber-300 active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 focus:outline-none"
   >
-    <!-- Label layer. The masked gradient is the "shimmer" — a moving slice of
-         brand color that reveals the text. text-academic-700 is the resting
-         color; the mask sweeps across the whole label diagonally. -->
-    <span class="shiny-label relative block size-full text-[11px] uppercase tracking-[0.18em] text-academic-700">
+    <!-- Static label baseline — readable even before the shimmer animation runs
+         on first paint. Anchored above the moving overlay via z-10. -->
+    <span class="relative z-10 inline-flex items-center gap-2 whitespace-nowrap">
       <slot>{{ label }}</slot>
     </span>
-    <!-- Border layer. content-box + exclude composite carves the inside out so
-         only the 1px ring is painted, then a diagonal gradient pulses across it. -->
-    <span class="shiny-border absolute inset-0 z-10 block rounded-[inherit] p-px" aria-hidden="true"></span>
+
+    <!-- The shimmer overlay. A bright white slice sweeps diagonally across the
+         pill. Resting state is amber (not transparent like the earlier draft),
+         so the sweep needs to be bright enough to actually read. -->
+    <span class="shiny-sweep absolute inset-0 z-[5] pointer-events-none" aria-hidden="true"></span>
+
+    <!-- Tracer ring: a thin border-only gradient pulses along the rim. Reads as
+         the "shine" of polished metal/coin alongside the surface sweep. -->
+    <span class="shiny-border absolute inset-0 z-[6] pointer-events-none rounded-[inherit] p-px" aria-hidden="true"></span>
   </button>
 </template>
 
 <style scoped>
-/* `--x` is the value the masks track. Both the label and the border read it,
-   so a single keyframe drives both layers in lock-step.
-   The variable is registered with @property where supported so the browser
-   actually interpolates it (otherwise CSS treats custom properties as discrete
-   and the animation jumps between keyframes). */
 @property --x {
   syntax: '<percentage>';
   inherits: false;
@@ -62,37 +84,44 @@ function handleClick(event) {
 
 .shiny-button {
   --x: 100%;
-  /* 3s sweep + 1s pause matches the repeatDelay:1 from the original spring config. */
-  animation: shiny-sweep 4s linear infinite;
-  /* Brand color sourced from the academic palette via a custom prop so the masks
-     can interpolate it. The hex below maps to the `academic-500` Tailwind token —
-     a richer SAHA blue, not a generic primary. */
-  --shiny-primary: 70 124 168; /* rgb of academic-500 */
+  /* Faster than the previous 4s + 1s pause — the user explicitly asked for
+     "shinier", which here means more frequent sweep + brighter highlight. */
+  animation: shiny-sweep 2.4s linear infinite;
+  /* Amber glow ring so the button reads as a CTA even at rest. Slightly stronger
+     on hover for affordance. The keyframe doesn't touch this; it's static. */
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 6px 24px -6px rgba(251, 191, 36, 0.55),
+    0 2px 6px -2px rgba(0, 0, 0, 0.18);
 }
 
-.shiny-label {
-  -webkit-mask-image: linear-gradient(
+.shiny-button:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 10px 32px -4px rgba(251, 191, 36, 0.7),
+    0 3px 8px -2px rgba(0, 0, 0, 0.22);
+}
+
+.shiny-sweep {
+  background: linear-gradient(
     -75deg,
-    rgb(var(--shiny-primary)) calc(var(--x) + 20%),
-    transparent calc(var(--x) + 30%),
-    rgb(var(--shiny-primary)) calc(var(--x) + 100%)
+    transparent calc(var(--x) - 30%),
+    rgba(255, 255, 255, 0.85) calc(var(--x) - 5%),
+    rgba(255, 255, 255, 0.0) calc(var(--x) + 20%),
+    transparent calc(var(--x) + 30%)
   );
-  mask-image: linear-gradient(
-    -75deg,
-    rgb(var(--shiny-primary)) calc(var(--x) + 20%),
-    transparent calc(var(--x) + 30%),
-    rgb(var(--shiny-primary)) calc(var(--x) + 100%)
-  );
+  /* mix-blend on amber gives the sweep a pearlescent feel rather than a flat
+     white wash — closer to real reflected light. */
+  mix-blend-mode: screen;
 }
 
 .shiny-border {
   background: linear-gradient(
     -75deg,
-    rgb(var(--shiny-primary) / 15%) calc(var(--x) + 20%),
-    rgb(var(--shiny-primary) / 60%) calc(var(--x) + 25%),
-    rgb(var(--shiny-primary) / 15%) calc(var(--x) + 100%)
+    rgba(255, 255, 255, 0.0) calc(var(--x) + 10%),
+    rgba(255, 255, 255, 0.95) calc(var(--x) + 25%),
+    rgba(255, 255, 255, 0.0) calc(var(--x) + 45%)
   );
-  /* Two-mask composite — paints only the border ring, not the fill. */
   -webkit-mask:
     linear-gradient(#000, #000) content-box,
     linear-gradient(#000, #000);
@@ -104,19 +133,19 @@ function handleClick(event) {
 }
 
 @keyframes shiny-sweep {
-  /* Sweep across, then hold off-screen for the remaining time so the shimmer
-     has a beat between sweeps instead of looking like a continuous strobe. */
-  0% { --x: 100%; }
-  75% { --x: -100%; }
-  100% { --x: -100%; }
+  0%   { --x: 130%; }
+  60%  { --x: -30%; }
+  100% { --x: -30%; }
 }
 
-/* Reduce motion: respect the user's OS preference. Falls back to a static
-   styled pill — still tappable, still on-brand, no shimmer. */
 @media (prefers-reduced-motion: reduce) {
   .shiny-button {
     animation: none;
     --x: 50%;
+  }
+  .shiny-sweep,
+  .shiny-border {
+    opacity: 0;
   }
 }
 </style>
