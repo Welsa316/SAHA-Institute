@@ -5,7 +5,7 @@ export default {
     signup: 'سائن اپ',
     about: 'ہمارے بارے میں',
     contact: 'رابطہ',
-    enroll: 'سائن اپ',
+    enroll: 'گرمیوں کا سائن اپ',
     saha: 'ساہا',
     tagline: 'ادارہ برائے تعلیم',
     openMenu: 'مینو کھولیں',

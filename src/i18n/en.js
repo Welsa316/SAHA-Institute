@@ -8,10 +8,11 @@ export default {
     signup: 'Sign Up',
     about: 'About',
     contact: 'Contact',
-    // Button is the entry point to summer camp + workshops signups — NOT
-    // year-round tutoring enrollment. Plain "Sign Up" reads correctly for an
-    // events context without overpromising a permanent student account.
-    enroll: 'Sign Up',
+    // Button is the entry point to summer events — workshops + camp. The label
+    // names the time-bounded context explicitly so a parent doesn't read it as
+    // "make an account" or "enroll in tutoring." Both ambiguities were flagged
+    // in user feedback against the previous "Enroll Now" / "Sign Up" wording.
+    enroll: 'Summer Signups',
     saha: 'SAHA',
     tagline: 'Institute for Learning',
     openMenu: 'Open menu',
