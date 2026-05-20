@@ -14,7 +14,10 @@ const props = defineProps({
   open: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['update:open'])
+// `submitted` propagates upward so callers (e.g. the admin list page) can
+// react — reload the list, log analytics, etc. The modal handles its own
+// auto-close timing internally; emitting submitted is purely informational.
+const emit = defineEmits(['update:open', 'submitted'])
 
 const { t } = useI18n()
 
@@ -26,7 +29,8 @@ function close() {
 }
 
 function onSubmitted() {
-  // Auto-close 1.8s after a successful submission so the parent sees the
+  emit('submitted')
+  // Auto-close 1.8s after a successful submission so the user sees the
   // success state for a beat before the modal disappears. The form's own
   // success message renders immediately; this is just timing the dismissal.
   setTimeout(close, 1800)

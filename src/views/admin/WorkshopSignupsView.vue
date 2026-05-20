@@ -5,6 +5,7 @@ import PageHeader from '../../components/admin/PageHeader.vue'
 import ToggleSwitch from '../../components/admin/ToggleSwitch.vue'
 import InlineNotes from '../../components/admin/InlineNotes.vue'
 import ConfirmDialog from '../../components/admin/ConfirmDialog.vue'
+import WorkshopSignupModal from '../../components/WorkshopSignupModal.vue'
 
 const api = useAdminApi()
 
@@ -14,9 +15,10 @@ const error = ref('')
 const rowSaving = ref(new Set())
 
 const sortBy = ref('newest') // 'newest' | 'parent' | 'paid'
-const filter = ref('all') // 'all' | 'contacted' | 'notContacted' | 'paid' | 'notPaid'
+const filter = ref('all') // 'all' | 'paid' | 'notPaid'
 
 const toDeleteId = ref(null)
+const addModalOpen = ref(false)
 
 async function load() {
   loading.value = true
@@ -35,9 +37,7 @@ onMounted(load)
 
 const filtered = computed(() => {
   let rows = signups.value
-  if (filter.value === 'contacted') rows = rows.filter((r) => r.contacted)
-  else if (filter.value === 'notContacted') rows = rows.filter((r) => !r.contacted)
-  else if (filter.value === 'paid') rows = rows.filter((r) => r.paid)
+  if (filter.value === 'paid') rows = rows.filter((r) => r.paid)
   else if (filter.value === 'notPaid') rows = rows.filter((r) => !r.paid)
 
   const sorted = [...rows]
@@ -91,8 +91,6 @@ async function confirmDelete() {
 
 const filterChips = [
   { key: 'all', label: 'All' },
-  { key: 'contacted', label: 'Contacted' },
-  { key: 'notContacted', label: 'Not contacted' },
   { key: 'paid', label: 'Paid' },
   { key: 'notPaid', label: 'Not paid' },
 ]
@@ -107,11 +105,23 @@ const sortOptions = [
 <template>
   <main>
     <PageHeader
-      eyebrow="Inbox"
+      eyebrow="List"
       title="Workshop Signups"
-      subtitle="Parents who've requested to enroll their student. Work the list top-to-bottom — newest signups first."
       :count="signups.length"
-    />
+    >
+      <template #actions>
+        <button
+          type="button"
+          @click="addModalOpen = true"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#001B3D] text-white font-body text-sm font-bold tracking-wider uppercase hover:bg-navy-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Add signup
+        </button>
+      </template>
+    </PageHeader>
 
     <!-- Filters + sort -->
     <div class="px-6 md:px-10 py-5 border-b border-navy-100 bg-white flex flex-wrap items-center gap-3 justify-between">
@@ -158,7 +168,6 @@ const sortOptions = [
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Submitted</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Contacted</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid until</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (parent)</th>
@@ -182,14 +191,6 @@ const sortOptions = [
                   </div>
                 </td>
                 <td class="px-4 py-4 font-body text-xs text-navy-500 whitespace-nowrap">{{ formatDate(row.createdAt) }}</td>
-                <td class="px-4 py-4">
-                  <ToggleSwitch
-                    :model-value="row.contacted"
-                    :disabled="isSaving(row.id)"
-                    label="Mark contacted"
-                    @update:model-value="(v) => patch(row, { contacted: v })"
-                  />
-                </td>
                 <td class="px-4 py-4">
                   <ToggleSwitch
                     :model-value="row.paid"
@@ -247,5 +248,10 @@ const sortOptions = [
       @confirm="confirmDelete"
       @cancel="toDeleteId = null"
     />
+
+    <!-- Manual add — same modal + form parents use on /enroll. Authenticated
+         POSTs skip the public rate limiter and don't trigger the admin
+         notification email (Anila wouldn't want to email herself). -->
+    <WorkshopSignupModal v-model:open="addModalOpen" @submitted="load" />
   </main>
 </template>
