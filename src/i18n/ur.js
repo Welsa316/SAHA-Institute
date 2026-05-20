@@ -5,6 +5,7 @@ export default {
     signup: 'سائن اپ',
     about: 'ہمارے بارے میں',
     contact: 'رابطہ',
+    explore: 'پروگرامز دیکھیں',
     saha: 'ساہا',
     tagline: 'ادارہ برائے تعلیم',
     openMenu: 'مینو کھولیں',
