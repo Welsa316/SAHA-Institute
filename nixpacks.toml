@@ -1,0 +1,28 @@
+# Explicit Nixpacks config for Railway. Without this, Railway auto-detects the
+# provider and writes its own plan each build, which is slower and varies between
+# Nixpacks versions. Pinning the steps here makes the build deterministic and
+# slightly faster because Railway can short-circuit the detection phase.
+
+# Pin Node so the npm cache layer is reusable across builds. Bumping this version
+# invalidates the install cache — only do it when we actually need a new Node.
+[phases.setup]
+nixPkgs = ['nodejs_22']
+
+# Single npm ci for both prod + dev deps. We need devDeps during build (vite,
+# tailwind, postcss, @types/*), but the resulting runtime image is fine carrying
+# them — `tsx server/index.ts` boots in ~200ms regardless of node_modules size,
+# and the trade-off of a slightly larger image vs. a second install step
+# (production prune) is worth it for build-time predictability.
+[phases.install]
+cmds = ['npm ci --no-audit --no-fund']
+
+# Vite build only. Drizzle migrations and admin seeding run on first boot inside
+# the server (`runMigrations()` + `seedAdmin()` in server/index.ts), so the build
+# phase doesn't need DB access.
+[phases.build]
+cmds = ['npm run build']
+
+# `npm start` runs the TypeScript server directly via `tsx` — no compile step,
+# no dual-publish drift between TS source and shipped JS.
+[start]
+cmd = 'npm start'
