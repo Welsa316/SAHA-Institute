@@ -20,6 +20,7 @@ const mobileOpen = ref(false)
 const navLinks = computed(() => [
   { name: t('nav.home'), to: '/' },
   { name: t('nav.programs'), to: '/#programs' },
+  { name: t('nav.signup'), to: '/signup' },
   { name: t('nav.about'), to: '/about' },
   { name: t('nav.contact'), to: '/contact' },
 ])

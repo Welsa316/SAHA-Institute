@@ -1,0 +1,167 @@
+import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
+import { desc, eq } from 'drizzle-orm'
+import { db } from '../db/index.js'
+import { workshopSignups } from '../db/schema.js'
+import {
+  workshopSignupCreateSchema,
+  workshopSignupUpdateSchema,
+  idParamSchema,
+} from '../schemas/index.js'
+import { requireAuth } from '../middleware/requireAuth.js'
+import { HttpError } from '../middleware/errorHandler.js'
+import { escapeHtml, sendEmail } from '../lib/email.js'
+import { logger } from '../lib/log.js'
+
+export const workshopSignupsRouter: Router = Router()
+
+// Public form is rate-limited to slow spam without inconveniencing real parents.
+// 5 submissions per IP per hour matches the spec.
+const publicLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many signups from this address. Please try again in an hour or call us.' },
+})
+
+const ADMIN_PATH = '/admin/workshop-signups'
+
+function buildSignupEmail(args: {
+  parentName: string
+  studentName: string
+  workshops: string[]
+  additionalNotes: string | null | undefined
+  submittedAt: Date
+  adminUrl: string
+}): string {
+  const { parentName, studentName, workshops, additionalNotes, submittedAt, adminUrl } = args
+  const workshopList = workshops.map((w) => `<li style="margin: 4px 0;">${escapeHtml(w)}</li>`).join('')
+  const notesBlock = additionalNotes
+    ? `<p style="font-weight: bold; color: #001B3D; margin: 16px 0 8px;">Additional Notes:</p>
+       <p style="color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(additionalNotes)}</p>`
+    : ''
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #001B3D; padding: 24px; border-radius: 12px 12px 0 0;">
+        <h2 style="color: white; margin: 0;">New Workshop Signup</h2>
+      </div>
+      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #001B3D; width: 140px;">Parent:</td>
+            <td style="padding: 8px 0; color: #334155;">${escapeHtml(parentName)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Student:</td>
+            <td style="padding: 8px 0; color: #334155;">${escapeHtml(studentName)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Submitted:</td>
+            <td style="padding: 8px 0; color: #334155;">${submittedAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+          </tr>
+        </table>
+        <p style="font-weight: bold; color: #001B3D; margin: 16px 0 8px;">Workshops:</p>
+        <ul style="color: #334155; padding-left: 20px; margin: 0;">${workshopList}</ul>
+        ${notesBlock}
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px;" />
+        <a href="${escapeHtml(adminUrl)}" style="display: inline-block; background: #001B3D; color: white; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 14px;">
+          Open Admin Dashboard
+        </a>
+      </div>
+    </div>
+  `
+}
+
+// POST /api/workshop-signups — public.
+// Creates a row, then fires a Resend email to the admin. Email failure does NOT block the
+// response — the parent gets a 200 and the row is safely persisted either way.
+workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
+  try {
+    const input = workshopSignupCreateSchema.parse(req.body)
+
+    const [row] = await db
+      .insert(workshopSignups)
+      .values({
+        parentName: input.parentName,
+        studentName: input.studentName,
+        workshops: input.workshops,
+        additionalNotes: input.additionalNotes ?? null,
+      })
+      .returning()
+
+    logger.info('signup', 'created', { id: row.id, workshops: input.workshops.length })
+
+    // Fire-and-forget email — don't make the parent wait on Resend latency.
+    const siteOrigin = process.env.SITE_ORIGIN ?? 'https://sahainstituteforlearning.com'
+    const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning1675@gmail.com'
+    void sendEmail({
+      to: [adminEmail],
+      subject: `New Workshop Signup — ${input.studentName}`,
+      html: buildSignupEmail({
+        parentName: input.parentName,
+        studentName: input.studentName,
+        workshops: input.workshops,
+        additionalNotes: input.additionalNotes,
+        submittedAt: row.createdAt,
+        adminUrl: `${siteOrigin}${ADMIN_PATH}`,
+      }),
+    })
+
+    res.status(201).json({ ok: true, id: row.id })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/workshop-signups — admin, newest first.
+workshopSignupsRouter.get('/', requireAuth, async (_req, res, next) => {
+  try {
+    const rows = await db
+      .select()
+      .from(workshopSignups)
+      .orderBy(desc(workshopSignups.createdAt))
+    res.json({ signups: rows })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PATCH /api/workshop-signups/:id — admin. Partial update of teacher-side fields.
+workshopSignupsRouter.patch('/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params)
+    const patch = workshopSignupUpdateSchema.parse(req.body)
+
+    // If `paid` is explicitly being set to false, clear paid_until too so the date input
+    // doesn't show stale data. The frontend can override by passing both fields together.
+    if (patch.paid === false && patch.paidUntil === undefined) {
+      patch.paidUntil = null
+    }
+
+    const [row] = await db
+      .update(workshopSignups)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(workshopSignups.id, id))
+      .returning()
+
+    if (!row) throw new HttpError(404, 'Signup not found.')
+    logger.info('signup', 'updated', { id, fields: Object.keys(patch), user: res.locals.user?.email })
+    res.json({ signup: row })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// DELETE /api/workshop-signups/:id — admin. Spec lists this implicitly via the UI delete button.
+workshopSignupsRouter.delete('/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params)
+    const result = await db.delete(workshopSignups).where(eq(workshopSignups.id, id)).returning()
+    if (result.length === 0) throw new HttpError(404, 'Signup not found.')
+    logger.info('signup', 'deleted', { id, user: res.locals.user?.email })
+    res.json({ ok: true })
+  } catch (err) {
+    next(err)
+  }
+})

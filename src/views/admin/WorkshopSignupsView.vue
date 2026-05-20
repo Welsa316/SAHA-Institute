@@ -1,0 +1,251 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useAdminApi } from '../../composables/useAdminApi.js'
+import PageHeader from '../../components/admin/PageHeader.vue'
+import ToggleSwitch from '../../components/admin/ToggleSwitch.vue'
+import InlineNotes from '../../components/admin/InlineNotes.vue'
+import ConfirmDialog from '../../components/admin/ConfirmDialog.vue'
+
+const api = useAdminApi()
+
+const signups = ref([])
+const loading = ref(true)
+const error = ref('')
+const rowSaving = ref(new Set())
+
+const sortBy = ref('newest') // 'newest' | 'parent' | 'paid'
+const filter = ref('all') // 'all' | 'contacted' | 'notContacted' | 'paid' | 'notPaid'
+
+const toDeleteId = ref(null)
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    const data = await api.get('/api/workshop-signups')
+    signups.value = data.signups ?? []
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
+
+const filtered = computed(() => {
+  let rows = signups.value
+  if (filter.value === 'contacted') rows = rows.filter((r) => r.contacted)
+  else if (filter.value === 'notContacted') rows = rows.filter((r) => !r.contacted)
+  else if (filter.value === 'paid') rows = rows.filter((r) => r.paid)
+  else if (filter.value === 'notPaid') rows = rows.filter((r) => !r.paid)
+
+  const sorted = [...rows]
+  if (sortBy.value === 'newest') {
+    sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  } else if (sortBy.value === 'parent') {
+    sorted.sort((a, b) => a.parentName.localeCompare(b.parentName))
+  } else if (sortBy.value === 'paid') {
+    sorted.sort((a, b) => Number(b.paid) - Number(a.paid))
+  }
+  return sorted
+})
+
+async function patch(row, patchBody) {
+  rowSaving.value.add(row.id)
+  // Optimistic update — apply the change in the UI immediately, roll back if the API rejects.
+  const prev = { ...row }
+  Object.assign(row, patchBody)
+  try {
+    const data = await api.patch(`/api/workshop-signups/${row.id}`, patchBody)
+    Object.assign(row, data.signup)
+  } catch (err) {
+    Object.assign(row, prev)
+    error.value = err.message
+  } finally {
+    rowSaving.value.delete(row.id)
+  }
+}
+
+function isSaving(id) {
+  return rowSaving.value.has(id)
+}
+
+function formatDate(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+async function confirmDelete() {
+  const id = toDeleteId.value
+  if (!id) return
+  toDeleteId.value = null
+  try {
+    await api.delete(`/api/workshop-signups/${id}`)
+    signups.value = signups.value.filter((r) => r.id !== id)
+  } catch (err) {
+    error.value = err.message
+  }
+}
+
+const filterChips = [
+  { key: 'all', label: 'All' },
+  { key: 'contacted', label: 'Contacted' },
+  { key: 'notContacted', label: 'Not contacted' },
+  { key: 'paid', label: 'Paid' },
+  { key: 'notPaid', label: 'Not paid' },
+]
+
+const sortOptions = [
+  { key: 'newest', label: 'Newest first' },
+  { key: 'parent', label: 'Parent A–Z' },
+  { key: 'paid', label: 'Paid first' },
+]
+</script>
+
+<template>
+  <main>
+    <PageHeader
+      eyebrow="Inbox"
+      title="Workshop Signups"
+      subtitle="Parents who've requested to enroll their student. Work the list top-to-bottom — newest signups first."
+      :count="signups.length"
+    />
+
+    <!-- Filters + sort -->
+    <div class="px-6 md:px-10 py-5 border-b border-navy-100 bg-white flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="chip in filterChips"
+          :key="chip.key"
+          @click="filter = chip.key"
+          class="px-3.5 py-1.5 rounded-full font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+          :class="filter === chip.key
+            ? 'bg-[#001B3D] text-white'
+            : 'bg-navy-50 text-navy-600 hover:bg-navy-100'"
+        >
+          {{ chip.label }}
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="font-body text-xs font-semibold text-navy-500 uppercase tracking-wider">Sort</label>
+        <select
+          v-model="sortBy"
+          class="px-3 py-1.5 rounded-lg bg-navy-50 border border-navy-100 text-navy-700 font-body text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400"
+        >
+          <option v-for="opt in sortOptions" :key="opt.key" :value="opt.key">{{ opt.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div v-if="error" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
+      {{ error }}
+    </div>
+
+    <div class="px-6 md:px-10 py-6">
+      <div v-if="loading" class="py-16 text-center font-body text-sm text-navy-400">Loading…</div>
+      <div v-else-if="filtered.length === 0" class="py-16 text-center">
+        <p class="font-body text-sm text-navy-400">No signups match this filter yet.</p>
+      </div>
+
+      <div v-else class="bg-white rounded-2xl border border-navy-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-navy-50/60">
+              <tr>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Submitted</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Contacted</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid until</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (parent)</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (teacher)</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-navy-100">
+              <tr v-for="row in filtered" :key="row.id" class="align-top hover:bg-navy-50/40 transition-colors">
+                <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.parentName }}</td>
+                <td class="px-4 py-4 font-body text-navy-700">{{ row.studentName }}</td>
+                <td class="px-4 py-4">
+                  <div class="flex flex-wrap gap-1.5 max-w-xs">
+                    <span
+                      v-for="w in row.workshops"
+                      :key="w"
+                      class="inline-block px-2 py-0.5 rounded-full bg-academic-50 text-academic-700 border border-academic-200 text-[10px] font-body font-semibold"
+                    >
+                      {{ w }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 font-body text-xs text-navy-500 whitespace-nowrap">{{ formatDate(row.createdAt) }}</td>
+                <td class="px-4 py-4">
+                  <ToggleSwitch
+                    :model-value="row.contacted"
+                    :disabled="isSaving(row.id)"
+                    label="Mark contacted"
+                    @update:model-value="(v) => patch(row, { contacted: v })"
+                  />
+                </td>
+                <td class="px-4 py-4">
+                  <ToggleSwitch
+                    :model-value="row.paid"
+                    :disabled="isSaving(row.id)"
+                    label="Mark paid"
+                    @update:model-value="(v) => patch(row, { paid: v })"
+                  />
+                </td>
+                <td class="px-4 py-4">
+                  <input
+                    type="date"
+                    :value="row.paidUntil ?? ''"
+                    :disabled="!row.paid || isSaving(row.id)"
+                    @change="(e) => patch(row, { paidUntil: e.target.value || null })"
+                    class="px-2 py-1 rounded-lg bg-navy-50 border border-navy-100 text-navy-700 text-xs font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                  />
+                </td>
+                <td class="px-4 py-4">
+                  <p v-if="row.additionalNotes" class="font-body text-xs text-navy-600 max-w-xs whitespace-pre-wrap">{{ row.additionalNotes }}</p>
+                  <p v-else class="font-body text-xs text-navy-300 italic">—</p>
+                </td>
+                <td class="px-4 py-4">
+                  <InlineNotes
+                    :model-value="row.notes"
+                    :saving="isSaving(row.id)"
+                    placeholder="Add a note for yourself…"
+                    @save="(v) => patch(row, { notes: v })"
+                  />
+                </td>
+                <td class="px-4 py-4 text-right">
+                  <button
+                    type="button"
+                    @click="toDeleteId = row.id"
+                    class="p-2 rounded-lg text-navy-400 hover:bg-red-50 hover:text-red-600 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 focus:outline-none"
+                    aria-label="Delete signup"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <ConfirmDialog
+      :show="toDeleteId !== null"
+      title="Delete this signup?"
+      message="This will permanently remove the parent's submission. You can't undo this."
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+      @cancel="toDeleteId = null"
+    />
+  </main>
+</template>

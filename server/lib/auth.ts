@@ -1,0 +1,63 @@
+import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
+
+const BCRYPT_ROUNDS = 12
+const JWT_ALGORITHM = 'HS256'
+
+// 30-day session per spec.
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
+
+export interface JwtPayload {
+  userId: number
+  email: string
+}
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret.length < 32) {
+    throw new Error('[auth] JWT_SECRET must be set to a value of at least 32 characters.')
+  }
+  return secret
+}
+
+export async function hashPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, BCRYPT_ROUNDS)
+}
+
+export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(plain, hash)
+}
+
+export function signSession(payload: JwtPayload): string {
+  return jwt.sign(payload, getJwtSecret(), {
+    algorithm: JWT_ALGORITHM,
+    expiresIn: SESSION_TTL_SECONDS,
+  })
+}
+
+export function verifySession(token: string): JwtPayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
+    if (typeof decoded === 'string') return null
+    const { userId, email } = decoded as Record<string, unknown>
+    if (typeof userId !== 'number' || typeof email !== 'string') return null
+    return { userId, email }
+  } catch {
+    return null
+  }
+}
+
+export const SESSION_COOKIE_NAME = 'saha_session'
+
+export const sessionCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: SESSION_TTL_SECONDS * 1000,
+  path: '/',
+}
+
+export const clearSessionCookieOptions = {
+  ...sessionCookieOptions,
+  maxAge: 0,
+}
