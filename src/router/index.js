@@ -91,6 +91,18 @@ const routes = [
         component: () => import('../views/admin/StemProgramView.vue'),
         meta: { admin: true, requiresAuth: true, title: `STEM Program | ${BASE_TITLE}` },
       },
+      {
+        path: 'students',
+        name: 'AdminStudents',
+        component: () => import('../views/admin/StudentsView.vue'),
+        meta: { admin: true, requiresAuth: true, title: `Students | ${BASE_TITLE}` },
+      },
+      {
+        path: 'payments',
+        name: 'AdminPayments',
+        component: () => import('../views/admin/PaymentsView.vue'),
+        meta: { admin: true, requiresAuth: true, title: `Payments | ${BASE_TITLE}` },
+      },
     ],
   },
 ]

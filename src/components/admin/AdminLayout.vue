@@ -25,6 +25,16 @@ const navItems = [
     label: 'STEM Program',
     icon: 'beaker',
   },
+  {
+    to: '/admin/students',
+    label: 'Students',
+    icon: 'users',
+  },
+  {
+    to: '/admin/payments',
+    label: 'Payments',
+    icon: 'card',
+  },
 ]
 
 async function handleLogout() {
@@ -41,10 +51,17 @@ async function handleLogout() {
       :class="mobileNavOpen ? 'flex translate-x-0' : 'flex -translate-x-full md:translate-x-0'"
     >
       <div class="mb-10">
-        <p class="font-heading text-2xl font-extrabold tracking-tight text-academic-300" style="font-family: 'Cormorant Garamond', serif;">
-          SAHA
-        </p>
-        <p class="font-body text-[10px] tracking-[0.25em] uppercase text-white/40 font-medium mt-1">
+        <!-- The public site's wordmark is the brand; the admin sidebar mirrors that
+             instead of typesetting "SAHA" on its own. Image is white-trimmed and reads
+             on the navy background. -->
+        <img
+          src="/logo.png"
+          alt="SAHA Institute For Learning"
+          class="h-10 w-auto brightness-0 invert opacity-95"
+          width="464"
+          height="114"
+        />
+        <p class="font-body text-[10px] tracking-[0.25em] uppercase text-white/40 font-medium mt-3">
           Admin Portal
         </p>
       </div>
@@ -68,6 +85,12 @@ async function handleLogout() {
           </svg>
           <svg v-if="item.icon === 'beaker'" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M5 14.5l-1.456 2.186A1.5 1.5 0 004.788 19h14.424a1.5 1.5 0 001.244-2.314L19 14.5" />
+          </svg>
+          <svg v-if="item.icon === 'users'" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+          <svg v-if="item.icon === 'card'" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 8.25h19.5M2.25 9V6.75A2.25 2.25 0 014.5 4.5h15a2.25 2.25 0 012.25 2.25V9m-19.5 0v8.25A2.25 2.25 0 004.5 19.5h15a2.25 2.25 0 002.25-2.25V9m-19.5 0h19.5" />
           </svg>
           {{ item.label }}
         </RouterLink>
@@ -109,9 +132,13 @@ async function handleLogout() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
           </svg>
         </button>
-        <p class="font-heading text-base font-bold text-navy-900 tracking-tight" style="font-family: 'Cormorant Garamond', serif;">
-          SAHA Admin
-        </p>
+        <img
+          src="/logo.png"
+          alt="SAHA Institute For Learning"
+          class="h-7 w-auto"
+          width="464"
+          height="114"
+        />
         <span class="w-9" /> <!-- spacer to balance the hamburger -->
       </div>
 
