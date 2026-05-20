@@ -18,10 +18,11 @@ const isHome = computed(() => route.path === '/')
 const isScrolled = computed(() => !isHome.value || props.scrollY > 50)
 const mobileOpen = ref(false)
 
+// Nav links — Home was dropped (the logo lock-up handles home navigation) and
+// Sign Up was rolled into the Enroll Now CTA, which opens the workshop signup
+// modal on /enroll. Three primary links + the amber CTA.
 const navLinks = computed(() => [
-  { name: t('nav.home'), to: '/' },
   { name: t('nav.programs'), to: '/#programs' },
-  { name: t('nav.signup'), to: '/signup' },
   { name: t('nav.about'), to: '/about' },
   { name: t('nav.contact'), to: '/contact' },
 ])
@@ -84,7 +85,7 @@ function closeMenu() {
           >
             {{ link.name }}
           </router-link>
-          <ShinyButton to="/summer-camp" :label="t('nav.explore')" />
+          <ShinyButton to="/enroll" :label="t('nav.enroll')" />
           <button
             @click="toggleLocale"
             class="text-sm font-body font-medium px-3 py-1.5 rounded-full border transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
@@ -129,7 +130,7 @@ function closeMenu() {
           {{ link.name }}
         </router-link>
         <div class="pt-3 mt-1 border-t border-navy-100 flex justify-center">
-          <ShinyButton to="/summer-camp" :label="t('nav.explore')" />
+          <ShinyButton to="/enroll" :label="t('nav.enroll')" />
         </div>
       </div>
     </div>

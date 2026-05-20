@@ -35,13 +35,20 @@ const routes = [
     },
   },
   {
-    path: '/signup',
-    name: 'Signup',
-    component: () => import('../views/SignupView.vue'),
+    path: '/enroll',
+    name: 'Enroll',
+    component: () => import('../views/EnrollView.vue'),
     meta: {
-      title: `Workshop Signup | ${BASE_TITLE}`,
-      description: 'Sign your student up for SAHA Institute workshops. Mrs. Anila will follow up to confirm.',
+      title: `Enroll | ${BASE_TITLE}`,
+      description: 'Enroll your student in SAHA Institute summer camp, STEM, or workshops. Online workshop signup, phone enrollment for summer programs.',
     },
+  },
+  // /signup is the old standalone workshop-signup URL. The form moved into a
+  // modal on /enroll so we redirect there with ?signup=1, which EnrollView reads
+  // on mount to auto-open the modal — keeps any old bookmarks landing in the form.
+  {
+    path: '/signup',
+    redirect: { name: 'Enroll', query: { signup: '1' } },
   },
   {
     path: '/contact',
