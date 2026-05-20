@@ -12,6 +12,7 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { authRouter } from './routes/auth.js'
 import { workshopSignupsRouter } from './routes/workshopSignups.js'
 import { studentsRouter } from './routes/students.js'
+import { paymentsRouter } from './routes/payments.js'
 import { contactRouter } from './routes/contact.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -37,6 +38,8 @@ app.use('/api/contact', contactRouter)
 app.use('/api/workshop-signups', workshopSignupsRouter)
 app.use('/api/summer-camp', studentsRouter('summer_camp'))
 app.use('/api/stem-program', studentsRouter('stem_program'))
+app.use('/api/students', studentsRouter('regular'))
+app.use('/api/payments', paymentsRouter)
 
 // ---------- Static frontend ----------
 // In production the Vite build lands in /dist. In dev (`npm run dev`) Vite serves the
