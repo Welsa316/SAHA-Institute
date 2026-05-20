@@ -21,6 +21,11 @@ const props = defineProps({
   // Only the Students master roster surfaces the "paid from" billing-window start. The
   // camp pages keep that column hidden because Mrs. Anila tracks only the expiry there.
   showPaidFrom: { type: Boolean, default: false },
+  // Whether to show the "Add student" button + form modal. Summer Camp and
+  // STEM Program use manual entry (Anila adds names off-channel), so this is
+  // on by default. The year-round Students roster turns it off — those rows
+  // will be created automatically when student self-registration ships.
+  allowAdd: { type: Boolean, default: true },
 })
 
 const api = useAdminApi()
@@ -168,7 +173,7 @@ function detailRef() {
 <template>
   <main>
     <PageHeader :eyebrow="eyebrow" :title="title" :subtitle="subtitle" :count="students.length">
-      <template #actions>
+      <template v-if="allowAdd" #actions>
         <button
           type="button"
           @click="openAdd"
@@ -282,8 +287,9 @@ function detailRef() {
       </template>
     </div>
 
-    <!-- Add student modal -->
+    <!-- Add student modal — only mounted when manual entry is allowed. -->
     <Transition
+      v-if="allowAdd"
       enter-active-class="transition duration-150 ease-out"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"

@@ -8,7 +8,10 @@ export default {
     signup: 'Sign Up',
     about: 'About',
     contact: 'Contact',
-    enroll: 'Enroll Now',
+    // Button is the entry point to summer camp + workshops signups — NOT
+    // year-round tutoring enrollment. Plain "Sign Up" reads correctly for an
+    // events context without overpromising a permanent student account.
+    enroll: 'Sign Up',
     saha: 'SAHA',
     tagline: 'Institute for Learning',
     openMenu: 'Open menu',
@@ -129,10 +132,10 @@ export default {
     },
   },
   enroll: {
-    heroBadge: 'Enrollment Open',
-    heroHeading: 'Two ways to',
-    heroHighlight: 'join us',
-    heroSubtitle: 'Summer Camp & STEM run a full month over phone enrollment. Workshops sign up online — same form, all year round.',
+    heroBadge: 'Sign-ups Open',
+    heroHeading: 'Sign up for',
+    heroHighlight: 'events & workshops',
+    heroSubtitle: 'Summer Camp & STEM run a full month — sign up by phone. Workshops sign up online, same form for parents and admin.',
     summerBadge: 'Summer 2026',
     summerHeading1: 'Summer Camp',
     summerHeading2: '& STEM',
