@@ -41,8 +41,11 @@ app.use('/api/stem-program', studentsRouter('stem_program'))
 // ---------- Static frontend ----------
 // In production the Vite build lands in /dist. In dev (`npm run dev`) Vite serves the
 // frontend on a different port — this static middleware is harmless when /dist is missing.
+// `redirect: false` disables Express's automatic trailing-slash redirect for directory
+// URLs. Without it, `/summer-camp` 301s to `/summer-camp/` (because dist/summer-camp/
+// holds flyer images), which breaks vue-router for that route.
 const distPath = join(__dirname, '..', 'dist')
-app.use(express.static(distPath))
+app.use(express.static(distPath, { redirect: false }))
 
 // SPA fallback — any non-API GET that didn't match static gets index.html so vue-router
 // can take over. Anything starting with /api that didn't match a route falls through to
