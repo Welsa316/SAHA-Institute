@@ -5,6 +5,7 @@ export default {
     signup: 'Sign Up',
     about: 'About',
     contact: 'Contact',
+    explore: 'Explore Programs',
     saha: 'SAHA',
     tagline: 'Institute for Learning',
     openMenu: 'Open menu',

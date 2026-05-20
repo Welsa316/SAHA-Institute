@@ -2,7 +2,10 @@ import { pgTable, serial, text, boolean, timestamp, date, pgEnum } from 'drizzle
 
 // ---------- Enums ----------
 
-export const programEnum = pgEnum('program', ['summer_camp', 'stem_program'])
+// 'regular' = year-round tutoring students (not tied to a season). Added in the second
+// admin pass after Mrs. Anila asked for a master roster separate from the camp / STEM
+// signup queues.
+export const programEnum = pgEnum('program', ['summer_camp', 'stem_program', 'regular'])
 export const gradeLevelEnum = pgEnum('grade_level', ['elementary', 'middle', 'high'])
 
 // ---------- users (admin auth) ----------
@@ -45,7 +48,13 @@ export const students = pgTable('students', {
   parentName: text('parent_name').notNull(),
   studentName: text('student_name').notNull(),
   gradeLevel: gradeLevelEnum('grade_level').notNull(),
+  // Nullable — added retroactively, so existing summer_camp / stem_program rows have NULL.
+  phoneNumber: text('phone_number'),
   paid: boolean('paid').notNull().default(false),
+  // paid_from is mainly used for the year-round students roster — when the current billing
+  // window started — but the column lives here for all three programs so we never have to
+  // schema-fork later.
+  paidFrom: date('paid_from'),
   paidUntil: date('paid_until'),
   notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

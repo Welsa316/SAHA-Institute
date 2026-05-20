@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
+import ShinyButton from './ShinyButton.vue'
 
 const { t, locale, isRTL, toggleLocale } = useI18n()
 
@@ -73,7 +74,7 @@ function closeMenu() {
           />
         </router-link>
 
-        <div class="hidden md:flex items-center gap-10">
+        <div class="hidden md:flex items-center gap-8 lg:gap-10">
           <router-link
             v-for="link in navLinks"
             :key="link.to"
@@ -83,6 +84,7 @@ function closeMenu() {
           >
             {{ link.name }}
           </router-link>
+          <ShinyButton to="/summer-camp" :label="t('nav.explore')" />
           <button
             @click="toggleLocale"
             class="text-sm font-body font-medium px-3 py-1.5 rounded-full border transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
@@ -126,6 +128,9 @@ function closeMenu() {
         >
           {{ link.name }}
         </router-link>
+        <div class="pt-3 mt-1 border-t border-navy-100 flex justify-center">
+          <ShinyButton to="/summer-camp" :label="t('nav.explore')" />
+        </div>
       </div>
     </div>
   </nav>
