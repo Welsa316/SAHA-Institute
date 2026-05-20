@@ -46,7 +46,9 @@ export function studentsRouter(program: Program): Router {
           parentName: input.parentName,
           studentName: input.studentName,
           gradeLevel: input.gradeLevel,
+          phoneNumber: input.phoneNumber ?? null,
           paid: input.paid ?? false,
+          paidFrom: input.paidFrom ?? null,
           paidUntil: input.paidUntil ?? null,
           notes: input.notes ?? null,
         })
@@ -64,10 +66,13 @@ export function studentsRouter(program: Program): Router {
       const { id } = idParamSchema.parse(req.params)
       const patch = studentUpdateSchema.parse(req.body)
 
-      // Match the workshop_signups behaviour: clearing `paid` also clears the date
-      // unless the client explicitly sent one.
-      if (patch.paid === false && patch.paidUntil === undefined) {
-        patch.paidUntil = null
+      // Match the workshop_signups behaviour: clearing `paid` also clears both date
+      // bounds unless the client explicitly sent them. Otherwise we'd have a row with
+      // paid=false but a paid_until in the future, which the Payments view would
+      // mistakenly count as "still in window."
+      if (patch.paid === false) {
+        if (patch.paidUntil === undefined) patch.paidUntil = null
+        if (patch.paidFrom === undefined) patch.paidFrom = null
       }
 
       const [row] = await db
