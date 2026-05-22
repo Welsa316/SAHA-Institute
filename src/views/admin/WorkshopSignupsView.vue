@@ -220,7 +220,7 @@ const sortOptions = [
           <table class="w-full text-left text-sm">
             <thead class="bg-navy-50/60">
               <tr>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Name</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops <span class="font-normal normal-case tracking-normal text-navy-400">(click to toggle paid)</span></th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Status</th>
@@ -233,7 +233,10 @@ const sortOptions = [
             <tbody class="divide-y divide-navy-100">
               <tr v-for="row in filtered" :key="row.id" class="align-top hover:bg-navy-50/40 transition-colors">
                 <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.parentName }}</td>
-                <td class="px-4 py-4 font-body text-navy-700">{{ row.studentName }}</td>
+                <td class="px-4 py-4 font-body text-navy-700">
+                  <span v-if="row.studentName">{{ row.studentName }}</span>
+                  <span v-else class="text-navy-300 italic">—</span>
+                </td>
                 <td class="px-4 py-4">
                   <!-- Each workshop pill is a button. Color encodes WHICH workshop;
                        fill weight (light tinted vs solid) encodes paid state.

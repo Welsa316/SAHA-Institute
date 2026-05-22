@@ -29,8 +29,15 @@ export const users = pgTable('users', {
 
 export const workshopSignups = pgTable('workshop_signups', {
   id: serial('id').primaryKey(),
+  // `parent_name` is a misnomer kept for column stability — it's "the full
+  // name of whoever filled the form." Often a parent, but a student can fill
+  // it for themselves too, in which case it's the student's own name and
+  // `student_name` below is left null.
   parentName: text('parent_name').notNull(),
-  studentName: text('student_name').notNull(),
+  // Optional. If a parent fills the form, this is their child's name. If a
+  // student fills it themselves, this is left null. Migration 0004 dropped
+  // the NOT NULL constraint.
+  studentName: text('student_name'),
   // What they signed up for. Postgres text[].
   workshops: text('workshops').array().notNull().default([]),
   additionalNotes: text('additional_notes'),

@@ -111,10 +111,16 @@ export default {
     heroSubtitle: 'Tell us a little about your student and which workshops they\'d like to join. Mrs. Anila will follow up to confirm.',
     formHeading: 'Workshop registration',
     formSubtitle: 'Required fields are marked.',
-    parentLabel: 'Parent Name',
-    parentPlaceholder: 'Your name',
+    // Legacy keys (kept in case anything else references them; current form
+    // reads fullNameLabel + studentLabelOptional).
+    parentLabel: 'Full Name',
+    parentPlaceholder: 'Your full name',
     studentLabel: 'Student Name',
-    studentPlaceholder: 'Your child\'s name',
+    studentPlaceholder: 'If signing up a student, their name',
+    // Current form fields.
+    fullNameLabel: 'Full Name',
+    fullNamePlaceholder: 'Your full name',
+    studentLabelOptional: 'Student Name (optional)',
     workshopsLabel: 'Workshops (select one or more)',
     workshopsPending: 'Workshop list coming soon.',
     workshopsPendingHint: 'We\'re finalizing this summer\'s workshop lineup. Check back in a few days, or call us to ask what\'s being planned.',
@@ -127,7 +133,8 @@ export default {
     signAnother: 'Sign up another student',
     closeModal: 'Close',
     errors: {
-      namesRequired: 'Please enter both the parent and student name.',
+      namesRequired: 'Please enter your full name.',
+      nameRequired: 'Please enter your full name.',
       workshopRequired: 'Please select at least one workshop.',
       generic: 'Something went wrong. Please try again or call us at (504) 667-3625.',
     },

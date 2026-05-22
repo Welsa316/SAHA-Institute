@@ -56,8 +56,11 @@ function isSelected(name) {
 async function submitForm() {
   error.value = ''
 
-  if (!form.value.parentName.trim() || !form.value.studentName.trim()) {
-    error.value = t('signup.errors.namesRequired')
+  // Only the registrant's full name is required. Student name is optional —
+  // a student filling for themselves leaves it blank, a parent filling for a
+  // kid fills it in.
+  if (!form.value.parentName.trim()) {
+    error.value = t('signup.errors.nameRequired')
     return
   }
   if (form.value.workshops.length === 0) {
@@ -72,7 +75,9 @@ async function submitForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         parentName: form.value.parentName.trim(),
-        studentName: form.value.studentName.trim(),
+        // Send null when blank so the DB stores absence as NULL rather than
+        // a literal empty string (cleaner queries downstream).
+        studentName: form.value.studentName.trim() || null,
         workshops: form.value.workshops,
         additionalNotes: form.value.additionalNotes.trim() || null,
       }),
@@ -133,11 +138,13 @@ function resetForm() {
     </div>
 
     <form @submit.prevent="submitForm" class="space-y-5">
-      <!-- Parent + student names -->
+      <!-- Full name (required) + optional student name. The form might be
+           filled by a parent on behalf of a kid (use both fields) OR by a
+           student themselves (just the top field). -->
       <div class="grid sm:grid-cols-2 gap-5">
         <div>
           <label for="wsf-parent" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
-            {{ t('signup.parentLabel') }}
+            {{ t('signup.fullNameLabel') }}
           </label>
           <input
             id="wsf-parent"
@@ -145,19 +152,18 @@ function resetForm() {
             type="text"
             required
             :disabled="sending"
-            :placeholder="t('signup.parentPlaceholder')"
+            :placeholder="t('signup.fullNamePlaceholder')"
             class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
           />
         </div>
         <div>
           <label for="wsf-student" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
-            {{ t('signup.studentLabel') }}
+            {{ t('signup.studentLabelOptional') }}
           </label>
           <input
             id="wsf-student"
             v-model="form.studentName"
             type="text"
-            required
             :disabled="sending"
             :placeholder="t('signup.studentPlaceholder')"
             class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"

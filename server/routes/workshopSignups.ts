@@ -37,7 +37,7 @@ const ADMIN_PATH = '/admin/workshop-signups'
 
 function buildSignupEmail(args: {
   parentName: string
-  studentName: string
+  studentName: string | null | undefined
   workshops: string[]
   additionalNotes: string | null | undefined
   submittedAt: Date
@@ -49,6 +49,15 @@ function buildSignupEmail(args: {
     ? `<p style="font-weight: bold; color: #001B3D; margin: 16px 0 8px;">Additional Notes:</p>
        <p style="color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(additionalNotes)}</p>`
     : ''
+  // Student row is omitted entirely when the form was filled without a student
+  // name — the form is now signed by "the participant" rather than "a parent
+  // on behalf of a student," so the absence is meaningful, not missing data.
+  const studentRow = studentName
+    ? `<tr>
+         <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Student:</td>
+         <td style="padding: 8px 0; color: #334155;">${escapeHtml(studentName)}</td>
+       </tr>`
+    : ''
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #001B3D; padding: 24px; border-radius: 12px 12px 0 0;">
@@ -57,13 +66,10 @@ function buildSignupEmail(args: {
       <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #001B3D; width: 140px;">Parent:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #001B3D; width: 140px;">Name:</td>
             <td style="padding: 8px 0; color: #334155;">${escapeHtml(parentName)}</td>
           </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Student:</td>
-            <td style="padding: 8px 0; color: #334155;">${escapeHtml(studentName)}</td>
-          </tr>
+          ${studentRow}
           <tr>
             <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Submitted:</td>
             <td style="padding: 8px 0; color: #334155;">${submittedAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</td>
@@ -113,7 +119,9 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
       const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning1675@gmail.com'
       void sendEmail({
         to: [adminEmail],
-        subject: `New Workshop Signup — ${input.studentName}`,
+        // Subject falls back to the parent/registrant name when no separate
+        // student name was provided.
+        subject: `New Workshop Signup — ${input.studentName ?? input.parentName}`,
         html: buildSignupEmail({
           parentName: input.parentName,
           studentName: input.studentName,

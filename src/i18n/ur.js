@@ -104,10 +104,15 @@ export default {
     heroSubtitle: 'ہمیں اپنے بچے کے بارے میں اور اس کی پسند کی ورکشاپس کے بارے میں بتائیں۔ محترمہ انیلا تصدیق کے لیے رابطہ کریں گی۔',
     formHeading: 'ورکشاپ رجسٹریشن',
     formSubtitle: 'ضروری خانے نشان زدہ ہیں۔',
-    parentLabel: 'والدین کا نام',
-    parentPlaceholder: 'آپ کا نام',
+    // Legacy keys retained for safety; current form uses fullNameLabel +
+    // studentLabelOptional.
+    parentLabel: 'پورا نام',
+    parentPlaceholder: 'آپ کا پورا نام',
     studentLabel: 'طالب علم کا نام',
-    studentPlaceholder: 'آپ کے بچے کا نام',
+    studentPlaceholder: 'اگر کسی طالب علم کے لیے سائن اپ کر رہے ہیں تو اس کا نام',
+    fullNameLabel: 'پورا نام',
+    fullNamePlaceholder: 'آپ کا پورا نام',
+    studentLabelOptional: 'طالب علم کا نام (اختیاری)',
     workshopsLabel: 'ورکشاپس (ایک یا زیادہ منتخب کریں)',
     workshopsPending: 'ورکشاپ کی فہرست جلد آ رہی ہے۔',
     workshopsPendingHint: 'ہم اس گرمیوں کی ورکشاپس کو حتمی شکل دے رہے ہیں۔ کچھ دنوں میں دوبارہ چیک کریں، یا کال کرکے دریافت کریں۔',
@@ -120,7 +125,8 @@ export default {
     signAnother: 'دوسرے بچے کا اندراج کریں',
     closeModal: 'بند کریں',
     errors: {
-      namesRequired: 'براہ کرم والدین اور بچے دونوں کے نام درج کریں۔',
+      namesRequired: 'براہ کرم اپنا پورا نام درج کریں۔',
+      nameRequired: 'براہ کرم اپنا پورا نام درج کریں۔',
       workshopRequired: 'براہ کرم کم از کم ایک ورکشاپ منتخب کریں۔',
       generic: 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں یا (504) 667-3625 پر کال کریں۔',
     },

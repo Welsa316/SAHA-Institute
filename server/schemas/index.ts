@@ -10,9 +10,12 @@ export const loginSchema = z.object({
 // ---------- Workshop signups ----------
 
 // Public form submission. Workshops list comes from the frontend dropdown.
+// `parentName` is required and holds "the full name of whoever signed up" —
+// could be a parent or the student themselves. `studentName` is optional;
+// the frontend sends null when blank.
 export const workshopSignupCreateSchema = z.object({
   parentName: z.string().trim().min(2).max(100),
-  studentName: z.string().trim().min(2).max(100),
+  studentName: z.string().trim().min(2).max(100).nullable().optional(),
   workshops: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
   additionalNotes: z.string().trim().max(2000).optional().nullable(),
 })

@@ -215,7 +215,7 @@ const statusFilters = [
                 class="hover:bg-navy-50/40 transition-colors cursor-pointer"
                 @click="goToSource(row)"
               >
-                <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.studentName }}</td>
+                <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.studentName || row.parentName }}</td>
                 <td class="px-4 py-4 font-body text-navy-700">{{ row.parentName }}</td>
                 <td class="px-4 py-4">
                   <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border" :class="sourceColors[row.source]">

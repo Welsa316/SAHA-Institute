@@ -30,7 +30,10 @@ paymentsRouter.use(requireAuth)
 interface PaymentRow {
   id: number
   source: 'workshop' | 'summer_camp' | 'stem_program' | 'regular'
-  studentName: string
+  // Workshop rows can have a null studentName (form filled by the student
+  // themselves — their name is in parentName instead). Student rows are
+  // always populated since the camp/STEM/tutoring forms require it.
+  studentName: string | null
   parentName: string
   phoneNumber: string | null
   paid: boolean
