@@ -145,16 +145,12 @@ workshopSignupsRouter.get('/', requireAuth, async (_req, res, next) => {
 })
 
 // PATCH /api/workshop-signups/:id — admin. Partial update of teacher-side fields.
+// With per-workshop payment tracking there's no global paid flag to auto-clear
+// anymore; clients just send the new paidWorkshops array.
 workshopSignupsRouter.patch('/:id', requireAuth, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params)
     const patch = workshopSignupUpdateSchema.parse(req.body)
-
-    // If `paid` is explicitly being set to false, clear paid_until too so the date input
-    // doesn't show stale data. The frontend can override by passing both fields together.
-    if (patch.paid === false && patch.paidUntil === undefined) {
-      patch.paidUntil = null
-    }
 
     const [row] = await db
       .update(workshopSignups)

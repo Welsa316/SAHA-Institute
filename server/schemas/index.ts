@@ -18,12 +18,12 @@ export const workshopSignupCreateSchema = z.object({
 })
 
 // Teacher-side update. Every field is optional — partial updates allowed.
-// `paidUntil` accepts an ISO date string (yyyy-mm-dd) or null.
-// `contacted` was removed in migration 0002 — parents aren't contacted as a
-// follow-up step, so there's no flag for it.
+// Workshop payments are tracked PER WORKSHOP via paidWorkshops (subset of the
+// row's workshops). `paid` + `paidUntil` were removed in migration 0003 because
+// they couldn't express "paid for Henna, not paid for Baking" — see schema.ts.
+// `contacted` was removed earlier in migration 0002.
 export const workshopSignupUpdateSchema = z.object({
-  paid: z.boolean().optional(),
-  paidUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  paidWorkshops: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 

@@ -20,21 +20,26 @@ export const users = pgTable('users', {
 
 // ---------- workshop_signups ----------
 // Parents submit themselves via the public form, OR Anila adds them manually
-// from the admin dashboard. Either way, the row IS the signup — there is no
-// follow-up "contact" step, so we don't track a contacted flag.
+// from the admin dashboard. Either way, the row IS the signup.
+//
+// Payment is tracked PER WORKSHOP, not per family. A family that picks Henna +
+// Baking pays separately for each — being unpaid on one doesn't make them
+// unpaid overall. `paid_workshops` is a subset of `workshops`; the family is
+// "fully paid" when paid_workshops covers workshops (computed at display time).
 
 export const workshopSignups = pgTable('workshop_signups', {
   id: serial('id').primaryKey(),
   parentName: text('parent_name').notNull(),
   studentName: text('student_name').notNull(),
-  // Postgres text[] — stored as the workshop IDs/names selected on the form.
+  // What they signed up for. Postgres text[].
   workshops: text('workshops').array().notNull().default([]),
   additionalNotes: text('additional_notes'),
-  // `contacted` lived here briefly. Removed in migration 0002 because parents
-  // aren't contacted as a separate follow-up step — submitting the form (or
-  // being added manually) IS the signup.
-  paid: boolean('paid').notNull().default(false),
-  paidUntil: date('paid_until'),
+  // Which of those workshops have been paid for. Subset of `workshops`. Starts
+  // empty; admin toggles individual workshops paid by clicking the pill.
+  paidWorkshops: text('paid_workshops').array().notNull().default([]),
+  // `contacted` lived here briefly (migration 0002 removed it). `paid` and
+  // `paid_until` lived here too (migration 0003 removed them) once workshop
+  // payments became per-workshop and one-time — no recurring "until" date.
   notes: text('notes'), // teacher-side notes (distinct from additional_notes which came from the parent)
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
