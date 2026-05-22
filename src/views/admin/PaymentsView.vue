@@ -18,7 +18,7 @@ const loading = ref(true)
 const error = ref('')
 
 const sourceFilter = ref('all') // 'all' | 'workshop' | 'summer_camp' | 'stem_program' | 'regular'
-const statusFilter = ref('all') // 'all' | 'active' | 'expiring' | 'expired' | 'unpaid'
+const statusFilter = ref('all') // 'all' | 'active' | 'expiring' | 'expired' | 'partial' | 'unpaid'
 
 // Today, as a yyyy-mm-dd string in local time. Postgres date columns are bare-day so we
 // compare string-to-string against paid_until to keep the math timezone-agnostic.
@@ -45,7 +45,19 @@ async function load() {
 onMounted(load)
 
 // Status categorization — used for the color pill AND the filter dropdown.
+// Workshop rows carry workshops + paidWorkshops arrays (per-workshop payment).
+// Student rows carry paid + paidUntil (windowed billing).
 function statusOf(row) {
+  // Workshop rows: derive from the two arrays. Partial = some workshops paid
+  // but not all; unpaid = none paid; active = every signed-up workshop paid.
+  if (row.source === 'workshop') {
+    const total = row.workshops?.length ?? 0
+    const paid = (row.paidWorkshops ?? []).filter((w) => row.workshops?.includes(w)).length
+    if (total === 0 || paid === 0) return 'unpaid'
+    if (paid === total) return 'active'
+    return 'partial'
+  }
+  // Student rows: original windowed-billing logic.
   if (!row.paid) return 'unpaid'
   if (!row.paidUntil) return 'active' // paid=true but no expiry = treat as active
   if (row.paidUntil < todayStr) return 'expired'
@@ -62,7 +74,7 @@ const filtered = computed(() => {
 })
 
 const counts = computed(() => {
-  const c = { all: rows.value.length, active: 0, expiring: 0, expired: 0, unpaid: 0 }
+  const c = { all: rows.value.length, active: 0, expiring: 0, expired: 0, partial: 0, unpaid: 0 }
   for (const r of rows.value) c[statusOf(r)]++
   return c
 })
@@ -92,6 +104,16 @@ const sourceRoutes = {
 function statusBadge(row) {
   const s = statusOf(row)
   const base = 'inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border whitespace-nowrap'
+  // Workshop rows get fractional labels ("Paid 2/3") because payment is per
+  // workshop, not per billing window.
+  if (row.source === 'workshop') {
+    const total = row.workshops?.length ?? 0
+    const paid = (row.paidWorkshops ?? []).filter((w) => row.workshops?.includes(w)).length
+    if (s === 'active') return { class: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`, label: `Paid ${paid}/${total}` }
+    if (s === 'partial') return { class: `${base} bg-amber-50 text-amber-800 border-amber-200`, label: `Partial ${paid}/${total}` }
+    return { class: `${base} bg-navy-50 text-navy-500 border-navy-200`, label: `Not paid 0/${total}` }
+  }
+  // Student rows: windowed billing labels.
   if (s === 'active') return { class: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`, label: row.paidUntil ? `Paid · until ${row.paidUntil}` : 'Paid' }
   if (s === 'expiring') return { class: `${base} bg-amber-50 text-amber-800 border-amber-200`, label: `Expires ${row.paidUntil}` }
   if (s === 'expired') return { class: `${base} bg-red-50 text-red-700 border-red-200`, label: `Expired ${row.paidUntil}` }
@@ -122,6 +144,7 @@ const statusFilters = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active', tone: 'emerald' },
   { key: 'expiring', label: 'Expiring soon', tone: 'amber' },
+  { key: 'partial', label: 'Partial', tone: 'amber' },
   { key: 'expired', label: 'Expired', tone: 'red' },
   { key: 'unpaid', label: 'Unpaid', tone: 'navy' },
 ]

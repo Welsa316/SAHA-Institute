@@ -2,11 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAdminApi } from '../../composables/useAdminApi.js'
 import PageHeader from '../../components/admin/PageHeader.vue'
-import ToggleSwitch from '../../components/admin/ToggleSwitch.vue'
 import InlineNotes from '../../components/admin/InlineNotes.vue'
 import ConfirmDialog from '../../components/admin/ConfirmDialog.vue'
 import WorkshopSignupModal from '../../components/WorkshopSignupModal.vue'
-import { WORKSHOPS } from '../../constants/workshops.js'
+import { WORKSHOPS, workshopPillClasses } from '../../constants/workshops.js'
 
 const api = useAdminApi()
 
@@ -15,8 +14,8 @@ const loading = ref(true)
 const error = ref('')
 const rowSaving = ref(new Set())
 
-const sortBy = ref('newest') // 'newest' | 'parent' | 'paid'
-const filter = ref('all') // 'all' | 'paid' | 'notPaid'
+const sortBy = ref('newest') // 'newest' | 'parent'
+const filter = ref('all') // 'all' | 'paid' | 'partial' | 'notPaid'
 // Per-workshop slice. '' = all workshops; otherwise the exact workshop string.
 // Pattern C from the design discussion: keep one row per family (one
 // `workshops` array column), but let Anila slice the list down to a single
@@ -41,10 +40,29 @@ async function load() {
 
 onMounted(load)
 
+// "paid" / "partial" / "unpaid" derived from the row's two arrays. We compare
+// paidWorkshops against the family's workshops (not against the global catalog)
+// because a family who signed up for 2 workshops and paid for both is "fully
+// paid" even though there are 9 other workshops they didn't sign up for.
+function paidStatus(row) {
+  const total = row.workshops?.length ?? 0
+  if (total === 0) return 'unpaid'
+  const paidCount = (row.paidWorkshops ?? []).filter((w) => row.workshops.includes(w)).length
+  if (paidCount === 0) return 'unpaid'
+  if (paidCount === total) return 'paid'
+  return 'partial'
+}
+
+function paidCount(row) {
+  return (row.paidWorkshops ?? []).filter((w) => row.workshops?.includes(w)).length
+}
+
 const filtered = computed(() => {
   let rows = signups.value
-  if (filter.value === 'paid') rows = rows.filter((r) => r.paid)
-  else if (filter.value === 'notPaid') rows = rows.filter((r) => !r.paid)
+  if (filter.value !== 'all') {
+    const want = filter.value === 'notPaid' ? 'unpaid' : filter.value
+    rows = rows.filter((r) => paidStatus(r) === want)
+  }
 
   // Workshop slice — include any row whose workshops array contains the
   // selected workshop. Multi-workshop families still appear here, just
@@ -58,8 +76,6 @@ const filtered = computed(() => {
     sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   } else if (sortBy.value === 'parent') {
     sorted.sort((a, b) => a.parentName.localeCompare(b.parentName))
-  } else if (sortBy.value === 'paid') {
-    sorted.sort((a, b) => Number(b.paid) - Number(a.paid))
   }
   return sorted
 })
@@ -67,7 +83,7 @@ const filtered = computed(() => {
 async function patch(row, patchBody) {
   rowSaving.value.add(row.id)
   // Optimistic update — apply the change in the UI immediately, roll back if the API rejects.
-  const prev = { ...row }
+  const prev = { ...row, paidWorkshops: [...(row.paidWorkshops ?? [])] }
   Object.assign(row, patchBody)
   try {
     const data = await api.patch(`/api/workshop-signups/${row.id}`, patchBody)
@@ -80,8 +96,21 @@ async function patch(row, patchBody) {
   }
 }
 
+// Toggle a single workshop's paid status for this family. Adds or removes
+// the workshop from paidWorkshops, then PATCHes the row.
+async function togglePaidWorkshop(row, workshop) {
+  const current = new Set(row.paidWorkshops ?? [])
+  if (current.has(workshop)) current.delete(workshop)
+  else current.add(workshop)
+  await patch(row, { paidWorkshops: Array.from(current) })
+}
+
 function isSaving(id) {
   return rowSaving.value.has(id)
+}
+
+function isPaidFor(row, workshop) {
+  return (row.paidWorkshops ?? []).includes(workshop)
 }
 
 function formatDate(value) {
@@ -105,13 +134,13 @@ async function confirmDelete() {
 const filterChips = [
   { key: 'all', label: 'All' },
   { key: 'paid', label: 'Paid' },
+  { key: 'partial', label: 'Partial' },
   { key: 'notPaid', label: 'Not paid' },
 ]
 
 const sortOptions = [
   { key: 'newest', label: 'Newest first' },
   { key: 'parent', label: 'Parent A–Z' },
-  { key: 'paid', label: 'Paid first' },
 ]
 </script>
 
@@ -193,10 +222,9 @@ const sortOptions = [
               <tr>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops</th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops <span class="font-normal normal-case tracking-normal text-navy-400">(click to toggle paid)</span></th>
+                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Status</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Submitted</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid until</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (parent)</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (teacher)</th>
                 <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Actions</th>
@@ -207,34 +235,44 @@ const sortOptions = [
                 <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.parentName }}</td>
                 <td class="px-4 py-4 font-body text-navy-700">{{ row.studentName }}</td>
                 <td class="px-4 py-4">
-                  <div class="flex flex-wrap gap-1.5 max-w-xs">
-                    <span
+                  <!-- Each workshop pill is a button. Color encodes WHICH workshop;
+                       fill weight (light tinted vs solid) encodes paid state.
+                       Click toggles paid for that one workshop. -->
+                  <div class="flex flex-wrap gap-1.5 max-w-md">
+                    <button
                       v-for="w in row.workshops"
                       :key="w"
-                      class="inline-block px-2 py-0.5 rounded-full bg-academic-50 text-academic-700 border border-academic-200 text-[10px] font-body font-semibold"
+                      type="button"
+                      :disabled="isSaving(row.id)"
+                      @click="togglePaidWorkshop(row, w)"
+                      :class="[
+                        workshopPillClasses(w, isPaidFor(row, w)),
+                        'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-body font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
+                      ]"
+                      :aria-pressed="isPaidFor(row, w)"
+                      :aria-label="`${w} — ${isPaidFor(row, w) ? 'paid' : 'unpaid'}, click to toggle`"
                     >
-                      {{ w }}
-                    </span>
+                      <svg v-if="isPaidFor(row, w)" class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>{{ w }}</span>
+                    </button>
                   </div>
                 </td>
+                <td class="px-4 py-4">
+                  <!-- Compact "X/Y paid" badge — quick scan of where each family stands. -->
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border whitespace-nowrap"
+                    :class="paidStatus(row) === 'paid'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : paidStatus(row) === 'partial'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-navy-50 text-navy-500 border-navy-200'"
+                  >
+                    {{ paidCount(row) }} / {{ row.workshops?.length ?? 0 }} paid
+                  </span>
+                </td>
                 <td class="px-4 py-4 font-body text-xs text-navy-500 whitespace-nowrap">{{ formatDate(row.createdAt) }}</td>
-                <td class="px-4 py-4">
-                  <ToggleSwitch
-                    :model-value="row.paid"
-                    :disabled="isSaving(row.id)"
-                    label="Mark paid"
-                    @update:model-value="(v) => patch(row, { paid: v })"
-                  />
-                </td>
-                <td class="px-4 py-4">
-                  <input
-                    type="date"
-                    :value="row.paidUntil ?? ''"
-                    :disabled="!row.paid || isSaving(row.id)"
-                    @change="(e) => patch(row, { paidUntil: e.target.value || null })"
-                    class="px-2 py-1 rounded-lg bg-navy-50 border border-navy-100 text-navy-700 text-xs font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-40 disabled:cursor-not-allowed"
-                  />
-                </td>
                 <td class="px-4 py-4">
                   <p v-if="row.additionalNotes" class="font-body text-xs text-navy-600 max-w-xs whitespace-pre-wrap">{{ row.additionalNotes }}</p>
                   <p v-else class="font-body text-xs text-navy-300 italic">—</p>
