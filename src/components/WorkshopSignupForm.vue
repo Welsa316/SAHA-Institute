@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../composables/useI18n'
+import { WORKSHOPS } from '../constants/workshops.js'
 
 // The workshop signup form, decoupled from any page-level chrome. Currently
 // only WorkshopSignupModal renders it (the form lives in the modal on /enroll),
@@ -22,10 +23,12 @@ const emit = defineEmits(['submitted'])
 
 const { t } = useI18n()
 
-// TODO: replace with the 11 real workshop names once the user provides them.
-// When empty, the form shows the "Workshop list coming soon" notice instead of
-// rendering a broken empty checkbox grid.
-const WORKSHOPS = []
+// The catalog of workshops parents can pick from lives in a shared constants
+// file (src/constants/workshops.js) so the admin filter dropdown reads the
+// same source. If WORKSHOPS ever goes empty (unlikely now, but say the
+// summer's over and we haven't backfilled next season's list), the form
+// gracefully shows a "Workshop list coming soon" notice — see
+// workshopsAvailable below.
 
 const form = ref({
   parentName: '',

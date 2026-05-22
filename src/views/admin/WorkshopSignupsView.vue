@@ -6,6 +6,7 @@ import ToggleSwitch from '../../components/admin/ToggleSwitch.vue'
 import InlineNotes from '../../components/admin/InlineNotes.vue'
 import ConfirmDialog from '../../components/admin/ConfirmDialog.vue'
 import WorkshopSignupModal from '../../components/WorkshopSignupModal.vue'
+import { WORKSHOPS } from '../../constants/workshops.js'
 
 const api = useAdminApi()
 
@@ -16,6 +17,11 @@ const rowSaving = ref(new Set())
 
 const sortBy = ref('newest') // 'newest' | 'parent' | 'paid'
 const filter = ref('all') // 'all' | 'paid' | 'notPaid'
+// Per-workshop slice. '' = all workshops; otherwise the exact workshop string.
+// Pattern C from the design discussion: keep one row per family (one
+// `workshops` array column), but let Anila slice the list down to a single
+// workshop when she wants an attendance roster for, say, the Baking Workshop.
+const workshopFilter = ref('')
 
 const toDeleteId = ref(null)
 const addModalOpen = ref(false)
@@ -39,6 +45,13 @@ const filtered = computed(() => {
   let rows = signups.value
   if (filter.value === 'paid') rows = rows.filter((r) => r.paid)
   else if (filter.value === 'notPaid') rows = rows.filter((r) => !r.paid)
+
+  // Workshop slice — include any row whose workshops array contains the
+  // selected workshop. Multi-workshop families still appear here, just
+  // alongside everyone else who picked the same workshop.
+  if (workshopFilter.value) {
+    rows = rows.filter((r) => r.workshops?.includes(workshopFilter.value))
+  }
 
   const sorted = [...rows]
   if (sortBy.value === 'newest') {
@@ -125,18 +138,32 @@ const sortOptions = [
 
     <!-- Filters + sort -->
     <div class="px-6 md:px-10 py-5 border-b border-navy-100 bg-white flex flex-wrap items-center gap-3 justify-between">
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="chip in filterChips"
-          :key="chip.key"
-          @click="filter = chip.key"
-          class="px-3.5 py-1.5 rounded-full font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
-          :class="filter === chip.key
-            ? 'bg-[#001B3D] text-white'
-            : 'bg-navy-50 text-navy-600 hover:bg-navy-100'"
-        >
-          {{ chip.label }}
-        </button>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="chip in filterChips"
+            :key="chip.key"
+            @click="filter = chip.key"
+            class="px-3.5 py-1.5 rounded-full font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+            :class="filter === chip.key
+              ? 'bg-[#001B3D] text-white'
+              : 'bg-navy-50 text-navy-600 hover:bg-navy-100'"
+          >
+            {{ chip.label }}
+          </button>
+        </div>
+        <!-- Per-workshop filter. Empty value = no slice, show everyone. -->
+        <div class="flex items-center gap-2">
+          <label for="workshop-filter" class="font-body text-xs font-semibold text-navy-500 uppercase tracking-wider">Workshop</label>
+          <select
+            id="workshop-filter"
+            v-model="workshopFilter"
+            class="px-3 py-1.5 rounded-lg bg-navy-50 border border-navy-100 text-navy-700 font-body text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 max-w-[18rem]"
+          >
+            <option value="">All workshops</option>
+            <option v-for="w in WORKSHOPS" :key="w" :value="w">{{ w }}</option>
+          </select>
+        </div>
       </div>
       <div class="flex items-center gap-2">
         <label class="font-body text-xs font-semibold text-navy-500 uppercase tracking-wider">Sort</label>
