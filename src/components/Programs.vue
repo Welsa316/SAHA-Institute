@@ -144,6 +144,25 @@ const programs = computed(() =>
 
         </div>
       </div>
+
+      <!-- CTA below the cards — primary entry to /tutoring-signup. The user
+           reads the program cards, sees prices, then has a clear next step
+           without having to leave the section to find the signup link. -->
+      <div
+        class="mt-14 md:mt-16 text-center transition-all duration-700 delay-500 ease-out"
+        :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
+      >
+        <router-link
+          to="/tutoring-signup"
+          class="group inline-flex items-center gap-2 px-9 py-4 rounded-full bg-[#001B3D] text-white font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-navy-800 transition-all duration-300 shadow-xl shadow-navy-900/20 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+        >
+          {{ t('programs.signUpCta') }}
+          <svg class="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+        </router-link>
+        <p class="mt-3 font-body text-xs text-navy-400">{{ t('programs.signUpHint') }}</p>
+      </div>
     </div>
   </section>
 </template>

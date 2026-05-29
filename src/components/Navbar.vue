@@ -19,10 +19,13 @@ const isScrolled = computed(() => !isHome.value || props.scrollY > 50)
 const mobileOpen = ref(false)
 
 // Nav links — Home was dropped (the logo lock-up handles home navigation) and
-// Sign Up was rolled into the Enroll Now CTA, which opens the workshop signup
-// modal on /enroll. Three primary links + the amber CTA.
+// the old "Sign Up" link was rolled into the amber Summer Signups CTA on the
+// right. "Register" is the year-round tutoring entry point — distinct verb
+// from "Summer Signups" so the two don't visually conflate (events vs.
+// permanent student account).
 const navLinks = computed(() => [
   { name: t('nav.programs'), to: '/#programs' },
+  { name: t('nav.register'), to: '/tutoring-signup' },
   { name: t('nav.about'), to: '/about' },
   { name: t('nav.contact'), to: '/contact' },
 ])

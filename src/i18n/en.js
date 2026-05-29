@@ -13,6 +13,10 @@ export default {
     // "make an account" or "enroll in tutoring." Both ambiguities were flagged
     // in user feedback against the previous "Enroll Now" / "Sign Up" wording.
     enroll: 'Summer Signups',
+    // Year-round tutoring entry point in the nav. "Register" reads as
+    // permanent enrollment (which is what tutoring is) without colliding
+    // with "Summer Signups" (events) or "Programs" (info anchor).
+    register: 'Register',
     saha: 'SAHA',
     tagline: 'Institute for Learning',
     openMenu: 'Open menu',
@@ -50,6 +54,11 @@ export default {
     subtitle: 'Academics, Quran studies, and standardized test prep. All one-on-one.',
     ageBadge: 'Ages 4–17 · Pre-K through High School',
     oneOnOne: 'All classes are one-on-one',
+    // CTA under the program cards leading to /tutoring-signup. "Sign Up for
+    // Tutoring" here is unambiguous because the user has just read the prices
+    // and program descriptions — they know what they're signing up for.
+    signUpCta: 'Sign Up for Tutoring',
+    signUpHint: 'Quick form. Mrs. Anila follows up within a day.',
     items: [
       {
         title: 'Academics',
@@ -256,8 +265,9 @@ export default {
     heading: 'Ready to help your child',
     headingHighlight: 'succeed',
     subtitle: 'Book a free consultation and we\'ll find the right program for your child.',
-    button1: 'Schedule a Consultation',
+    button1: 'Schedule a Consultation', // retained for any consumer; CallToAction now uses signUpButton
     button2: 'Call Us Today',
+    signUpButton: 'Register for Tutoring',
   },
   footer: {
     brand: 'SAHA Institute For Learning',
