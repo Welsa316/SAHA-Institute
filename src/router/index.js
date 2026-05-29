@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import { useAdminAuth } from '../composables/useAdminAuth.js'
+import { useStudentAuth } from '../composables/useStudentAuth.js'
 
 const BASE_TITLE = 'SAHA Institute For Learning'
 const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep for ages 4 to 17.'
@@ -43,21 +44,48 @@ const routes = [
       description: 'Enroll your student in SAHA Institute summer camp, STEM, or workshops. Online workshop signup, phone enrollment for summer programs.',
     },
   },
-  {
-    path: '/tutoring-signup',
-    name: 'TutoringSignup',
-    component: () => import('../views/TutoringSignupView.vue'),
-    meta: {
-      title: `Tutoring Signup | ${BASE_TITLE}`,
-      description: 'Register your student for year-round one-on-one tutoring at SAHA Institute — academics, Islamic studies, and test prep for ages 4 to 17.',
-    },
-  },
   // /signup is the old standalone workshop-signup URL. The form moved into a
   // modal on /enroll so we redirect there with ?signup=1, which EnrollView reads
   // on mount to auto-open the modal — keeps any old bookmarks landing in the form.
   {
     path: '/signup',
     redirect: { name: 'Enroll', query: { signup: '1' } },
+  },
+
+  // ---------- Student accounts (self-service) ----------
+  // /register + /login share one component (mode keyed off route name).
+  // /portal is the logged-in status view, guarded by the student session.
+  // `bare: true` hides the public Navbar/Footer (these are full-screen flows).
+  {
+    path: '/register',
+    name: 'StudentSignup',
+    component: () => import('../views/StudentAuthView.vue'),
+    meta: {
+      bare: true,
+      title: `Create a Student Account | ${BASE_TITLE}`,
+      description: 'Create a SAHA Institute student account to enroll in one-on-one tutoring.',
+    },
+  },
+  {
+    path: '/login',
+    name: 'StudentLogin',
+    component: () => import('../views/StudentAuthView.vue'),
+    meta: {
+      bare: true,
+      title: `Log In | ${BASE_TITLE}`,
+      noindex: true,
+    },
+  },
+  {
+    path: '/portal',
+    name: 'StudentPortal',
+    component: () => import('../views/StudentPortalView.vue'),
+    meta: {
+      bare: true,
+      requiresStudentAuth: true,
+      title: `My Account | ${BASE_TITLE}`,
+      noindex: true,
+    },
   },
   {
     path: '/contact',
@@ -135,16 +163,26 @@ const router = createRouter({
   },
 })
 
-// Auth guard for /admin/* (except /admin/login).
-// We hit /api/auth/me only once per session — `ensureChecked` is a no-op after first call.
+// Auth guards. Admin routes check the admin session; the student portal checks
+// the (separate) student session. Each hits its /me endpoint once per session —
+// `ensureChecked` is a no-op after the first call.
 router.beforeEach(async (to) => {
-  if (!to.meta?.requiresAuth) return true
-
-  const { isAuthenticated, ensureChecked } = useAdminAuth()
-  await ensureChecked()
-  if (!isAuthenticated.value) {
-    return { name: 'AdminLogin', query: { next: to.fullPath } }
+  if (to.meta?.requiresAuth) {
+    const { isAuthenticated, ensureChecked } = useAdminAuth()
+    await ensureChecked()
+    if (!isAuthenticated.value) {
+      return { name: 'AdminLogin', query: { next: to.fullPath } }
+    }
   }
+
+  if (to.meta?.requiresStudentAuth) {
+    const { isAuthenticated, ensureChecked } = useStudentAuth()
+    await ensureChecked()
+    if (!isAuthenticated.value) {
+      return { name: 'StudentLogin', query: { next: to.fullPath } }
+    }
+  }
+
   return true
 })
 

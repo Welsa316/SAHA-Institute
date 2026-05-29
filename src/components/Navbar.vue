@@ -25,7 +25,7 @@ const mobileOpen = ref(false)
 // permanent student account).
 const navLinks = computed(() => [
   { name: t('nav.programs'), to: '/#programs' },
-  { name: t('nav.register'), to: '/tutoring-signup' },
+  { name: t('nav.register'), to: '/register' },
   { name: t('nav.about'), to: '/about' },
   { name: t('nav.contact'), to: '/contact' },
 ])

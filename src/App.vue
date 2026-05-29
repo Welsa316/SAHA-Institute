@@ -10,7 +10,11 @@ const route = useRoute()
 
 // Admin routes have their own chrome (the AdminLayout sidebar). Hide the public
 // site's Navbar, Footer, WhatsApp widget, and language toggle on those pages.
+// `bare` routes (student signup / login / portal) are full-screen flows with
+// their own headers, so they hide the public chrome too.
 const isAdminRoute = computed(() => !!route.meta?.admin)
+const isBareRoute = computed(() => !!route.meta?.bare)
+const hideChrome = computed(() => isAdminRoute.value || isBareRoute.value)
 
 const scrollY = ref(0)
 
@@ -29,13 +33,13 @@ onUnmounted(() => {
 
 <template>
   <div class="relative min-h-screen">
-    <Navbar v-if="!isAdminRoute" :scrollY="scrollY" />
+    <Navbar v-if="!hideChrome" :scrollY="scrollY" />
     <router-view />
-    <Footer v-if="!isAdminRoute" />
+    <Footer v-if="!hideChrome" />
 
     <!-- WhatsApp floating widget -->
     <a
-      v-if="!isAdminRoute"
+      v-if="!hideChrome"
       href="https://wa.me/15043739778"
       target="_blank"
       rel="noopener noreferrer"
@@ -52,7 +56,7 @@ onUnmounted(() => {
 
     <!-- Mobile language toggle widget -->
     <button
-      v-if="!isAdminRoute"
+      v-if="!hideChrome"
       @click="toggleLocale"
       :class="[
         'fixed bottom-6 z-50 md:hidden w-12 h-12 rounded-full bg-[#001B3D] text-white flex items-center justify-center shadow-lg text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none',

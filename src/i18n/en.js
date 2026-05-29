@@ -54,9 +54,9 @@ export default {
     subtitle: 'Academics, Quran studies, and standardized test prep. All one-on-one.',
     ageBadge: 'Ages 4–17 · Pre-K through High School',
     oneOnOne: 'All classes are one-on-one',
-    // CTA under the program cards leading to /tutoring-signup. "Sign Up for
-    // Tutoring" here is unambiguous because the user has just read the prices
-    // and program descriptions — they know what they're signing up for.
+    // CTA under the program cards leading to /register (student account). "Sign
+    // Up for Tutoring" is unambiguous here because the parent has just read the
+    // prices and program descriptions — they know what they're signing up for.
     signUpCta: 'Sign Up for Tutoring',
     signUpHint: 'Quick form. Mrs. Anila follows up within a day.',
     items: [
@@ -204,6 +204,52 @@ export default {
       namesRequired: 'Please enter both the parent and student name.',
       generic: 'Something went wrong. Please try again or call us at (504) 373-9778.',
     },
+  },
+  studentAuth: {
+    signupHeading: 'Create your account',
+    signupSubtitle: 'Set up a student account to enroll in tutoring and track your status.',
+    loginHeading: 'Welcome back',
+    loginSubtitle: 'Log in to your student account.',
+    nameLabel: 'Student Name',
+    namePlaceholder: 'Your full name',
+    emailLabel: 'Email',
+    emailPlaceholder: 'you@example.com',
+    passwordLabel: 'Password',
+    passwordPlaceholder: 'Your password',
+    passwordHintSignup: 'At least 8 characters',
+    signupSubmit: 'Create Account',
+    loginSubmit: 'Log In',
+    submitting: 'Please wait…',
+    haveAccount: 'Already have an account?',
+    noAccount: 'New to SAHA?',
+    loginLink: 'Log in',
+    signupLink: 'Create one',
+    errors: {
+      nameRequired: 'Please enter your name.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+  portal: {
+    eyebrow: 'My Account',
+    greeting: 'Welcome, {name}',
+    paymentLabel: 'Payment',
+    payPendingHeading: 'Awaiting first payment',
+    payPendingDetail: 'Your account is set up. Mrs. Anila will reach out to arrange your first payment and schedule.',
+    payActiveHeading: 'You\'re all set',
+    payActiveDetail: 'Your tuition is paid through {date}.',
+    payNoDateDetail: 'Your tuition is marked paid.',
+    payExpiringHeading: 'Renewal coming up',
+    payExpiringDetail: 'Your tuition is paid through {date} — {days} days left. Mrs. Anila will follow up about renewing.',
+    payExpiredHeading: 'Renewal due',
+    payExpiredDetail: 'Your tuition lapsed on {date}. Please reach out to Mrs. Anila to renew.',
+    gradeLabel: 'Grade',
+    gradeUnset: 'Not set yet',
+    statusLabel: 'Status',
+    statusEnrolled: 'Enrolled',
+    statusPending: 'Pending',
+    footnote: 'Payments are handled directly with Mrs. Anila. This page reflects what\'s on file — reach out with any questions.',
+    logout: 'Log out',
+    loading: 'Loading…',
   },
   summerCamp: {
     heroBadge: 'Summer 2026',

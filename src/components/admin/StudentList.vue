@@ -68,11 +68,14 @@ async function load() {
 
 onMounted(load)
 
-// Group students by grade level for visual headers in the table.
+// Group students by grade level for visual headers in the table. The
+// `unassigned` bucket catches self-signup accounts (gradeLevel is null until
+// the admin assigns one) so they never silently disappear from the roster.
 const grouped = computed(() => {
-  const groups = { elementary: [], middle: [], high: [] }
+  const groups = { elementary: [], middle: [], high: [], unassigned: [] }
   for (const s of students.value) {
-    if (groups[s.gradeLevel]) groups[s.gradeLevel].push(s)
+    const key = groups[s.gradeLevel] ? s.gradeLevel : 'unassigned'
+    groups[key].push(s)
   }
   for (const key of Object.keys(groups)) {
     groups[key].sort((a, b) => a.studentName.localeCompare(b.studentName))
@@ -80,10 +83,15 @@ const grouped = computed(() => {
   return groups
 })
 
+// Order the unassigned group last so brand-new signups surface at the bottom
+// where the admin expects "needs attention" rows.
+const gradeOrder = ['elementary', 'middle', 'high', 'unassigned']
+
 const gradeLabels = {
   elementary: 'Elementary',
   middle: 'Middle School',
   high: 'High School',
+  unassigned: 'Unassigned grade',
 }
 
 async function patch(row, patchBody) {
@@ -265,11 +273,11 @@ function detailRef() {
       </div>
 
       <template v-else>
-        <section v-for="grade in ['elementary', 'middle', 'high']" :key="grade">
+        <section v-for="grade in gradeOrder" :key="grade">
           <div v-if="grouped[grade].length > 0">
             <div class="flex items-center gap-3 mb-3">
               <h2 class="font-heading text-lg font-bold text-[#001B3D] tracking-tight">{{ gradeLabels[grade] }}</h2>
-              <GradePill :grade="grade" size="sm" />
+              <GradePill v-if="grade !== 'unassigned'" :grade="grade" size="sm" />
               <span class="font-body text-xs text-navy-400">{{ grouped[grade].length }}</span>
             </div>
             <div class="bg-white rounded-2xl border border-navy-100 shadow-sm overflow-hidden">
@@ -498,7 +506,10 @@ function detailRef() {
           <dl class="grid grid-cols-2 gap-4 mb-6">
             <div>
               <dt class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1">Grade</dt>
-              <dd><GradePill :grade="detailRow.gradeLevel" size="sm" /></dd>
+              <dd>
+                <GradePill v-if="detailRow.gradeLevel" :grade="detailRow.gradeLevel" size="sm" />
+                <span v-else class="font-body text-sm text-navy-300 italic">Not set</span>
+              </dd>
             </div>
             <div>
               <dt class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1">Phone</dt>

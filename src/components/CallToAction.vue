@@ -41,7 +41,7 @@ const { t } = useI18n()
         :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
         <router-link
-          to="/tutoring-signup"
+          to="/register"
           class="min-w-[240px] px-10 py-4 bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase rounded-full hover:bg-navy-50 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           {{ t('cta.signUpButton') }}

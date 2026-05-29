@@ -8,13 +8,22 @@ const locale = ref(localStorage.getItem('saha-locale') || 'en')
 export function useI18n() {
   const isRTL = computed(() => locale.value === 'ur')
 
-  function t(key) {
+  // Optional `params` interpolates {placeholder} tokens, e.g.
+  // t('portal.greeting', { name: 'Aisha' }) against "Welcome, {name}".
+  // No params -> original passthrough behaviour, so existing callers are unaffected.
+  function t(key, params) {
     const keys = key.split('.')
     let value = translations[locale.value]
     for (const k of keys) {
       value = value?.[k]
     }
-    return value || key
+    if (typeof value !== 'string') return value || key
+    if (params) {
+      return value.replace(/\{(\w+)\}/g, (match, name) =>
+        Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match,
+      )
+    }
+    return value
   }
 
   function toggleLocale() {
