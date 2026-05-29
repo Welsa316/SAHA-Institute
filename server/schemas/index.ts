@@ -69,6 +69,17 @@ export const studentUpdateSchema = z.object({
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
+// Public student signup form. Always creates a regular-program row; admin
+// follows up off-platform for first payment. Same lenient phone shape used
+// elsewhere — Anila's rosters mix "(504) 373-9778" and "504.373.9778".
+export const studentSignupCreateSchema = z.object({
+  parentName: z.string().trim().min(2).max(100),
+  studentName: z.string().trim().min(2).max(100),
+  gradeLevel: gradeLevelSchema,
+  phoneNumber: phoneSchema.nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+})
+
 export const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 })
@@ -78,3 +89,4 @@ export type WorkshopSignupCreate = z.infer<typeof workshopSignupCreateSchema>
 export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>
 export type StudentCreate = z.infer<typeof studentCreateSchema>
 export type StudentUpdate = z.infer<typeof studentUpdateSchema>
+export type StudentSignupCreate = z.infer<typeof studentSignupCreateSchema>
