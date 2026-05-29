@@ -107,6 +107,73 @@ function isSaving(id) {
   return rowSaving.value.has(id)
 }
 
+// ---------- Billing cycle helpers ----------
+// "Reasonable paid-until cycles" per the spec: one click sets the next
+// 30-day window. Smart base date — if the row is currently paid through a
+// future date, extend FROM that date (so a 2-day-early renew doesn't drop
+// the family's remaining time); otherwise extend from today (lapsed renews
+// from now).
+
+function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function addDays(yyyyMmDd, days) {
+  // Parse as local-date (no UTC shift); the date column doesn't carry time.
+  const [y, m, d] = yyyyMmDd.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+// Days between today and paidUntil. Positive = days remaining; negative =
+// days lapsed; null = no paid_until set.
+function daysUntil(yyyyMmDd) {
+  if (!yyyyMmDd) return null
+  const [y, m, d] = yyyyMmDd.split('-').map(Number)
+  const t = new Date()
+  const target = new Date(y, m - 1, d)
+  const today = new Date(t.getFullYear(), t.getMonth(), t.getDate())
+  return Math.round((target - today) / 86400000)
+}
+
+// "fresh" = paid + plenty of runway left; "warning" = paid but expiring in
+// the next 14 days; "expired" = paid in the past; "none" = never set.
+function billingStatus(row) {
+  if (!row.paid) return 'none'
+  const days = daysUntil(row.paidUntil)
+  if (days === null) return 'active' // marked paid with no expiry — treat as fine
+  if (days < 0) return 'expired'
+  if (days <= 14) return 'warning'
+  return 'fresh'
+}
+
+function billingBadge(row) {
+  const status = billingStatus(row)
+  const base = 'inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border whitespace-nowrap'
+  const days = daysUntil(row.paidUntil)
+  if (status === 'fresh') return { class: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`, label: `Paid · ${days}d left` }
+  if (status === 'warning') return { class: `${base} bg-amber-50 text-amber-800 border-amber-200`, label: days === 0 ? 'Expires today' : `Expires in ${days}d` }
+  if (status === 'expired') return { class: `${base} bg-red-50 text-red-700 border-red-200`, label: `Expired ${Math.abs(days)}d ago` }
+  if (status === 'active') return { class: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`, label: 'Paid' }
+  return { class: `${base} bg-navy-50 text-navy-500 border-navy-200`, label: 'Not paid' }
+}
+
+// Click handler for the quick-action button. Behaviour depends on row state:
+//   - Not paid yet -> mark paid, set paid_from=today, paid_until=today+30
+//   - Already paid -> extend paid_until by 30 days from the smarter base
+async function quickRenew(row, days = 30) {
+  const today = todayStr()
+  if (!row.paid) {
+    await patch(row, { paid: true, paidFrom: today, paidUntil: addDays(today, days) })
+    return
+  }
+  // Extend from current paid_until if still in the future; otherwise from today.
+  const base = row.paidUntil && row.paidUntil >= today ? row.paidUntil : today
+  await patch(row, { paid: true, paidUntil: addDays(base, days) })
+}
+
 async function confirmDelete() {
   const id = toDeleteId.value
   if (!id) return
@@ -214,6 +281,7 @@ function detailRef() {
                       <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
                       <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Phone</th>
                       <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid</th>
+                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Billing status</th>
                       <th v-if="showPaidFrom" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid from</th>
                       <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid until</th>
                       <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes</th>
@@ -238,6 +306,27 @@ function detailRef() {
                           label="Mark paid"
                           @update:model-value="(v) => patch(row, { paid: v })"
                         />
+                      </td>
+                      <td class="px-4 py-4" @click.stop>
+                        <!-- Status badge + one-click cycle action. The button
+                             relabels based on row state: unpaid -> "Mark paid +1mo"
+                             (turns on paid + sets a 30-day window starting today);
+                             already paid -> "Renew +1mo" (extends paid_until by 30
+                             days from the smarter base date). -->
+                        <div class="flex flex-col items-start gap-1.5">
+                          <span :class="billingBadge(row).class">{{ billingBadge(row).label }}</span>
+                          <button
+                            type="button"
+                            :disabled="isSaving(row.id)"
+                            @click="quickRenew(row, 30)"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-academic-50 text-academic-700 border border-academic-200 hover:bg-academic-100 hover:border-academic-300 font-body text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+                          >
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            {{ row.paid ? 'Renew +1mo' : 'Mark paid +1mo' }}
+                          </button>
+                        </div>
                       </td>
                       <td v-if="showPaidFrom" class="px-4 py-4" @click.stop>
                         <input
