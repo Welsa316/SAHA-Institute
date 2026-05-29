@@ -53,18 +53,34 @@ export const workshopSignups = pgTable('workshop_signups', {
 })
 
 // ---------- students ----------
-// One table backs both Summer Camp and STEM Program. The admin UI keeps them on separate pages
-// (filtered by `program`), but storage stays in a single shape so adding a third program later
-// — or a "students" master list — is a column-add, not a table-add.
+// One table backs Summer Camp, STEM Program, and the year-round 'regular' roster.
+// The admin UI keeps them on separate pages (filtered by `program`), but storage
+// stays in a single shape.
+//
+// As of migration 0005 this table also backs self-service STUDENT ACCOUNTS:
+// a student who signs up at /signup creates a `program='regular'` row carrying
+// `email` + `password_hash`. Those credentials authenticate them at /login;
+// admin-created roster rows (camp / STEM, or manual regular adds) simply leave
+// email + password_hash null. `parent_name` and `grade_level` became nullable
+// in 0005 because self-signup only collects a name — Anila fills the rest in
+// later from the admin dashboard.
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
   program: programEnum('program').notNull(),
-  parentName: text('parent_name').notNull(),
+  // Nullable since 0005 — self-signup accounts don't provide a parent name.
+  parentName: text('parent_name'),
   studentName: text('student_name').notNull(),
-  gradeLevel: gradeLevelEnum('grade_level').notNull(),
+  // Nullable since 0005 — self-signup accounts don't provide a grade. Admin
+  // assigns one later; until then the row shows in an "Unassigned" group.
+  gradeLevel: gradeLevelEnum('grade_level'),
   // Nullable — added retroactively, so existing summer_camp / stem_program rows have NULL.
   phoneNumber: text('phone_number'),
+  // ---- Self-service account credentials (null for admin-created roster rows) ----
+  // Unique login identifier. Only set on rows created via /signup.
+  email: text('email').unique(),
+  // bcrypt hash. Only set on rows created via /signup.
+  passwordHash: text('password_hash'),
   paid: boolean('paid').notNull().default(false),
   // paid_from is mainly used for the year-round students roster — when the current billing
   // window started — but the column lives here for all three programs so we never have to

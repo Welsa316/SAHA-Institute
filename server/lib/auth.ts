@@ -66,3 +66,38 @@ export const clearSessionCookieOptions = {
   ...sessionCookieOptions,
   maxAge: 0,
 }
+
+// ---------- Student sessions ----------
+// Self-service student accounts use a SEPARATE cookie + JWT from the admin.
+// Two guards against cross-use:
+//   1. Different cookie name (saha_student vs saha_session), so a student
+//      session is never sent to an admin endpoint and vice versa.
+//   2. A `type: 'student'` claim in the JWT, verified on read — even if a
+//      token were placed in the wrong cookie, the type check rejects it.
+
+export interface StudentJwtPayload {
+  studentId: number
+  email: string
+}
+
+export const STUDENT_COOKIE_NAME = 'saha_student'
+
+export function signStudentSession(payload: StudentJwtPayload): string {
+  return jwt.sign({ ...payload, type: 'student' }, getJwtSecret(), {
+    algorithm: JWT_ALGORITHM,
+    expiresIn: SESSION_TTL_SECONDS,
+  })
+}
+
+export function verifyStudentSession(token: string): StudentJwtPayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
+    if (typeof decoded === 'string') return null
+    const { studentId, email, type } = decoded as Record<string, unknown>
+    if (type !== 'student') return null
+    if (typeof studentId !== 'number' || typeof email !== 'string') return null
+    return { studentId, email }
+  } catch {
+    return null
+  }
+}

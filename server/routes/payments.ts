@@ -34,7 +34,9 @@ interface PaymentRow {
   // themselves — their name is in parentName instead). Student rows are
   // always populated since the camp/STEM/tutoring forms require it.
   studentName: string | null
-  parentName: string
+  // Nullable since migration 0005 — self-signup student accounts don't carry
+  // a parent name (workshop rows always do).
+  parentName: string | null
   phoneNumber: string | null
   paid: boolean
   paidFrom: string | null

@@ -80,6 +80,24 @@ export const studentSignupCreateSchema = z.object({
   notes: z.string().trim().max(2000).nullable().optional(),
 })
 
+// ---------- Student accounts (self-service auth) ----------
+
+// Signup collects only a display name + login credentials, per the product
+// decision that "student name is fine" for account creation. Parent name and
+// grade are filled in later by the admin.
+export const studentAuthSignupSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().toLowerCase().email().max(200),
+  // 8-char floor is a reasonable minimum without being hostile. Cap prevents
+  // absurd inputs (bcrypt also truncates at 72 bytes, but we reject earlier).
+  password: z.string().min(8).max(200),
+})
+
+export const studentAuthLoginSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(200),
+  password: z.string().min(1).max(200),
+})
+
 export const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 })
@@ -90,3 +108,5 @@ export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>
 export type StudentCreate = z.infer<typeof studentCreateSchema>
 export type StudentUpdate = z.infer<typeof studentUpdateSchema>
 export type StudentSignupCreate = z.infer<typeof studentSignupCreateSchema>
+export type StudentAuthSignup = z.infer<typeof studentAuthSignupSchema>
+export type StudentAuthLogin = z.infer<typeof studentAuthLoginSchema>

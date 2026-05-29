@@ -14,6 +14,26 @@ import { logger } from '../lib/log.js'
 // One factory backs both /api/summer-camp and /api/stem-program. The two programs share
 // storage and schema; only the `program` enum value differs.
 
+// Explicit column list so we NEVER ship password_hash to the client (the
+// students table grew credential columns in migration 0005 for self-service
+// accounts). email is safe to expose to the admin — it's how they recognize
+// a self-signup row. Reused across GET / POST / PATCH `.returning()`.
+const publicColumns = {
+  id: students.id,
+  program: students.program,
+  parentName: students.parentName,
+  studentName: students.studentName,
+  gradeLevel: students.gradeLevel,
+  phoneNumber: students.phoneNumber,
+  email: students.email,
+  paid: students.paid,
+  paidFrom: students.paidFrom,
+  paidUntil: students.paidUntil,
+  notes: students.notes,
+  createdAt: students.createdAt,
+  updatedAt: students.updatedAt,
+}
+
 export function studentsRouter(program: Program): Router {
   const router = Router()
 
@@ -25,7 +45,7 @@ export function studentsRouter(program: Program): Router {
   router.get('/', async (_req, res, next) => {
     try {
       const rows = await db
-        .select()
+        .select(publicColumns)
         .from(students)
         .where(eq(students.program, program))
         .orderBy(asc(students.gradeLevel), asc(students.studentName))
@@ -52,7 +72,7 @@ export function studentsRouter(program: Program): Router {
           paidUntil: input.paidUntil ?? null,
           notes: input.notes ?? null,
         })
-        .returning()
+        .returning(publicColumns)
       logger.info('student', 'created', { id: row.id, program, user: res.locals.user?.email })
       res.status(201).json({ student: row })
     } catch (err) {
@@ -79,7 +99,7 @@ export function studentsRouter(program: Program): Router {
         .update(students)
         .set({ ...patch, updatedAt: new Date() })
         .where(and(eq(students.id, id), eq(students.program, program)))
-        .returning()
+        .returning(publicColumns)
 
       if (!row) throw new HttpError(404, 'Student not found.')
       logger.info('student', 'updated', { id, program, fields: Object.keys(patch), user: res.locals.user?.email })
