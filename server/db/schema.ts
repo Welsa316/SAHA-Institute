@@ -76,10 +76,15 @@ export const students = pgTable('students', {
   gradeLevel: gradeLevelEnum('grade_level'),
   // Nullable — added retroactively, so existing summer_camp / stem_program rows have NULL.
   phoneNumber: text('phone_number'),
-  // ---- Self-service account credentials (null for admin-created roster rows) ----
-  // Unique login identifier. Only set on rows created via /signup.
+  // Self-signups land unapproved (false) and sit in a "Pending approval"
+  // section in the admin until a real person is confirmed — a spam/fake-name
+  // gate. Everything admin-created (camp / STEM / manual regular adds) defaults
+  // to true, so only public name-only signups start pending.
+  approved: boolean('approved').notNull().default(true),
+  // ---- Reserved for a future self-service login (migration 0005, currently
+  // unused — the public signup is name-only for now). Kept nullable so reviving
+  // accounts later is a code change, not another migration. ----
   email: text('email').unique(),
-  // bcrypt hash. Only set on rows created via /signup.
   passwordHash: text('password_hash'),
   paid: boolean('paid').notNull().default(false),
   // paid_from is mainly used for the year-round students roster — when the current billing

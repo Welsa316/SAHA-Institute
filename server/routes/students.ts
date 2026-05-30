@@ -26,6 +26,7 @@ const publicColumns = {
   gradeLevel: students.gradeLevel,
   phoneNumber: students.phoneNumber,
   email: students.email,
+  approved: students.approved,
   paid: students.paid,
   paidFrom: students.paidFrom,
   paidUntil: students.paidUntil,

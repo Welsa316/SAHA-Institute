@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { asc, desc } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { students, workshopSignups } from '../db/schema.js'
 import { requireAuth } from '../middleware/requireAuth.js'
@@ -76,6 +76,9 @@ paymentsRouter.get('/', async (_req, res, next) => {
           updatedAt: students.updatedAt,
         })
         .from(students)
+        // Pending (unapproved) self-signups aren't real billing records yet —
+        // keep them out of the payments overview until an admin approves them.
+        .where(eq(students.approved, true))
         .orderBy(asc(students.studentName)),
     ])
 

@@ -12,7 +12,7 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { authRouter } from './routes/auth.js'
 import { workshopSignupsRouter } from './routes/workshopSignups.js'
 import { studentsRouter } from './routes/students.js'
-import { studentAuthRouter } from './routes/studentAuth.js'
+import { studentSignupRouter } from './routes/studentSignup.js'
 import { paymentsRouter } from './routes/payments.js'
 import { contactRouter } from './routes/contact.js'
 
@@ -40,7 +40,7 @@ app.use('/api/workshop-signups', workshopSignupsRouter)
 app.use('/api/summer-camp', studentsRouter('summer_camp'))
 app.use('/api/stem-program', studentsRouter('stem_program'))
 app.use('/api/students', studentsRouter('regular'))
-app.use('/api/student-auth', studentAuthRouter)
+app.use('/api/student-signup', studentSignupRouter)
 app.use('/api/payments', paymentsRouter)
 
 // ---------- Static frontend ----------

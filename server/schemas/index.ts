@@ -63,28 +63,17 @@ export const studentUpdateSchema = z.object({
   studentName: z.string().trim().min(2).max(100).optional(),
   gradeLevel: gradeLevelSchema.optional(),
   phoneNumber: phoneSchema.nullable().optional(),
+  approved: z.boolean().optional(),
   paid: z.boolean().optional(),
   paidFrom: isoDateSchema.nullable().optional(),
   paidUntil: isoDateSchema.nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
-// ---------- Student accounts (self-service auth) ----------
-
-// Signup collects only a display name + login credentials, per the product
-// decision that "student name is fine" for account creation. Parent name and
-// grade are filled in later by the admin.
-export const studentAuthSignupSchema = z.object({
+// Public name-only signup. The entire student-facing form is just a name — the
+// admin assigns grade and approves later. Lands as a pending regular student.
+export const studentSignupCreateSchema = z.object({
   name: z.string().trim().min(2).max(100),
-  email: z.string().trim().toLowerCase().email().max(200),
-  // 8-char floor is a reasonable minimum without being hostile. Cap prevents
-  // absurd inputs (bcrypt also truncates at 72 bytes, but we reject earlier).
-  password: z.string().min(8).max(200),
-})
-
-export const studentAuthLoginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(200),
-  password: z.string().min(1).max(200),
 })
 
 export const idParamSchema = z.object({
@@ -96,5 +85,4 @@ export type WorkshopSignupCreate = z.infer<typeof workshopSignupCreateSchema>
 export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>
 export type StudentCreate = z.infer<typeof studentCreateSchema>
 export type StudentUpdate = z.infer<typeof studentUpdateSchema>
-export type StudentAuthSignup = z.infer<typeof studentAuthSignupSchema>
-export type StudentAuthLogin = z.infer<typeof studentAuthLoginSchema>
+export type StudentSignupCreate = z.infer<typeof studentSignupCreateSchema>
