@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { students, workshopSignups } from '../db/schema.js'
 import { requireAuth } from '../middleware/requireAuth.js'
@@ -76,14 +76,21 @@ paymentsRouter.get('/', async (_req, res, next) => {
           updatedAt: students.updatedAt,
         })
         .from(students)
-        // Pending (unapproved) self-signups aren't real billing records yet —
-        // keep them out of the payments overview until an admin approves them.
-        .where(eq(students.approved, true))
+        // Payments is a record of actual payments — only rows marked paid
+        // belong here. Unpaid students live on their program roster, not here
+        // (this also stops one student showing as both "paid" and "not paid"
+        // when they have more than one record). Pending/unapproved signups
+        // are excluded for the same reason.
+        .where(and(eq(students.approved, true), eq(students.paid, true)))
         .orderBy(asc(students.studentName)),
     ])
 
+    // Workshop families belong in Payments once they've paid for at least one
+    // workshop. Zero paid = nothing to show here yet.
+    const paidWorkshopRows = workshopRows.filter((r) => r.paidWorkshops.length > 0)
+
     const rows: PaymentRow[] = [
-      ...workshopRows.map((r) => {
+      ...paidWorkshopRows.map((r) => {
         // "Fully paid" for a workshop family means every workshop they signed
         // up for is in paidWorkshops. The UI can derive partial / unpaid from
         // the arrays we pass through.

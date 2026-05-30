@@ -140,13 +140,15 @@ const sourceFilters = [
   { key: 'regular', label: 'Tutoring' },
 ]
 
+// Payments only contains paid records now, so there's no "Unpaid" bucket —
+// everything here has been marked paid in some form (active window, expiring,
+// expired, or a partially-paid workshop family).
 const statusFilters = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active', tone: 'emerald' },
   { key: 'expiring', label: 'Expiring soon', tone: 'amber' },
   { key: 'partial', label: 'Partial', tone: 'amber' },
   { key: 'expired', label: 'Expired', tone: 'red' },
-  { key: 'unpaid', label: 'Unpaid', tone: 'navy' },
 ]
 </script>
 
