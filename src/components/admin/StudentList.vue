@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAdminApi } from '../../composables/useAdminApi.js'
 import PageHeader from './PageHeader.vue'
 import GradePill from './GradePill.vue'
@@ -103,6 +103,33 @@ const gradeLabels = {
   high: 'High School',
   unassigned: 'Unassigned grade',
 }
+
+// Shorter labels for the tab strip (the section headers carry the full names).
+const gradeTabLabels = {
+  elementary: 'Elementary',
+  middle: 'Middle',
+  high: 'High',
+  unassigned: 'Unassigned',
+}
+
+// One tab per grade that actually has students — keeps the strip from showing
+// empty buckets. The roster shows only the active grade's table now (the user
+// didn't want all three grades stacked on one page).
+const gradeTabs = computed(() => gradeOrder.filter((g) => grouped.value[g].length > 0))
+
+const activeGrade = ref('elementary')
+
+// Keep the active tab valid: if it empties out (last student in it moved or
+// deleted) or the default isn't present, snap to the first available tab.
+watch(
+  gradeTabs,
+  (tabs) => {
+    if (tabs.length && !tabs.includes(activeGrade.value)) {
+      activeGrade.value = tabs[0]
+    }
+  },
+  { immediate: true },
+)
 
 async function patch(row, patchBody) {
   rowSaving.value.add(row.id)
@@ -370,8 +397,28 @@ function detailRef() {
         </div>
       </section>
 
-      <template v-if="students.length > 0">
-        <section v-for="grade in gradeOrder" :key="grade">
+      <template v-if="students.length > 0 && gradeTabs.length > 0">
+        <!-- Grade tabs — one per grade that has students. Only the active
+             grade's table renders below, so the three grades aren't stacked
+             on one long page. -->
+        <div class="flex flex-wrap gap-1 border-b border-navy-100">
+          <button
+            v-for="grade in gradeTabs"
+            :key="`tab-${grade}`"
+            type="button"
+            @click="activeGrade = grade"
+            class="relative px-4 py-2.5 -mb-px border-b-2 font-body text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+            :class="activeGrade === grade
+              ? 'text-[#001B3D] border-[#001B3D]'
+              : 'text-navy-400 border-transparent hover:text-navy-700'"
+          >
+            {{ gradeTabLabels[grade] }}
+            <span class="ml-1.5 text-xs font-bold" :class="activeGrade === grade ? 'text-academic-600' : 'text-navy-300'">{{ grouped[grade].length }}</span>
+          </button>
+        </div>
+
+        <template v-for="grade in gradeTabs" :key="grade">
+          <section v-if="grade === activeGrade">
           <div v-if="grouped[grade].length > 0">
             <div class="flex items-center gap-3 mb-3">
               <h2 class="font-heading text-lg font-bold text-[#001B3D] tracking-tight">{{ gradeLabels[grade] }}</h2>
@@ -478,7 +525,8 @@ function detailRef() {
               </div>
             </div>
           </div>
-        </section>
+          </section>
+        </template>
       </template>
     </div>
 
