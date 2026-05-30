@@ -68,12 +68,22 @@ async function load() {
 
 onMounted(load)
 
-// Group students by grade level for visual headers in the table. The
-// `unassigned` bucket catches self-signup accounts (gradeLevel is null until
-// the admin assigns one) so they never silently disappear from the roster.
+// Pending self-signups (approved=false) — surfaced in their own section at the
+// top so the admin can vet them before they hit the real roster. Newest first
+// so fresh signups are right there.
+const pending = computed(() =>
+  students.value
+    .filter((s) => !s.approved)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+)
+
+// Group APPROVED students by grade level for the roster table. The `unassigned`
+// bucket catches approved rows that still have no grade (e.g. a signup approved
+// before a grade was set) so they never silently disappear.
 const grouped = computed(() => {
   const groups = { elementary: [], middle: [], high: [], unassigned: [] }
   for (const s of students.value) {
+    if (!s.approved) continue // pending rows live in their own section
     const key = groups[s.gradeLevel] ? s.gradeLevel : 'unassigned'
     groups[key].push(s)
   }
@@ -113,6 +123,20 @@ async function patch(row, patchBody) {
 
 function isSaving(id) {
   return rowSaving.value.has(id)
+}
+
+// ---------- Approval ----------
+// Approve a pending signup. It immediately drops out of the pending section and
+// joins the grade-grouped roster (under its assigned grade, or Unassigned).
+async function approve(row) {
+  await patch(row, { approved: true })
+}
+
+// Admin assigns / changes a student's grade. This is the "separate form" for
+// grade management — students never pick their own grade at signup.
+async function setGrade(row, gradeLevel) {
+  if (!gradeLevel) return
+  await patch(row, { gradeLevel })
 }
 
 // ---------- Billing cycle helpers ----------
@@ -232,6 +256,12 @@ function formatPhone(value) {
   return value
 }
 
+function formatRegistered(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function openDetail(row) {
   // Pass a shallow copy so edits in the modal don't leak back until PATCH succeeds.
   detailRow.value = { ...row }
@@ -272,7 +302,75 @@ function detailRef() {
         <p class="font-body text-sm text-navy-400">{{ emptyMessage }}</p>
       </div>
 
-      <template v-else>
+      <!-- Pending approval — self-signups awaiting review. Vet here (assign a
+           grade, approve) or delete if it doesn't look real, before they reach
+           the roster below. -->
+      <section v-if="pending.length > 0">
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="font-heading text-lg font-bold text-amber-700 tracking-tight">Pending approval</h2>
+          <span class="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full bg-amber-100 text-amber-800 font-body text-xs font-bold">{{ pending.length }}</span>
+        </div>
+        <div class="bg-amber-50/60 rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-amber-100/50">
+                <tr>
+                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Name</th>
+                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Registered</th>
+                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Assign grade</th>
+                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800 text-right">Review</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-amber-200/70">
+                <tr v-for="row in pending" :key="row.id" class="hover:bg-amber-100/30 transition-colors">
+                  <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.studentName }}</td>
+                  <td class="px-4 py-4 font-body text-xs text-navy-500 whitespace-nowrap">{{ formatRegistered(row.createdAt) }}</td>
+                  <td class="px-4 py-4">
+                    <select
+                      :value="row.gradeLevel ?? ''"
+                      :disabled="isSaving(row.id)"
+                      @change="(e) => setGrade(row, e.target.value)"
+                      class="px-2.5 py-1.5 rounded-lg bg-white border border-amber-200 text-navy-700 text-xs font-body font-semibold focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-50"
+                    >
+                      <option value="" disabled>Choose grade…</option>
+                      <option value="elementary">Elementary</option>
+                      <option value="middle">Middle School</option>
+                      <option value="high">High School</option>
+                    </select>
+                  </td>
+                  <td class="px-4 py-4">
+                    <div class="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        :disabled="isSaving(row.id)"
+                        @click="approve(row)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 text-white font-body text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 focus:outline-none"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        @click="toDeleteId = row.id"
+                        class="p-2 rounded-lg text-navy-400 hover:bg-red-50 hover:text-red-600 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 focus:outline-none"
+                        aria-label="Reject and delete signup"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <template v-if="students.length > 0">
         <section v-for="grade in gradeOrder" :key="grade">
           <div v-if="grouped[grade].length > 0">
             <div class="flex items-center gap-3 mb-3">
@@ -507,8 +605,19 @@ function detailRef() {
             <div>
               <dt class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1">Grade</dt>
               <dd>
-                <GradePill v-if="detailRow.gradeLevel" :grade="detailRow.gradeLevel" size="sm" />
-                <span v-else class="font-body text-sm text-navy-300 italic">Not set</span>
+                <!-- Editable: grade is admin-managed, so the detail view doubles
+                     as the grade form for any student. -->
+                <select
+                  :value="detailRow.gradeLevel ?? ''"
+                  :disabled="isSaving(detailRow.id)"
+                  @change="(e) => setGrade(detailRow, e.target.value)"
+                  class="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-navy-200 text-navy-700 text-sm font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-50"
+                >
+                  <option value="" disabled>Not set</option>
+                  <option value="elementary">Elementary</option>
+                  <option value="middle">Middle School</option>
+                  <option value="high">High School</option>
+                </select>
               </dd>
             </div>
             <div>

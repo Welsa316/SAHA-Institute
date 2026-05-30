@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import { useAdminAuth } from '../composables/useAdminAuth.js'
-import { useStudentAuth } from '../composables/useStudentAuth.js'
 
 const BASE_TITLE = 'SAHA Institute For Learning'
 const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep for ages 4 to 17.'
@@ -52,39 +51,16 @@ const routes = [
     redirect: { name: 'Enroll', query: { signup: '1' } },
   },
 
-  // ---------- Student accounts (self-service) ----------
-  // /register + /login share one component (mode keyed off route name).
-  // /portal is the logged-in status view, guarded by the student session.
-  // `bare: true` hides the public Navbar/Footer (these are full-screen flows).
+  // ---------- Student registration (name-only, pending admin approval) ----------
+  // `bare: true` hides the public Navbar/Footer — it's a focused full-screen form.
   {
     path: '/register',
-    name: 'StudentSignup',
-    component: () => import('../views/StudentAuthView.vue'),
+    name: 'Register',
+    component: () => import('../views/RegisterView.vue'),
     meta: {
       bare: true,
-      title: `Create a Student Account | ${BASE_TITLE}`,
-      description: 'Create a SAHA Institute student account to enroll in one-on-one tutoring.',
-    },
-  },
-  {
-    path: '/login',
-    name: 'StudentLogin',
-    component: () => import('../views/StudentAuthView.vue'),
-    meta: {
-      bare: true,
-      title: `Log In | ${BASE_TITLE}`,
-      noindex: true,
-    },
-  },
-  {
-    path: '/portal',
-    name: 'StudentPortal',
-    component: () => import('../views/StudentPortalView.vue'),
-    meta: {
-      bare: true,
-      requiresStudentAuth: true,
-      title: `My Account | ${BASE_TITLE}`,
-      noindex: true,
+      title: `Register as a Student | ${BASE_TITLE}`,
+      description: 'Register as a SAHA Institute student. Submit your name and Mrs. Anila will follow up to enroll you.',
     },
   },
   {
@@ -172,14 +148,6 @@ router.beforeEach(async (to) => {
     await ensureChecked()
     if (!isAuthenticated.value) {
       return { name: 'AdminLogin', query: { next: to.fullPath } }
-    }
-  }
-
-  if (to.meta?.requiresStudentAuth) {
-    const { isAuthenticated, ensureChecked } = useStudentAuth()
-    await ensureChecked()
-    if (!isAuthenticated.value) {
-      return { name: 'StudentLogin', query: { next: to.fullPath } }
     }
   }
 
