@@ -60,7 +60,7 @@ const routes = [
     meta: {
       bare: true,
       title: `Register as a Student | ${BASE_TITLE}`,
-      description: 'Register as a SAHA Institute student. Submit your name and Mrs. Anila will follow up to enroll you.',
+      description: 'Register as a SAHA Institute student. Submit your name and our team will follow up to enroll you.',
     },
   },
   {
