@@ -67,8 +67,37 @@ export const clearSessionCookieOptions = {
   maxAge: 0,
 }
 
-// NOTE: a self-service student session (cookie saha_student + a type:'student'
-// JWT claim) lived here in migration 0005. It was removed when the public
-// signup became name-only (no credential = no login). The email + password_hash
-// columns survive on the students table, so reviving accounts later is a code
-// change, not another migration. See git history at the 0005 era.
+// ---------- Student sessions ----------
+// Self-service student accounts use a SEPARATE cookie + JWT from the admin.
+// Two guards against cross-use:
+//   1. Different cookie name (saha_student vs saha_session), so a student
+//      session is never sent to an admin endpoint and vice versa.
+//   2. A `type: 'student'` claim in the JWT, verified on read — even if a
+//      token were placed in the wrong cookie, the type check rejects it.
+
+export interface StudentJwtPayload {
+  studentId: number
+  username: string
+}
+
+export const STUDENT_COOKIE_NAME = 'saha_student'
+
+export function signStudentSession(payload: StudentJwtPayload): string {
+  return jwt.sign({ ...payload, type: 'student' }, getJwtSecret(), {
+    algorithm: JWT_ALGORITHM,
+    expiresIn: SESSION_TTL_SECONDS,
+  })
+}
+
+export function verifyStudentSession(token: string): StudentJwtPayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
+    if (typeof decoded === 'string') return null
+    const { studentId, username, type } = decoded as Record<string, unknown>
+    if (type !== 'student') return null
+    if (typeof studentId !== 'number' || typeof username !== 'string') return null
+    return { studentId, username }
+  } catch {
+    return null
+  }
+}

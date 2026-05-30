@@ -15,9 +15,10 @@ import { logger } from '../lib/log.js'
 // storage and schema; only the `program` enum value differs.
 
 // Explicit column list so we NEVER ship password_hash to the client (the
-// students table grew credential columns in migration 0005 for self-service
-// accounts). email is safe to expose to the admin — it's how they recognize
-// a self-signup row. Reused across GET / POST / PATCH `.returning()`.
+// students table carries credential columns (username + password_hash) for
+// self-service accounts. The admin dashboard shows the student NAME only —
+// neither the username nor the password hash is in this projection, so they
+// never reach the admin client. Reused across GET / POST / PATCH `.returning()`.
 const publicColumns = {
   id: students.id,
   program: students.program,
@@ -25,7 +26,6 @@ const publicColumns = {
   studentName: students.studentName,
   gradeLevel: students.gradeLevel,
   phoneNumber: students.phoneNumber,
-  email: students.email,
   approved: students.approved,
   paid: students.paid,
   paidFrom: students.paidFrom,

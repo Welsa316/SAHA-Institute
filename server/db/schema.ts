@@ -57,13 +57,15 @@ export const workshopSignups = pgTable('workshop_signups', {
 // The admin UI keeps them on separate pages (filtered by `program`), but storage
 // stays in a single shape.
 //
-// As of migration 0005 this table also backs self-service STUDENT ACCOUNTS:
-// a student who signs up at /signup creates a `program='regular'` row carrying
-// `email` + `password_hash`. Those credentials authenticate them at /login;
-// admin-created roster rows (camp / STEM, or manual regular adds) simply leave
-// email + password_hash null. `parent_name` and `grade_level` became nullable
-// in 0005 because self-signup only collects a name — Anila fills the rest in
-// later from the admin dashboard.
+// This table also backs self-service STUDENT ACCOUNTS: a student who registers
+// at /register creates a `program='regular'` row carrying `username` +
+// `password_hash` (they pick both, plus their display name). Those credentials
+// authenticate them at /login. Admin-created roster rows (camp / STEM, or manual
+// regular adds) leave username + password_hash null. New registrations land
+// `approved=false` and wait in the admin's pending queue. `parent_name` and
+// `grade_level` are nullable — a self-registration only supplies a name; the
+// admin assigns the rest. The admin dashboard shows the student NAME only,
+// never the username or password.
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
@@ -81,10 +83,10 @@ export const students = pgTable('students', {
   // gate. Everything admin-created (camp / STEM / manual regular adds) defaults
   // to true, so only public name-only signups start pending.
   approved: boolean('approved').notNull().default(true),
-  // ---- Reserved for a future self-service login (migration 0005, currently
-  // unused — the public signup is name-only for now). Kept nullable so reviving
-  // accounts later is a code change, not another migration. ----
-  email: text('email').unique(),
+  // ---- Self-service login credentials. Set only on rows created via
+  // /register; null on admin-created roster rows. Renamed from `email` in
+  // migration 0007 once students chose their own username instead. ----
+  username: text('username').unique(),
   passwordHash: text('password_hash'),
   paid: boolean('paid').notNull().default(false),
   // paid_from is mainly used for the year-round students roster — when the current billing

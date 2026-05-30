@@ -70,10 +70,26 @@ export const studentUpdateSchema = z.object({
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
-// Public name-only signup. The entire student-facing form is just a name — the
-// admin assigns grade and approves later. Lands as a pending regular student.
-export const studentSignupCreateSchema = z.object({
+// Self-service student registration. Students pick their own display name,
+// username, and password. Lands as a pending (approved=false) regular student;
+// the admin sees the name only and approves. Username is the login handle.
+export const studentRegisterSchema = z.object({
   name: z.string().trim().min(2).max(100),
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3)
+    .max(30)
+    // Letters, numbers, dot, underscore, hyphen — keeps usernames clean and
+    // case-insensitive (stored lowercased) so "Aisha" and "aisha" don't collide.
+    .regex(/^[a-z0-9._-]+$/, 'Username can use letters, numbers, dots, underscores, and hyphens.'),
+  password: z.string().min(6).max(200),
+})
+
+export const studentLoginSchema = z.object({
+  username: z.string().trim().toLowerCase().min(1).max(30),
+  password: z.string().min(1).max(200),
 })
 
 export const idParamSchema = z.object({
@@ -85,4 +101,5 @@ export type WorkshopSignupCreate = z.infer<typeof workshopSignupCreateSchema>
 export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>
 export type StudentCreate = z.infer<typeof studentCreateSchema>
 export type StudentUpdate = z.infer<typeof studentUpdateSchema>
-export type StudentSignupCreate = z.infer<typeof studentSignupCreateSchema>
+export type StudentRegister = z.infer<typeof studentRegisterSchema>
+export type StudentLogin = z.infer<typeof studentLoginSchema>
