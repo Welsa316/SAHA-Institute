@@ -2,7 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { dirname, join, sep } from 'path'
 
 import { runMigrations } from './db/migrate.js'
 import { seedAdmin } from './db/seed.js'
@@ -49,13 +49,40 @@ app.use('/api/payments', paymentsRouter)
 // `redirect: false` disables Express's automatic trailing-slash redirect for directory
 // URLs. Without it, `/summer-camp` 301s to `/summer-camp/` (because dist/summer-camp/
 // holds flyer images), which breaks vue-router for that route.
+//
+// Cache policy matters here: Vite assets carry a content hash in the filename, so
+// they're safe to cache forever (`immutable`). index.html must NEVER be cached
+// stale — it's the pointer to the current hashes. Without this, a browser that
+// cached index.html before a deploy keeps requesting old chunk files that no
+// longer exist, the SPA fallback answers with HTML instead of JS, and lazy-loaded
+// admin pages silently fail to open. (This bit a real user: the admin "Students"
+// tab appeared to show nothing after a deploy.)
 const distPath = join(__dirname, '..', 'dist')
-app.use(express.static(distPath, { redirect: false }))
+app.use(
+  express.static(distPath, {
+    redirect: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.includes(`${sep}assets${sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      } else {
+        // index.html, favicons, images at the root — always revalidate.
+        res.setHeader('Cache-Control', 'no-cache')
+      }
+    },
+  }),
+)
 
 // SPA fallback — any non-API GET that didn't match static gets index.html so vue-router
 // can take over. Anything starting with /api that didn't match a route falls through to
-// the 404 below.
-app.get(/^(?!\/api).*/, (_req, res) => {
+// the 404 below. A request for a stale hashed asset (old deploy) must 404 rather than
+// receive index.html-as-JavaScript, so the chunk-error handler in the frontend can
+// detect the failure and reload.
+app.get(/^(?!\/api).*/, (req, res) => {
+  if (req.path.startsWith('/assets/')) {
+    res.status(404).send('Asset not found (stale deploy reference).')
+    return
+  }
+  res.setHeader('Cache-Control', 'no-cache')
   res.sendFile(join(distPath, 'index.html'), (err) => {
     if (err) {
       res.status(404).send('Not found.')

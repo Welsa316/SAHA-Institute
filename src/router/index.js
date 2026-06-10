@@ -214,4 +214,27 @@ router.afterEach((to) => {
   }
 })
 
+// Recover from stale-deploy chunk failures. Lazy routes import hashed chunk
+// files; after a redeploy the old hashes are gone, so a browser holding a
+// cached index.html gets a failed dynamic import and navigation silently
+// aborts (this is how the admin Students tab once "showed nothing"). One
+// hard reload fetches the fresh index.html with current hashes. The
+// sessionStorage flag stops a reload loop if something else is broken.
+router.onError((error, to) => {
+  const chunkFailed =
+    error?.message?.includes('Failed to fetch dynamically imported module') ||
+    error?.message?.includes('Importing a module script failed') ||
+    error?.message?.includes('error loading dynamically imported module')
+  if (chunkFailed && !sessionStorage.getItem('saha-chunk-reload')) {
+    sessionStorage.setItem('saha-chunk-reload', '1')
+    window.location.assign(to?.fullPath ?? window.location.pathname)
+  }
+})
+
+router.afterEach(() => {
+  // Navigation succeeded — clear the reload guard so a future deploy can
+  // trigger recovery again.
+  sessionStorage.removeItem('saha-chunk-reload')
+})
+
 export default router

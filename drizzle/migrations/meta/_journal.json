@@ -57,6 +57,13 @@
       "when": 1780294800000,
       "tag": "0007_student_username",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781200800000,
+      "tag": "0008_repend_unreviewed_registrations",
+      "breakpoints": true
     }
   ]
 }
