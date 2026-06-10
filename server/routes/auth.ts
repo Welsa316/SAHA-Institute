@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users } from '../db/schema.js'
@@ -15,10 +16,21 @@ import { logger } from '../lib/log.js'
 
 export const authRouter: Router = Router()
 
+// Brute-force guard on the single shared admin account. 10 attempts per IP per
+// 15 minutes — comfortably above a fat-fingered human, far below an online
+// guessing attack. Mirrors the limiter the student auth routes already use.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please try again in a few minutes.' },
+})
+
 // POST /api/auth/login — body: { email, password }
 // Always returns within ~constant time whether the user exists or not (verifyPassword still runs)
 // so we don't leak account existence through response timing.
-authRouter.post('/login', async (req, res, next) => {
+authRouter.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body)
 

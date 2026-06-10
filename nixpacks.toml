@@ -3,6 +3,14 @@
 # Nixpacks versions. Pinning the steps here makes the build deterministic and
 # slightly faster because Railway can short-circuit the detection phase.
 
+# NODE_ENV=production is pinned here so it's GUARANTEED at runtime, not left to
+# Railway's defaults. The session cookie's `secure` flag keys off it
+# (server/lib/auth.ts) — without it set, admin/student session cookies could
+# ship over HTTP without Secure in production. Belt-and-suspenders even though
+# Railway usually sets it.
+[variables]
+NODE_ENV = 'production'
+
 # Pin Node so the npm cache layer is reusable across builds. Bumping this version
 # invalidates the install cache — only do it when we actually need a new Node.
 [phases.setup]
@@ -13,8 +21,11 @@ nixPkgs = ['nodejs_22']
 # them — `tsx server/index.ts` boots in ~200ms regardless of node_modules size,
 # and the trade-off of a slightly larger image vs. a second install step
 # (production prune) is worth it for build-time predictability.
+# `--include=dev` is REQUIRED because NODE_ENV=production (pinned above) would
+# otherwise make `npm ci` skip devDependencies, and the vite/tailwind build
+# would fail with "vite: not found".
 [phases.install]
-cmds = ['npm ci --no-audit --no-fund']
+cmds = ['npm ci --include=dev --no-audit --no-fund']
 
 # Vite build only. Drizzle migrations and admin seeding run on first boot inside
 # the server (`runMigrations()` + `seedAdmin()` in server/index.ts), so the build
