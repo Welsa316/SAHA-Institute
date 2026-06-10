@@ -13,6 +13,7 @@ import { authRouter } from './routes/auth.js'
 import { workshopSignupsRouter } from './routes/workshopSignups.js'
 import { studentsRouter } from './routes/students.js'
 import { studentAuthRouter } from './routes/studentAuth.js'
+import { assignmentsRouter } from './routes/assignments.js'
 import { paymentsRouter } from './routes/payments.js'
 import { contactRouter } from './routes/contact.js'
 
@@ -41,6 +42,7 @@ app.use('/api/summer-camp', studentsRouter('summer_camp'))
 app.use('/api/stem-program', studentsRouter('stem_program'))
 app.use('/api/students', studentsRouter('regular'))
 app.use('/api/student-auth', studentAuthRouter)
+app.use('/api/assignments', assignmentsRouter)
 app.use('/api/payments', paymentsRouter)
 
 // ---------- Static frontend ----------

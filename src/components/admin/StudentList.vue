@@ -26,6 +26,10 @@ const props = defineProps({
   // on by default. The year-round Students roster turns it off — those rows
   // will be created automatically when student self-registration ships.
   allowAdd: { type: Boolean, default: true },
+  // Homework management in the detail modal. Only the year-round Students
+  // roster turns this on — assignments go to students with portal accounts,
+  // not camp/STEM roster rows.
+  allowAssignments: { type: Boolean, default: false },
 })
 
 const api = useAdminApi()
@@ -299,6 +303,90 @@ function detailRef() {
   // to mutate the array entry, not the modal-local copy.
   if (!detailRow.value) return null
   return students.value.find((s) => s.id === detailRow.value.id) ?? null
+}
+
+// ---------- Assignments (homework) ----------
+// Loaded when the detail modal opens (only on rosters with allowAssignments).
+// Teacher can add, delete, and toggle completion; the student sees the same
+// list in their portal and can mark items done.
+
+const assignments = ref([])
+const assignmentsLoading = ref(false)
+const assignmentError = ref('')
+const assignmentSaving = ref(false)
+const newAssignment = ref({ title: '', details: '', dueDate: '' })
+
+watch(
+  () => detailRow.value?.id,
+  async (id) => {
+    assignments.value = []
+    assignmentError.value = ''
+    if (!id || !props.allowAssignments) return
+    assignmentsLoading.value = true
+    try {
+      const data = await api.get(`/api/assignments?studentId=${id}`)
+      assignments.value = data.assignments ?? []
+    } catch (err) {
+      assignmentError.value = err.message
+    } finally {
+      assignmentsLoading.value = false
+    }
+  },
+)
+
+async function addAssignment() {
+  assignmentError.value = ''
+  const { title, details, dueDate } = newAssignment.value
+  if (!title.trim()) {
+    assignmentError.value = 'A title is required.'
+    return
+  }
+  assignmentSaving.value = true
+  try {
+    const data = await api.post('/api/assignments', {
+      studentId: detailRow.value.id,
+      title: title.trim(),
+      details: details.trim() || null,
+      dueDate: dueDate || null,
+    })
+    assignments.value.unshift(data.assignment)
+    newAssignment.value = { title: '', details: '', dueDate: '' }
+  } catch (err) {
+    assignmentError.value = err.message
+  } finally {
+    assignmentSaving.value = false
+  }
+}
+
+async function toggleAssignmentDone(a) {
+  const prev = a.completed
+  a.completed = !prev
+  try {
+    const data = await api.patch(`/api/assignments/${a.id}`, { completed: a.completed })
+    Object.assign(a, data.assignment)
+  } catch (err) {
+    a.completed = prev
+    assignmentError.value = err.message
+  }
+}
+
+async function deleteAssignment(a) {
+  try {
+    await api.delete(`/api/assignments/${a.id}`)
+    assignments.value = assignments.value.filter((x) => x.id !== a.id)
+  } catch (err) {
+    assignmentError.value = err.message
+  }
+}
+
+function dueBadge(a) {
+  if (!a.dueDate) return null
+  const days = daysUntil(a.dueDate)
+  const base = 'inline-block px-2 py-0.5 rounded-full text-[10px] font-body font-bold border whitespace-nowrap'
+  if (a.completed) return { class: `${base} bg-navy-50 text-navy-400 border-navy-200`, label: `Due ${a.dueDate}` }
+  if (days < 0) return { class: `${base} bg-red-50 text-red-700 border-red-200`, label: `Overdue · ${a.dueDate}` }
+  if (days === 0) return { class: `${base} bg-amber-50 text-amber-800 border-amber-200`, label: 'Due today' }
+  return { class: `${base} bg-academic-50 text-academic-700 border-academic-200`, label: `Due ${a.dueDate}` }
 }
 </script>
 
@@ -697,6 +785,95 @@ function detailRef() {
             <p class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1.5">Notes</p>
             <p v-if="detailRow.notes" class="font-body text-sm text-navy-700 whitespace-pre-wrap leading-relaxed">{{ detailRow.notes }}</p>
             <p v-else class="font-body text-sm text-navy-300 italic">No notes yet.</p>
+          </div>
+
+          <!-- Homework — only on rosters with portal accounts (Students). -->
+          <div v-if="allowAssignments" class="mb-6 pt-5 border-t border-navy-100">
+            <p class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-2">Homework</p>
+
+            <div v-if="assignmentError" class="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-body">
+              {{ assignmentError }}
+            </div>
+
+            <div v-if="assignmentsLoading" class="py-3 font-body text-xs text-navy-400">Loading…</div>
+            <p v-else-if="assignments.length === 0" class="font-body text-sm text-navy-300 italic mb-3">Nothing assigned yet.</p>
+
+            <ul v-else class="space-y-2 mb-4 max-h-56 overflow-y-auto pr-1">
+              <li
+                v-for="a in assignments"
+                :key="a.id"
+                class="flex items-start gap-3 p-3 rounded-xl border"
+                :class="a.completed ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-navy-100'"
+              >
+                <!-- Done toggle -->
+                <button
+                  type="button"
+                  @click="toggleAssignmentDone(a)"
+                  :aria-label="a.completed ? 'Mark not done' : 'Mark done'"
+                  class="mt-0.5 w-5 h-5 shrink-0 rounded border flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+                  :class="a.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-navy-300 hover:border-academic-400'"
+                >
+                  <svg v-if="a.completed" class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-body text-sm font-semibold" :class="a.completed ? 'text-navy-400 line-through' : 'text-navy-900'">{{ a.title }}</p>
+                    <span v-if="dueBadge(a)" :class="dueBadge(a).class">{{ dueBadge(a).label }}</span>
+                  </div>
+                  <p v-if="a.details" class="font-body text-xs text-navy-500 mt-0.5 whitespace-pre-wrap">{{ a.details }}</p>
+                </div>
+                <button
+                  type="button"
+                  @click="deleteAssignment(a)"
+                  aria-label="Delete assignment"
+                  class="p-1.5 rounded-lg text-navy-300 hover:bg-red-50 hover:text-red-600 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 focus:outline-none"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </li>
+            </ul>
+
+            <!-- Add homework -->
+            <form @submit.prevent="addAssignment" class="space-y-2">
+              <input
+                v-model="newAssignment.title"
+                type="text"
+                required
+                :disabled="assignmentSaving"
+                placeholder="Assignment title (e.g. Math worksheet p. 12)"
+                class="w-full px-3 py-2 rounded-lg bg-white border border-navy-200 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 disabled:opacity-50"
+              />
+              <textarea
+                v-model="newAssignment.details"
+                rows="2"
+                :disabled="assignmentSaving"
+                placeholder="Details (optional)"
+                class="w-full px-3 py-2 rounded-lg bg-white border border-navy-200 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 resize-none disabled:opacity-50"
+              ></textarea>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="newAssignment.dueDate"
+                  type="date"
+                  :disabled="assignmentSaving"
+                  aria-label="Due date (optional)"
+                  class="px-2.5 py-1.5 rounded-lg bg-white border border-navy-200 text-navy-700 text-xs font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  :disabled="assignmentSaving"
+                  class="ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#001B3D] text-white font-body text-xs font-bold uppercase tracking-wider hover:bg-navy-800 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  {{ assignmentSaving ? 'Assigning…' : 'Assign' }}
+                </button>
+              </div>
+            </form>
           </div>
 
           <div class="flex justify-between items-center pt-4 border-t border-navy-100">

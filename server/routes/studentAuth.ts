@@ -1,9 +1,14 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { students } from '../db/schema.js'
-import { studentRegisterSchema, studentLoginSchema } from '../schemas/index.js'
+import { assignments, students } from '../db/schema.js'
+import {
+  studentRegisterSchema,
+  studentLoginSchema,
+  assignmentStudentUpdateSchema,
+  idParamSchema,
+} from '../schemas/index.js'
 import {
   STUDENT_COOKIE_NAME,
   clearSessionCookieOptions,
@@ -189,6 +194,50 @@ studentAuthRouter.get('/me', requireStudentAuth, async (_req, res, next) => {
       return
     }
     res.json({ student: publicStudent(account) })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ---------- Assignments (student side) ----------
+
+// GET /api/student-auth/assignments — the logged-in student's own homework,
+// open items first (incomplete sorted before complete), newest first within
+// each group.
+studentAuthRouter.get('/assignments', requireStudentAuth, async (_req, res, next) => {
+  try {
+    const studentId = res.locals.student!.studentId
+    const rows = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.studentId, studentId))
+      .orderBy(assignments.completed, desc(assignments.createdAt))
+    res.json({ assignments: rows })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PATCH /api/student-auth/assignments/:id — a student may ONLY toggle the
+// completed flag, and only on their own assignment (the WHERE clause binds
+// the row to their session's studentId, so a guessed id 404s).
+studentAuthRouter.patch('/assignments/:id', requireStudentAuth, async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params)
+    const { completed } = assignmentStudentUpdateSchema.parse(req.body)
+    const studentId = res.locals.student!.studentId
+
+    const [row] = await db
+      .update(assignments)
+      .set({ completed, updatedAt: new Date() })
+      .where(and(eq(assignments.id, id), eq(assignments.studentId, studentId)))
+      .returning()
+    if (!row) {
+      res.status(404).json({ error: 'Assignment not found.' })
+      return
+    }
+    logger.info('assignment', 'student toggled', { id, studentId, completed })
+    res.json({ assignment: row })
   } catch (err) {
     next(err)
   }

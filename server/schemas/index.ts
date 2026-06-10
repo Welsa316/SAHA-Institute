@@ -92,6 +92,34 @@ export const studentLoginSchema = z.object({
   password: z.string().min(1).max(200),
 })
 
+// ---------- Assignments (homework) ----------
+
+// Teacher-side create. Assigned to one student.
+export const assignmentCreateSchema = z.object({
+  studentId: z.number().int().positive(),
+  title: z.string().trim().min(1).max(200),
+  details: z.string().trim().max(5000).nullable().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+})
+
+// Teacher-side update — any subset of fields.
+export const assignmentUpdateSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  details: z.string().trim().max(5000).nullable().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  completed: z.boolean().optional(),
+})
+
+// Student-side update — the ONLY thing a student may change on their own
+// assignment is the completed flag.
+export const assignmentStudentUpdateSchema = z.object({
+  completed: z.boolean(),
+})
+
+export const studentIdQuerySchema = z.object({
+  studentId: z.coerce.number().int().positive(),
+})
+
 export const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 })
@@ -103,3 +131,5 @@ export type StudentCreate = z.infer<typeof studentCreateSchema>
 export type StudentUpdate = z.infer<typeof studentUpdateSchema>
 export type StudentRegister = z.infer<typeof studentRegisterSchema>
 export type StudentLogin = z.infer<typeof studentLoginSchema>
+export type AssignmentCreate = z.infer<typeof assignmentCreateSchema>
+export type AssignmentUpdate = z.infer<typeof assignmentUpdateSchema>

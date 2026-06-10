@@ -64,6 +64,13 @@
       "when": 1781200800000,
       "tag": "0008_repend_unreviewed_registrations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781201400000,
+      "tag": "0009_assignments",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, date, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, boolean, timestamp, date, integer, pgEnum } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
 
@@ -99,10 +99,32 @@ export const students = pgTable('students', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ---------- assignments ----------
+// Homework a teacher assigns to a specific student (admin-side CRUD). The
+// student sees their own list in the portal and can mark items done; the
+// teacher can also toggle completion (e.g. when work is handed in on paper).
+// Cascade delete: removing a student removes their assignments.
+
+export const assignments = pgTable('assignments', {
+  id: serial('id').primaryKey(),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  details: text('details'),
+  dueDate: date('due_date'),
+  completed: boolean('completed').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ---------- Inferred row types for use in route handlers and the frontend ----------
 
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
+
+export type Assignment = typeof assignments.$inferSelect
+export type NewAssignment = typeof assignments.$inferInsert
 
 export type WorkshopSignup = typeof workshopSignups.$inferSelect
 export type NewWorkshopSignup = typeof workshopSignups.$inferInsert
