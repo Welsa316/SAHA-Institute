@@ -1,5 +1,8 @@
 <script setup>
-defineProps({
+import { ref, toRef } from 'vue'
+import { useModalA11y } from '../../composables/useModalA11y.js'
+
+const props = defineProps({
   show: { type: Boolean, required: true },
   title: { type: String, default: 'Are you sure?' },
   message: { type: String, default: '' },
@@ -8,24 +11,33 @@ defineProps({
   danger: { type: Boolean, default: false },
 })
 const emit = defineEmits(['confirm', 'cancel'])
+
+// Focus trap + ESC-to-cancel + scroll lock. Sits above the detail modal
+// correctly thanks to the shared modal stack.
+const panel = ref(null)
+const show = toRef(props, 'show')
+useModalA11y(() => show.value, panel, () => emit('cancel'))
 </script>
 
 <template>
   <Transition
+    :duration="{ enter: 150, leave: 100 }"
     enter-active-class="transition duration-150 ease-out"
     enter-from-class="opacity-0"
     enter-to-class="opacity-100"
-    leave-active-class="transition duration-100 ease-in"
+    leave-active-class="transition duration-100 ease-in pointer-events-none"
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
     <div v-if="show" class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4" @click.self="emit('cancel')">
       <div
+        ref="panel"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
         class="bg-white rounded-2xl shadow-2xl shadow-black/20 max-w-md w-full p-6 md:p-7"
       >
-        <h2 class="font-heading text-xl font-bold text-[#001B3D] mb-2">{{ title }}</h2>
+        <h2 id="confirm-dialog-title" class="font-heading text-xl font-bold text-[#001B3D] mb-2">{{ title }}</h2>
         <p v-if="message" class="font-body text-sm text-navy-500 leading-relaxed mb-6">{{ message }}</p>
         <div class="flex gap-3 justify-end">
           <button

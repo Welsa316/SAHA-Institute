@@ -205,12 +205,12 @@ const sortOptions = [
       </div>
     </div>
 
-    <div v-if="error" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
+    <div v-if="error" role="alert" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
       {{ error }}
     </div>
 
     <div class="px-6 md:px-10 py-6">
-      <div v-if="loading" class="py-16 text-center font-body text-sm text-navy-400">Loading…</div>
+      <div v-if="loading" role="status" class="py-16 text-center font-body text-sm text-navy-400">Loading…</div>
       <div v-else-if="filtered.length === 0" class="py-16 text-center">
         <p class="font-body text-sm text-navy-400">No signups match this filter yet.</p>
       </div>
@@ -220,20 +220,20 @@ const sortOptions = [
           <table class="w-full text-left text-sm">
             <thead class="bg-navy-50/60">
               <tr>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Name</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops <span class="font-normal normal-case tracking-normal text-navy-400">(click to toggle paid)</span></th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Status</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Submitted</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (parent)</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (teacher)</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Actions</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Name</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Workshops <span class="font-normal normal-case tracking-normal text-navy-400">(click to toggle paid)</span></th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Status</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Submitted</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (parent)</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes (teacher)</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-navy-100">
               <tr v-for="row in filtered" :key="row.id" class="align-top hover:bg-navy-50/40 transition-colors">
-                <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.parentName }}</td>
-                <td class="px-4 py-4 font-body text-navy-700">
+                <td class="px-4 py-4 font-body font-semibold text-navy-900 break-words">{{ row.parentName }}</td>
+                <td class="px-4 py-4 font-body text-navy-700 break-words">
                   <span v-if="row.studentName">{{ row.studentName }}</span>
                   <span v-else class="text-navy-300 italic">—</span>
                 </td>

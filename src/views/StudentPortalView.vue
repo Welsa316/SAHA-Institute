@@ -129,7 +129,7 @@ async function handleLogout() {
             </span>
           </div>
 
-          <div v-if="assignmentsError" class="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
+          <div v-if="assignmentsError" role="alert" class="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
             {{ assignmentsError }}
           </div>
 
@@ -155,10 +155,10 @@ async function handleLogout() {
               </button>
               <div class="flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <p class="font-body text-sm font-semibold" :class="a.completed ? 'text-navy-400 line-through' : 'text-navy-900'">{{ a.title }}</p>
+                  <p class="font-body text-sm font-semibold break-words min-w-0" :class="a.completed ? 'text-navy-400 line-through' : 'text-navy-900'">{{ a.title }}</p>
                   <span v-if="dueInfo(a)" :class="dueInfo(a).class">{{ dueInfo(a).label }}</span>
                 </div>
-                <p v-if="a.details" class="font-body text-sm text-navy-600 mt-1 whitespace-pre-wrap leading-relaxed">{{ a.details }}</p>
+                <p v-if="a.details" class="font-body text-sm text-navy-600 mt-1 whitespace-pre-wrap break-words leading-relaxed">{{ a.details }}</p>
               </div>
             </li>
           </ul>

@@ -1,17 +1,15 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAdminApi } from '../../composables/useAdminApi.js'
 import PageHeader from '../../components/admin/PageHeader.vue'
 
 // Read-only consolidated view of paid status across every billable source — workshop
 // signups, summer camp, STEM program, regular tutoring. The point of this page is to
-// give Mrs. Anila a single screen to see who's about to lapse without bouncing through
-// four roster tabs. Editing still happens on the source-specific page; clicking a row
-// here deep-links there.
+// give the team a single screen to see who's about to lapse without bouncing through
+// four roster tabs. Editing still happens on the source-specific page; each row's
+// "Open" link deep-links there.
 
 const api = useAdminApi()
-const router = useRouter()
 
 const rows = ref([])
 const loading = ref(true)
@@ -120,12 +118,6 @@ function statusBadge(row) {
   return { class: `${base} bg-navy-50 text-navy-500 border-navy-200`, label: 'Not paid' }
 }
 
-function goToSource(row) {
-  // Mutations live on the source page. Deep-link the admin there so they can act on
-  // this exact record. No pre-selection yet — that's a follow-up if Anila asks for it.
-  router.push(sourceRoutes[row.source])
-}
-
 function formatUpdated(value) {
   if (!value) return '—'
   const d = new Date(value)
@@ -202,23 +194,22 @@ const statusFilters = [
           <table class="w-full text-left text-sm">
             <thead class="bg-navy-50/60">
               <tr>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Source</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Status</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Last updated</th>
-                <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Manage</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Source</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Status</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Last updated</th>
+                <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Manage</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-navy-100">
               <tr
                 v-for="row in filtered"
                 :key="`${row.source}-${row.id}`"
-                class="hover:bg-navy-50/40 transition-colors cursor-pointer"
-                @click="goToSource(row)"
+                class="hover:bg-navy-50/40 transition-colors"
               >
-                <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.studentName || row.parentName }}</td>
-                <td class="px-4 py-4 font-body text-navy-700">{{ row.parentName }}</td>
+                <td class="px-4 py-4 font-body font-semibold text-navy-900 break-words">{{ row.studentName || row.parentName }}</td>
+                <td class="px-4 py-4 font-body text-navy-700 break-words">{{ row.parentName }}</td>
                 <td class="px-4 py-4">
                   <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border" :class="sourceColors[row.source]">
                     {{ sourceLabels[row.source] }}
@@ -229,12 +220,18 @@ const statusFilters = [
                 </td>
                 <td class="px-4 py-4 font-body text-xs text-navy-500 whitespace-nowrap">{{ formatUpdated(row.updatedAt) }}</td>
                 <td class="px-4 py-4 text-right">
-                  <span class="inline-flex items-center gap-1 font-body text-xs text-academic-700 font-semibold">
+                  <!-- Real link, keyboard-reachable. Deep-links to the source
+                       page that owns this record's edits. -->
+                  <router-link
+                    :to="sourceRoutes[row.source]"
+                    class="inline-flex items-center gap-1 font-body text-xs text-academic-700 font-semibold hover:text-academic-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none rounded"
+                    :aria-label="`Manage ${row.studentName || row.parentName} in ${sourceLabels[row.source]}`"
+                  >
                     Open
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
-                  </span>
+                  </router-link>
                 </td>
               </tr>
             </tbody>

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useAdminApi } from '../../composables/useAdminApi.js'
+import { useModalA11y } from '../../composables/useModalA11y.js'
 import PageHeader from './PageHeader.vue'
 import GradePill from './GradePill.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
@@ -298,12 +299,12 @@ function openDetail(row) {
   detailRow.value = { ...row }
 }
 
-function detailRef() {
-  // Resolve the live reactive row matching detailRow.value.id — for PATCH calls we want
-  // to mutate the array entry, not the modal-local copy.
-  if (!detailRow.value) return null
-  return students.value.find((s) => s.id === detailRow.value.id) ?? null
-}
+// Accessibility: focus trap + ESC + scroll lock + focus restore for both modals.
+// Panel refs are attached to each dialog's panel element in the template.
+const addPanel = ref(null)
+const detailPanel = ref(null)
+useModalA11y(() => addOpen.value, addPanel, () => { addOpen.value = false })
+useModalA11y(() => !!detailRow.value, detailPanel, () => { detailRow.value = null })
 
 // ---------- Assignments (homework) ----------
 // Loaded when the detail modal opens (only on rosters with allowAssignments).
@@ -407,12 +408,12 @@ function dueBadge(a) {
       </template>
     </PageHeader>
 
-    <div v-if="error" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
+    <div v-if="error" role="alert" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
       {{ error }}
     </div>
 
     <div class="px-6 md:px-10 py-8 space-y-10">
-      <div v-if="loading" class="py-16 text-center font-body text-sm text-navy-400">Loading…</div>
+      <div v-if="loading" role="status" class="py-16 text-center font-body text-sm text-navy-400">Loading…</div>
       <div v-else-if="students.length === 0" class="py-16 text-center">
         <p class="font-body text-sm text-navy-400">{{ emptyMessage }}</p>
       </div>
@@ -430,21 +431,22 @@ function dueBadge(a) {
             <table class="w-full text-left text-sm">
               <thead class="bg-amber-100/50">
                 <tr>
-                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Name</th>
-                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Registered</th>
-                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Assign grade</th>
-                  <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800 text-right">Review</th>
+                  <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Name</th>
+                  <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Registered</th>
+                  <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Assign grade</th>
+                  <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800 text-right">Review</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-amber-200/70">
                 <tr v-for="row in pending" :key="row.id" class="hover:bg-amber-100/30 transition-colors">
-                  <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.studentName }}</td>
+                  <td class="px-4 py-4 font-body font-semibold text-navy-900 break-words">{{ row.studentName }}</td>
                   <td class="px-4 py-4 font-body text-xs text-navy-500 whitespace-nowrap">{{ formatRegistered(row.createdAt) }}</td>
                   <td class="px-4 py-4">
                     <select
                       :value="row.gradeLevel ?? ''"
                       :disabled="isSaving(row.id)"
                       @change="(e) => setGrade(row, e.target.value)"
+                      :aria-label="`Assign grade for ${row.studentName}`"
                       class="px-2.5 py-1.5 rounded-lg bg-white border border-amber-200 text-navy-700 text-xs font-body font-semibold focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-50"
                     >
                       <option value="" disabled>Choose grade…</option>
@@ -489,11 +491,13 @@ function dueBadge(a) {
         <!-- Grade tabs — one per grade that has students. Only the active
              grade's table renders below, so the three grades aren't stacked
              on one long page. -->
-        <div class="flex flex-wrap gap-1 border-b border-navy-100">
+        <div role="tablist" aria-label="Filter roster by grade" class="flex flex-wrap gap-1 border-b border-navy-100">
           <button
             v-for="grade in gradeTabs"
             :key="`tab-${grade}`"
             type="button"
+            role="tab"
+            :aria-selected="activeGrade === grade"
             @click="activeGrade = grade"
             class="relative px-4 py-2.5 -mb-px border-b-2 font-body text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
             :class="activeGrade === grade
@@ -518,15 +522,15 @@ function dueBadge(a) {
                 <table class="w-full text-left text-sm">
                   <thead class="bg-navy-50/60">
                     <tr>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Phone</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Billing status</th>
-                      <th v-if="showPaidFrom" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid from</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid until</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes</th>
-                      <th class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Actions</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Parent</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Student</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Phone</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Billing status</th>
+                      <th v-if="showPaidFrom" scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid from</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Paid until</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500">Notes</th>
+                      <th scope="col" class="px-4 py-3 font-body text-[10px] font-bold uppercase tracking-[0.18em] text-navy-500 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-navy-100">
@@ -536,8 +540,8 @@ function dueBadge(a) {
                       class="align-top hover:bg-navy-50/40 transition-colors cursor-pointer"
                       @click="openDetail(row)"
                     >
-                      <td class="px-4 py-4 font-body font-semibold text-navy-900">{{ row.parentName }}</td>
-                      <td class="px-4 py-4 font-body text-navy-700">{{ row.studentName }}</td>
+                      <td class="px-4 py-4 font-body font-semibold text-navy-900 break-words">{{ row.parentName }}</td>
+                      <td class="px-4 py-4 font-body text-navy-700 break-words">{{ row.studentName }}</td>
                       <td class="px-4 py-4 font-body text-navy-600 text-sm whitespace-nowrap">{{ formatPhone(row.phoneNumber) }}</td>
                       <!-- The toggles/inputs below have @click.stop so a misfire on the input doesn't open the detail modal. -->
                       <td class="px-4 py-4" @click.stop>
@@ -575,6 +579,7 @@ function dueBadge(a) {
                           :value="row.paidFrom ?? ''"
                           :disabled="!row.paid || isSaving(row.id)"
                           @change="(e) => patch(row, { paidFrom: e.target.value || null })"
+                          :aria-label="`Paid from date for ${row.studentName}`"
                           class="px-2 py-1 rounded-lg bg-navy-50 border border-navy-100 text-navy-700 text-xs font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-40 disabled:cursor-not-allowed"
                         />
                       </td>
@@ -584,6 +589,7 @@ function dueBadge(a) {
                           :value="row.paidUntil ?? ''"
                           :disabled="!row.paid || isSaving(row.id)"
                           @change="(e) => patch(row, { paidUntil: e.target.value || null })"
+                          :aria-label="`Paid until date for ${row.studentName}`"
                           class="px-2 py-1 rounded-lg bg-navy-50 border border-navy-100 text-navy-700 text-xs font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-40 disabled:cursor-not-allowed"
                         />
                       </td>
@@ -595,12 +601,26 @@ function dueBadge(a) {
                           @save="(v) => patch(row, { notes: v })"
                         />
                       </td>
-                      <td class="px-4 py-4 text-right" @click.stop>
+                      <td class="px-4 py-4 text-right whitespace-nowrap" @click.stop>
+                        <!-- Keyboard-reachable way into the detail modal (where
+                             homework + grade live). The row @click is a mouse
+                             convenience; this button is the accessible path. -->
+                        <button
+                          type="button"
+                          @click="openDetail(row)"
+                          class="p-2 rounded-lg text-navy-400 hover:bg-navy-50 hover:text-navy-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+                          :aria-label="`Open details for ${row.studentName}`"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </button>
                         <button
                           type="button"
                           @click="toDeleteId = row.id"
                           class="p-2 rounded-lg text-navy-400 hover:bg-red-50 hover:text-red-600 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 focus:outline-none"
-                          aria-label="Delete student"
+                          :aria-label="`Delete ${row.studentName}`"
                         >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -618,20 +638,24 @@ function dueBadge(a) {
       </template>
     </div>
 
-    <!-- Add student modal — only mounted when manual entry is allowed. -->
+    <!-- Add student modal — only mounted when manual entry is allowed.
+         :duration makes Vue finish the leave on a timer instead of relying on
+         transitionend, which automated browsers (and backgrounded tabs) can
+         fail to fire — otherwise the invisible backdrop can linger in the DOM. -->
     <Transition
       v-if="allowAdd"
+      :duration="{ enter: 150, leave: 100 }"
       enter-active-class="transition duration-150 ease-out"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"
-      leave-active-class="transition duration-100 ease-in"
+      leave-active-class="transition duration-100 ease-in pointer-events-none"
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
       <div v-if="addOpen" class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4" @click.self="addOpen = false">
-        <div role="dialog" aria-modal="true" class="bg-white rounded-2xl shadow-2xl shadow-black/20 max-w-md w-full p-6 md:p-7">
-          <h2 class="font-heading text-xl font-bold text-[#001B3D] mb-4">Add student</h2>
-          <div v-if="addError" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+        <div ref="addPanel" role="dialog" aria-modal="true" aria-labelledby="add-student-title" class="bg-white rounded-2xl shadow-2xl shadow-black/20 max-w-md w-full p-6 md:p-7">
+          <h2 id="add-student-title" class="font-heading text-xl font-bold text-[#001B3D] mb-4">Add student</h2>
+          <div v-if="addError" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
             {{ addError }}
           </div>
           <form @submit.prevent="submitAdd" class="space-y-4">
@@ -708,22 +732,24 @@ function dueBadge(a) {
       </div>
     </Transition>
 
-    <!-- Student detail modal -->
+    <!-- Student detail modal. :duration guarantees the leave completes on a
+         timer (see add-modal note) so the backdrop is always removed. -->
     <Transition
+      :duration="{ enter: 150, leave: 100 }"
       enter-active-class="transition duration-150 ease-out"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"
-      leave-active-class="transition duration-100 ease-in"
+      leave-active-class="transition duration-100 ease-in pointer-events-none"
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
       <div v-if="detailRow" class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4" @click.self="detailRow = null">
-        <div role="dialog" aria-modal="true" class="bg-white rounded-2xl shadow-2xl shadow-black/20 max-w-lg w-full p-6 md:p-8">
+        <div ref="detailPanel" role="dialog" aria-modal="true" aria-labelledby="student-detail-title" class="bg-white rounded-2xl shadow-2xl shadow-black/20 max-w-lg w-full p-6 md:p-8 max-h-[90vh] overflow-y-auto">
           <div class="flex items-start justify-between gap-4 mb-5">
             <div>
               <p class="font-body text-[10px] tracking-[0.2em] uppercase text-academic-600 font-bold mb-1">Student detail</p>
-              <h2 class="font-heading text-2xl font-bold text-[#001B3D] tracking-tight leading-tight">{{ detailRow.studentName }}</h2>
-              <p class="font-body text-sm text-navy-500 mt-0.5">Parent: {{ detailRow.parentName }}</p>
+              <h2 id="student-detail-title" class="font-heading text-2xl font-bold text-[#001B3D] tracking-tight leading-tight break-words">{{ detailRow.studentName }}</h2>
+              <p class="font-body text-sm text-navy-500 mt-0.5 break-words">Parent: {{ detailRow.parentName }}</p>
             </div>
             <button
               type="button"
@@ -791,11 +817,11 @@ function dueBadge(a) {
           <div v-if="allowAssignments" class="mb-6 pt-5 border-t border-navy-100">
             <p class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-2">Homework</p>
 
-            <div v-if="assignmentError" class="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-body">
+            <div v-if="assignmentError" role="alert" class="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-body">
               {{ assignmentError }}
             </div>
 
-            <div v-if="assignmentsLoading" class="py-3 font-body text-xs text-navy-400">Loading…</div>
+            <div v-if="assignmentsLoading" role="status" class="py-3 font-body text-xs text-navy-400">Loading…</div>
             <p v-else-if="assignments.length === 0" class="font-body text-sm text-navy-300 italic mb-3">Nothing assigned yet.</p>
 
             <ul v-else class="space-y-2 mb-4 max-h-56 overflow-y-auto pr-1">
@@ -822,7 +848,7 @@ function dueBadge(a) {
                     <p class="font-body text-sm font-semibold" :class="a.completed ? 'text-navy-400 line-through' : 'text-navy-900'">{{ a.title }}</p>
                     <span v-if="dueBadge(a)" :class="dueBadge(a).class">{{ dueBadge(a).label }}</span>
                   </div>
-                  <p v-if="a.details" class="font-body text-xs text-navy-500 mt-0.5 whitespace-pre-wrap">{{ a.details }}</p>
+                  <p v-if="a.details" class="font-body text-xs text-navy-500 mt-0.5 whitespace-pre-wrap break-words">{{ a.details }}</p>
                 </div>
                 <button
                   type="button"
@@ -844,6 +870,7 @@ function dueBadge(a) {
                 type="text"
                 required
                 :disabled="assignmentSaving"
+                aria-label="Assignment title"
                 placeholder="Assignment title (e.g. Math worksheet p. 12)"
                 class="w-full px-3 py-2 rounded-lg bg-white border border-navy-200 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 disabled:opacity-50"
               />
@@ -851,6 +878,7 @@ function dueBadge(a) {
                 v-model="newAssignment.details"
                 rows="2"
                 :disabled="assignmentSaving"
+                aria-label="Assignment details (optional)"
                 placeholder="Details (optional)"
                 class="w-full px-3 py-2 rounded-lg bg-white border border-navy-200 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 resize-none disabled:opacity-50"
               ></textarea>

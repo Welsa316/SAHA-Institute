@@ -68,7 +68,7 @@ const toggleTarget = computed(() => ({
           {{ mode === 'register' ? t('studentAuth.registerSubtitle') : t('studentAuth.loginSubtitle') }}
         </p>
 
-        <div v-if="error" class="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200">
+        <div v-if="error" role="alert" class="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200">
           <p class="font-body text-sm text-red-600">{{ error }}</p>
         </div>
 
