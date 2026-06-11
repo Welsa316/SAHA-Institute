@@ -75,3 +75,21 @@ is using the dashboard in production and feedback starts coming back.
 - `useAdminAuth.js` keeps the session in memory, so a hard refresh hits `/api/auth/me`
   to re-check. That's fine for a low-traffic admin but if we ever load 10+ admin pages
   in tabs we should debounce.
+
+## Known future work — refactors flagged in review (deferred, need their own PR)
+
+These came out of the admin-dashboard `/review`. They were deferred (not bug fixes —
+behavior-preserving restructures that touch many lines) so they don't get bundled into
+the targeted fix commits. Each should be its own PR.
+
+- **Split `src/components/admin/StudentList.vue` (~950 lines).** It now does the roster
+  table, grade tabs, the pending-approval queue, the add-student modal, the detail modal,
+  billing-cycle helpers, AND homework management. Extract into `PendingStudentsSection`,
+  `StudentRoster`, `StudentDetailModal` (+ an `AssignmentsPanel`), and a
+  `useStudentBilling` composable. Pure restructure — no behavior change. Biggest
+  maintainability win in the codebase.
+- **Extract a shared `useFormatting.js`.** `daysUntil` / `todayStr` / `addDays` /
+  `formatDate`-style date helpers are copy-pasted across StudentList, PaymentsView,
+  StudentPortalView, and the admin billing logic. One module, imported everywhere. Also
+  hoist the dummy-bcrypt-hash constant (duplicated in `routes/auth.ts` and
+  `routes/studentAuth.ts`) into `lib/auth.ts`.

@@ -120,13 +120,8 @@ export default {
     heroSubtitle: 'Tell us a little about your student and which workshops they\'d like to join. Our team will follow up to confirm.',
     formHeading: 'Workshop registration',
     formSubtitle: 'Required fields are marked.',
-    // Legacy keys (kept in case anything else references them; current form
-    // reads fullNameLabel + studentLabelOptional).
-    parentLabel: 'Full Name',
-    parentPlaceholder: 'Your full name',
     studentLabel: 'Student Name',
     studentPlaceholder: 'If signing up a student, their name',
-    // Current form fields.
     fullNameLabel: 'Full Name',
     fullNamePlaceholder: 'Your full name',
     studentLabelOptional: 'Student Name (optional)',

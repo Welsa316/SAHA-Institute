@@ -17,7 +17,6 @@ const props = defineProps({
   endpoint: { type: String, required: true }, // /api/summer-camp | /api/stem-program | /api/students
   title: { type: String, required: true },
   eyebrow: { type: String, required: true },
-  subtitle: { type: String, default: '' }, // optional — pages can hide it by omitting
   emptyMessage: { type: String, default: 'No students enrolled yet.' },
   // Only the Students master roster surfaces the "paid from" billing-window start. The
   // camp pages keep that column hidden because Mrs. Anila tracks only the expiry there.
@@ -393,7 +392,7 @@ function dueBadge(a) {
 
 <template>
   <main>
-    <PageHeader :eyebrow="eyebrow" :title="title" :subtitle="subtitle" :count="students.length">
+    <PageHeader :eyebrow="eyebrow" :title="title" :count="students.length">
       <template v-if="allowAdd" #actions>
         <button
           type="button"

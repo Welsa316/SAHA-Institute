@@ -107,10 +107,6 @@ export default {
     heroSubtitle: 'ہمیں اپنے بچے کے بارے میں اور اس کی پسند کی ورکشاپس کے بارے میں بتائیں۔ ہماری ٹیم تصدیق کے لیے رابطہ کرے گی۔',
     formHeading: 'ورکشاپ رجسٹریشن',
     formSubtitle: 'ضروری خانے نشان زدہ ہیں۔',
-    // Legacy keys retained for safety; current form uses fullNameLabel +
-    // studentLabelOptional.
-    parentLabel: 'پورا نام',
-    parentPlaceholder: 'آپ کا پورا نام',
     studentLabel: 'طالب علم کا نام',
     studentPlaceholder: 'اگر کسی طالب علم کے لیے سائن اپ کر رہے ہیں تو اس کا نام',
     fullNameLabel: 'پورا نام',
