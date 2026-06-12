@@ -1,9 +1,9 @@
 <script setup>
-import StudentList from '../../components/admin/StudentList.vue'
+import CampRoster from '../../components/admin/CampRoster.vue'
 </script>
 
 <template>
-  <StudentList
+  <CampRoster
     endpoint="/api/summer-camp"
     eyebrow="Roster"
     title="Summer Camp"

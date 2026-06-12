@@ -1,46 +1,34 @@
 import { Router } from 'express'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, ne } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { students, workshopSignups } from '../db/schema.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 
-// Read-only aggregated view for the Payments admin tab. Pulls every "billable"
-// record from the four sources Mrs. Anila tracks — workshop signups + the
-// three student programs (summer camp, STEM, regular tutoring) — normalizes
-// them into a single shape, and tags each row with its source so the UI can
-// color-code + deep-link.
+// Read-only aggregated view for the Payments admin tab: every record that has
+// actually been PAID (fully or, for workshops, partially), across the sources
+// the site tracks payment for — workshop signups and the camp/STEM rosters.
+// All payments are one-time; there are no billing windows or expiry dates.
 //
-// Workshop rows now expose BOTH the workshops the family signed up for AND
-// the subset they've paid for, so the client can render "Paid 2/3" /
-// "Partial 1/3" / "Not paid 0/3" badges without a second query.
+// Regular (tutoring) students are deliberately ABSENT: the site does not
+// track tutoring payments at all — that happens off-platform.
 //
-// This endpoint exists purely so the admin doesn't have to bounce between
-// four pages to see who owes money. All actual mutations still go through
-// the source-specific PATCH endpoints.
+// Workshop rows expose BOTH the workshops the family signed up for AND the
+// subset they've paid for, so the client can render "Paid 2/3" / "Partial"
+// badges without a second query. Mutations happen on the source pages.
 
 export const paymentsRouter = Router()
 
 paymentsRouter.use(requireAuth)
 
-// The shape every row gets normalized into before going out the door.
-// Students rows: paid is a plain bool, paidFrom/paidUntil are dates.
-// Workshop rows: paid is true iff all workshops are in paidWorkshops; the
-//                workshops + paidWorkshops arrays are passed through so the
-//                UI can show fractional progress.
 interface PaymentRow {
   id: number
-  source: 'workshop' | 'summer_camp' | 'stem_program' | 'regular'
+  source: 'workshop' | 'summer_camp' | 'stem_program'
   // Workshop rows can have a null studentName (form filled by the student
-  // themselves — their name is in parentName instead). Student rows are
-  // always populated since the camp/STEM/tutoring forms require it.
+  // themselves — their name is in parentName instead).
   studentName: string | null
-  // Nullable since migration 0005 — self-signup student accounts don't carry
-  // a parent name (workshop rows always do).
   parentName: string | null
   phoneNumber: string | null
   paid: boolean
-  paidFrom: string | null
-  paidUntil: string | null
   workshops: string[] | null
   paidWorkshops: string[] | null
   updatedAt: string
@@ -48,9 +36,6 @@ interface PaymentRow {
 
 paymentsRouter.get('/', async (_req, res, next) => {
   try {
-    // Fan out the two reads in parallel — they're independent and Postgres
-    // handles concurrent SELECTs trivially. Keeps p95 down even as the roster
-    // grows.
     const [workshopRows, studentRows] = await Promise.all([
       db
         .select({
@@ -71,29 +56,20 @@ paymentsRouter.get('/', async (_req, res, next) => {
           parentName: students.parentName,
           phoneNumber: students.phoneNumber,
           paid: students.paid,
-          paidFrom: students.paidFrom,
-          paidUntil: students.paidUntil,
           updatedAt: students.updatedAt,
         })
         .from(students)
-        // Payments is a record of actual payments — only rows marked paid
-        // belong here. Unpaid students live on their program roster, not here
-        // (this also stops one student showing as both "paid" and "not paid"
-        // when they have more than one record). Pending/unapproved signups
-        // are excluded for the same reason.
-        .where(and(eq(students.approved, true), eq(students.paid, true)))
+        // Camp/STEM only (no tutoring-payment tracking), approved, and
+        // actually paid — Payments is a record of payments, not a roster.
+        .where(and(ne(students.program, 'regular'), eq(students.approved, true), eq(students.paid, true)))
         .orderBy(asc(students.studentName)),
     ])
 
-    // Workshop families belong in Payments once they've paid for at least one
-    // workshop. Zero paid = nothing to show here yet.
+    // Workshop families belong here once they've paid for at least one workshop.
     const paidWorkshopRows = workshopRows.filter((r) => r.paidWorkshops.length > 0)
 
     const rows: PaymentRow[] = [
       ...paidWorkshopRows.map((r) => {
-        // "Fully paid" for a workshop family means every workshop they signed
-        // up for is in paidWorkshops. The UI can derive partial / unpaid from
-        // the arrays we pass through.
         const fullyPaid =
           r.workshops.length > 0 &&
           r.workshops.every((w) => r.paidWorkshops.includes(w))
@@ -102,10 +78,8 @@ paymentsRouter.get('/', async (_req, res, next) => {
           source: 'workshop' as const,
           studentName: r.studentName,
           parentName: r.parentName,
-          phoneNumber: null, // workshop_signups doesn't carry a phone number
+          phoneNumber: null,
           paid: fullyPaid,
-          paidFrom: null,
-          paidUntil: null, // workshop payments are one-time, no expiry
           workshops: r.workshops,
           paidWorkshops: r.paidWorkshops,
           updatedAt: r.updatedAt.toISOString(),
@@ -113,22 +87,17 @@ paymentsRouter.get('/', async (_req, res, next) => {
       }),
       ...studentRows.map((r) => ({
         id: r.id,
-        source: r.program,
+        source: r.program as 'summer_camp' | 'stem_program',
         studentName: r.studentName,
         parentName: r.parentName,
         phoneNumber: r.phoneNumber,
         paid: r.paid,
-        paidFrom: r.paidFrom,
-        paidUntil: r.paidUntil,
         workshops: null,
         paidWorkshops: null,
         updatedAt: r.updatedAt.toISOString(),
       })),
     ]
 
-    // Default order: most recently updated first. Filtering / re-sorting
-    // happens client-side since the dataset is small (sub-200 rows for the
-    // foreseeable future).
     rows.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 
     res.json({ payments: rows })
