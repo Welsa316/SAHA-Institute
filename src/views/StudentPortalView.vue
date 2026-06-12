@@ -4,14 +4,14 @@ import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useStudentAuth } from '../composables/useStudentAuth.js'
 
-// Logged-in student view. Shows who they are, their approval status, and
-// their homework: each assignment lists title / details / due date, with a
-// checkbox to mark it done (PATCH bound to their own session server-side).
+// Family homework dashboard. One login may cover several students (registered
+// together under the same parent email + password); each student gets their
+// own section — approval status + their assignments with done-toggles.
 // Re-fetches on mount so admin-side changes show up without re-login.
 
 const router = useRouter()
 const { t } = useI18n()
-const { student, fetchSession, logout } = useStudentAuth()
+const { account, fetchSession, logout } = useStudentAuth()
 
 const loading = ref(true)
 const assignments = ref([])
@@ -19,7 +19,7 @@ const assignmentsError = ref('')
 
 onMounted(async () => {
   await fetchSession()
-  if (student.value) {
+  if (account.value) {
     try {
       const res = await fetch('/api/student-auth/assignments', { credentials: 'same-origin' })
       if (res.ok) {
@@ -34,8 +34,15 @@ onMounted(async () => {
   loading.value = false
 })
 
-const approved = computed(() => !!student.value?.approved)
-const openCount = computed(() => assignments.value.filter((a) => !a.completed).length)
+const students = computed(() => account.value?.students ?? [])
+
+function assignmentsFor(studentId) {
+  return assignments.value.filter((a) => a.studentId === studentId)
+}
+
+function openCountFor(studentId) {
+  return assignmentsFor(studentId).filter((a) => !a.completed).length
+}
 
 async function toggleDone(a) {
   const prev = a.completed
@@ -97,71 +104,73 @@ async function handleLogout() {
     </header>
 
     <div class="max-w-3xl mx-auto px-6 md:px-10 py-12 md:py-16">
-      <div v-if="loading" class="py-16 text-center font-body text-sm text-navy-400">{{ t('portal.loading') }}</div>
+      <div v-if="loading" role="status" class="py-16 text-center font-body text-sm text-navy-400">{{ t('portal.loading') }}</div>
 
-      <template v-else-if="student">
+      <template v-else-if="account">
         <p class="font-body text-[11px] tracking-[0.28em] uppercase text-academic-600 font-bold mb-2">{{ t('portal.eyebrow') }}</p>
         <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-navy-900 tracking-tight mb-1">
-          {{ t('portal.greeting', { name: student.name }) }}
+          {{ students.length === 1 ? t('portal.greeting', { name: students[0].name }) : t('portal.greetingFamily') }}
         </h1>
-        <p class="font-body text-navy-500 mb-10">{{ student.parentEmail }}</p>
+        <p class="font-body text-navy-500 mb-10">{{ account.parentEmail }}</p>
 
-        <!-- Approval status -->
-        <div
-          class="rounded-2xl border p-6 md:p-7 mb-6"
-          :class="approved ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-900'"
-        >
-          <p class="font-body text-[10px] tracking-[0.2em] uppercase font-bold opacity-70 mb-1">{{ t('portal.statusLabel') }}</p>
-          <h2 class="font-heading text-xl font-bold mb-1">
-            {{ approved ? t('portal.approvedHeading') : t('portal.pendingHeading') }}
-          </h2>
-          <p class="font-body text-sm leading-relaxed">
-            {{ approved ? t('portal.approvedDetail') : t('portal.pendingDetail') }}
-          </p>
+        <div v-if="assignmentsError" role="alert" class="mb-6 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
+          {{ assignmentsError }}
         </div>
 
-        <!-- Assignments -->
-        <div class="bg-white rounded-2xl border border-navy-100 shadow-sm p-6 md:p-7">
-          <div class="flex items-baseline justify-between gap-3 mb-4">
-            <h2 class="font-heading text-lg font-bold text-navy-900">{{ t('portal.assignmentsHeading') }}</h2>
-            <span v-if="assignments.length" class="font-body text-xs text-navy-400">
-              {{ t('portal.assignmentsOpenCount', { open: openCount, total: assignments.length }) }}
-            </span>
-          </div>
-
-          <div v-if="assignmentsError" role="alert" class="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
-            {{ assignmentsError }}
-          </div>
-
-          <p v-if="assignments.length === 0" class="font-body text-sm text-navy-400">{{ t('portal.assignmentsEmpty') }}</p>
-
-          <ul v-else class="space-y-3">
-            <li
-              v-for="a in assignments"
-              :key="a.id"
-              class="flex items-start gap-3 p-4 rounded-xl border transition-colors"
-              :class="a.completed ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-navy-100'"
-            >
-              <button
-                type="button"
-                @click="toggleDone(a)"
-                :aria-label="a.completed ? t('portal.markNotDone') : t('portal.markDone')"
-                class="mt-0.5 w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
-                :class="a.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-navy-300 hover:border-academic-400'"
+        <!-- One section per student: approval status + their homework. -->
+        <div class="space-y-8">
+          <section
+            v-for="s in students"
+            :key="s.id"
+            class="bg-white rounded-2xl border border-navy-100 shadow-sm p-6 md:p-7"
+          >
+            <div class="flex flex-wrap items-center gap-3 mb-1">
+              <h2 class="font-heading text-xl font-bold text-navy-900 break-words">{{ s.name }}</h2>
+              <span
+                class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border whitespace-nowrap"
+                :class="s.approved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'"
               >
-                <svg v-if="a.completed" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                </svg>
-              </button>
-              <div class="flex-1 min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <p class="font-body text-sm font-semibold break-words min-w-0" :class="a.completed ? 'text-navy-400 line-through' : 'text-navy-900'">{{ a.title }}</p>
-                  <span v-if="dueInfo(a)" :class="dueInfo(a).class">{{ dueInfo(a).label }}</span>
+                {{ s.approved ? t('portal.approvedBadge') : t('portal.pendingBadge') }}
+              </span>
+              <span v-if="assignmentsFor(s.id).length" class="ml-auto font-body text-xs text-navy-400 whitespace-nowrap">
+                {{ t('portal.assignmentsOpenCount', { open: openCountFor(s.id), total: assignmentsFor(s.id).length }) }}
+              </span>
+            </div>
+            <p v-if="!s.approved" class="font-body text-xs text-navy-400 mb-4">{{ t('portal.pendingDetail') }}</p>
+            <div v-else class="mb-4"></div>
+
+            <p v-if="assignmentsFor(s.id).length === 0" class="font-body text-sm text-navy-400">
+              {{ t('portal.assignmentsEmpty') }}
+            </p>
+
+            <ul v-else class="space-y-3">
+              <li
+                v-for="a in assignmentsFor(s.id)"
+                :key="a.id"
+                class="flex items-start gap-3 p-4 rounded-xl border transition-colors"
+                :class="a.completed ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-navy-100'"
+              >
+                <button
+                  type="button"
+                  @click="toggleDone(a)"
+                  :aria-label="a.completed ? t('portal.markNotDone') : t('portal.markDone')"
+                  class="mt-0.5 w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+                  :class="a.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-navy-300 hover:border-academic-400'"
+                >
+                  <svg v-if="a.completed" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-body text-sm font-semibold break-words min-w-0" :class="a.completed ? 'text-navy-400 line-through' : 'text-navy-900'">{{ a.title }}</p>
+                    <span v-if="dueInfo(a)" :class="dueInfo(a).class">{{ dueInfo(a).label }}</span>
+                  </div>
+                  <p v-if="a.details" class="font-body text-sm text-navy-600 mt-1 whitespace-pre-wrap break-words leading-relaxed">{{ a.details }}</p>
                 </div>
-                <p v-if="a.details" class="font-body text-sm text-navy-600 mt-1 whitespace-pre-wrap break-words leading-relaxed">{{ a.details }}</p>
-              </div>
-            </li>
-          </ul>
+              </li>
+            </ul>
+          </section>
         </div>
       </template>
     </div>

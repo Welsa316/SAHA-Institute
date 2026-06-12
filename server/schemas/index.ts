@@ -72,12 +72,12 @@ export const studentUpdateSchema = z.object({
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
-// Self-service student registration: student name + PARENT contact + password.
-// Login is parent email + password. The email is shared between siblings, so
-// uniqueness is enforced on the (email, password) pair at registration, not on
-// the email itself.
+// Self-service registration: one FAMILY account. A parent registers one or
+// more students (the "more than one student?" checkbox on /register) under a
+// single parent email + password; every student in the registration shares
+// that login, and the portal shows each student's homework side by side.
 export const studentRegisterSchema = z.object({
-  name: z.string().trim().min(2).max(100),
+  names: z.array(z.string().trim().min(2).max(100)).min(1).max(6),
   parentEmail: z.string().trim().toLowerCase().email().max(200),
   parentPhone: phoneSchema,
   password: z.string().min(6).max(200),

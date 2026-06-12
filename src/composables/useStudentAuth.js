@@ -1,10 +1,11 @@
 import { ref, computed } from 'vue'
 
-// Shared reactive student-account session state. Mirror of useAdminAuth but
-// against /api/student-auth, tracking a `student` profile. Used by the auth
-// pages, the portal, and the router guard.
+// Shared reactive FAMILY-account session state. One login (parent email +
+// password) covers one or more students; `account` is { parentEmail,
+// students: [{id, name, approved, gradeLevel}] }. Used by the auth pages,
+// the portal, and the router guard.
 
-const student = ref(null)
+const account = ref(null)
 const checking = ref(false)
 const checked = ref(false)
 
@@ -12,9 +13,9 @@ async function fetchSession() {
   checking.value = true
   try {
     const res = await fetch('/api/student-auth/me', { credentials: 'same-origin' })
-    student.value = res.ok ? (await res.json()).student ?? null : null
+    account.value = res.ok ? (await res.json()).account ?? null : null
   } catch (_err) {
-    student.value = null
+    account.value = null
   } finally {
     checking.value = false
     checked.value = true
@@ -29,18 +30,18 @@ async function ensureChecked() {
   }
 }
 
-async function register({ name, parentEmail, parentPhone, password }) {
+async function register({ names, parentEmail, parentPhone, password }) {
   const res = await fetch('/api/student-auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
-    body: JSON.stringify({ name, parentEmail, parentPhone, password }),
+    body: JSON.stringify({ names, parentEmail, parentPhone, password }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || 'Could not create your account.')
-  student.value = data.student
+  account.value = data.account
   checked.value = true
-  return data.student
+  return data.account
 }
 
 async function login({ email, password }) {
@@ -52,9 +53,9 @@ async function login({ email, password }) {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || 'Could not log in.')
-  student.value = data.student
+  account.value = data.account
   checked.value = true
-  return data.student
+  return data.account
 }
 
 async function logout() {
@@ -63,16 +64,16 @@ async function logout() {
   } catch (_err) {
     // Clear local state regardless.
   }
-  student.value = null
+  account.value = null
   checked.value = true
 }
 
 export function useStudentAuth() {
   return {
-    student: computed(() => student.value),
+    account: computed(() => account.value),
     checking: computed(() => checking.value),
     checked: computed(() => checked.value),
-    isAuthenticated: computed(() => !!student.value),
+    isAuthenticated: computed(() => !!account.value),
     fetchSession,
     ensureChecked,
     register,

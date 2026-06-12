@@ -5,11 +5,11 @@ import { useI18n } from '../composables/useI18n'
 import { useStudentAuth } from '../composables/useStudentAuth.js'
 import { formatPhoneInput } from '../utils/phone.js'
 
-// One component drives both /register and /login. Registration collects the
-// student's name, the PARENT's email + phone, and a password; login is parent
-// email + password. Siblings register under the same parent email with
-// different passwords — the server matches the (email, password) pair to the
-// right student. On success, redirect to ?next or the portal.
+// One component drives both /register and /login. Registration creates ONE
+// family account: a parent registers one or more students (the "more than
+// one student?" checkbox reveals extra name fields) under a single parent
+// email + password. The portal then shows every student's homework side by
+// side. Login is parent email + password.
 
 const route = useRoute()
 const router = useRouter()
@@ -18,9 +18,31 @@ const { register, login } = useStudentAuth()
 
 const mode = computed(() => (route.name === 'StudentRegister' ? 'register' : 'login'))
 
-const form = ref({ name: '', email: '', phone: '', password: '' })
+const form = ref({ names: [''], email: '', phone: '', password: '' })
+const multipleStudents = ref(false)
 const submitting = ref(false)
 const error = ref('')
+
+const MAX_STUDENTS = 6
+
+function onMultipleToggle(e) {
+  multipleStudents.value = e.target.checked
+  if (multipleStudents.value && form.value.names.length === 1) {
+    form.value.names.push('')
+  } else if (!multipleStudents.value) {
+    // Back to a single student — keep the first name only.
+    form.value.names = [form.value.names[0] ?? '']
+  }
+}
+
+function addName() {
+  if (form.value.names.length < MAX_STUDENTS) form.value.names.push('')
+}
+
+function removeName(i) {
+  form.value.names.splice(i, 1)
+  if (form.value.names.length === 1) multipleStudents.value = false
+}
 
 function onPhoneInput(e) {
   // Live-format as the parent types: digits in, "(504) 373-9778" out.
@@ -30,7 +52,8 @@ function onPhoneInput(e) {
 async function onSubmit() {
   error.value = ''
   if (mode.value === 'register') {
-    if (form.value.name.trim().length < 2) {
+    const names = form.value.names.map((n) => n.trim()).filter((n) => n.length > 0)
+    if (names.length === 0 || names.some((n) => n.length < 2)) {
       error.value = t('studentAuth.errors.nameRequired')
       return
     }
@@ -43,7 +66,7 @@ async function onSubmit() {
   try {
     if (mode.value === 'register') {
       await register({
-        name: form.value.name.trim(),
+        names: form.value.names.map((n) => n.trim()).filter((n) => n.length > 0),
         parentEmail: form.value.email.trim(),
         parentPhone: form.value.phone,
         password: form.value.password,
@@ -88,21 +111,65 @@ const toggleTarget = computed(() => ({
         </div>
 
         <form @submit.prevent="onSubmit" class="space-y-4">
-          <div v-if="mode === 'register'">
-            <label for="sa-name" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
-              {{ t('studentAuth.nameLabel') }}
-            </label>
-            <input
-              id="sa-name"
-              v-model="form.name"
-              type="text"
-              autocomplete="name"
-              required
-              :disabled="submitting"
-              :placeholder="t('studentAuth.namePlaceholder')"
-              class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
-            />
-          </div>
+          <template v-if="mode === 'register'">
+            <div v-for="(n, i) in form.names" :key="`name-${i}`">
+              <label :for="`sa-name-${i}`" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
+                {{ form.names.length > 1 ? t('studentAuth.nameLabelN', { n: i + 1 }) : t('studentAuth.nameLabel') }}
+              </label>
+              <div class="flex gap-2">
+                <input
+                  :id="`sa-name-${i}`"
+                  v-model="form.names[i]"
+                  type="text"
+                  autocomplete="off"
+                  required
+                  :disabled="submitting"
+                  :placeholder="t('studentAuth.namePlaceholder')"
+                  class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+                />
+                <button
+                  v-if="form.names.length > 1"
+                  type="button"
+                  @click="removeName(i)"
+                  :disabled="submitting"
+                  :aria-label="t('studentAuth.removeStudent')"
+                  class="shrink-0 px-3 rounded-xl border border-navy-100 text-navy-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 focus:outline-none"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- One account covers the whole family — extra names share this
+                 login and show up side by side on the homework dashboard. -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <label class="inline-flex items-center gap-2 font-body text-sm text-navy-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  :checked="multipleStudents"
+                  @change="onMultipleToggle"
+                  :disabled="submitting"
+                  class="w-4 h-4 rounded border-navy-300 text-academic-600 focus:ring-academic-400"
+                />
+                {{ t('studentAuth.multipleLabel') }}
+              </label>
+              <button
+                v-if="multipleStudents && form.names.length < MAX_STUDENTS"
+                type="button"
+                @click="addName"
+                :disabled="submitting"
+                class="inline-flex items-center gap-1 font-body text-xs font-semibold text-academic-700 hover:text-academic-800 hover:underline underline-offset-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none rounded"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                {{ t('studentAuth.addStudent') }}
+              </button>
+            </div>
+            <p v-if="multipleStudents" class="font-body text-xs text-navy-400 -mt-1">{{ t('studentAuth.multipleHint') }}</p>
+          </template>
 
           <div>
             <label for="sa-email" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
@@ -154,7 +221,6 @@ const toggleTarget = computed(() => ({
               :placeholder="mode === 'register' ? t('studentAuth.passwordHintRegister') : t('studentAuth.passwordPlaceholder')"
               class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
             />
-            <p v-if="mode === 'register'" class="mt-1.5 font-body text-xs text-navy-400">{{ t('studentAuth.passwordHintSibling') }}</p>
           </div>
 
           <button
