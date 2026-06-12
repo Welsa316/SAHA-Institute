@@ -3,10 +3,13 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useStudentAuth } from '../composables/useStudentAuth.js'
+import { formatPhoneInput } from '../utils/phone.js'
 
-// One component drives both /register and /login. Mode comes from the route
-// name so each URL is clean + shareable; a link toggles between them. On
-// success, redirect to ?next or the portal.
+// One component drives both /register and /login. Registration collects the
+// student's name, the PARENT's email + phone, and a password; login is parent
+// email + password. Siblings register under the same parent email with
+// different passwords — the server matches the (email, password) pair to the
+// right student. On success, redirect to ?next or the portal.
 
 const route = useRoute()
 const router = useRouter()
@@ -15,26 +18,38 @@ const { register, login } = useStudentAuth()
 
 const mode = computed(() => (route.name === 'StudentRegister' ? 'register' : 'login'))
 
-const form = ref({ name: '', username: '', password: '' })
+const form = ref({ name: '', email: '', phone: '', password: '' })
 const submitting = ref(false)
 const error = ref('')
 
+function onPhoneInput(e) {
+  // Live-format as the parent types: digits in, "(504) 373-9778" out.
+  form.value.phone = formatPhoneInput(e.target.value)
+}
+
 async function onSubmit() {
   error.value = ''
-  if (mode.value === 'register' && form.value.name.trim().length < 2) {
-    error.value = t('studentAuth.errors.nameRequired')
-    return
+  if (mode.value === 'register') {
+    if (form.value.name.trim().length < 2) {
+      error.value = t('studentAuth.errors.nameRequired')
+      return
+    }
+    if (form.value.phone.replace(/\D/g, '').length < 10) {
+      error.value = t('studentAuth.errors.phoneRequired')
+      return
+    }
   }
   submitting.value = true
   try {
     if (mode.value === 'register') {
       await register({
         name: form.value.name.trim(),
-        username: form.value.username.trim(),
+        parentEmail: form.value.email.trim(),
+        parentPhone: form.value.phone,
         password: form.value.password,
       })
     } else {
-      await login({ username: form.value.username.trim(), password: form.value.password })
+      await login({ email: form.value.email.trim(), password: form.value.password })
     }
     const next = typeof route.query.next === 'string' ? route.query.next : '/portal'
     router.push(next)
@@ -90,19 +105,36 @@ const toggleTarget = computed(() => ({
           </div>
 
           <div>
-            <label for="sa-username" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
-              {{ t('studentAuth.usernameLabel') }}
+            <label for="sa-email" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
+              {{ t('studentAuth.emailLabel') }}
             </label>
             <input
-              id="sa-username"
-              v-model="form.username"
-              type="text"
-              autocomplete="username"
-              autocapitalize="none"
-              spellcheck="false"
+              id="sa-email"
+              v-model="form.email"
+              type="email"
+              autocomplete="email"
               required
               :disabled="submitting"
-              :placeholder="t('studentAuth.usernamePlaceholder')"
+              :placeholder="t('studentAuth.emailPlaceholder')"
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+            />
+            <p v-if="mode === 'register'" class="mt-1.5 font-body text-xs text-navy-400">{{ t('studentAuth.emailHint') }}</p>
+          </div>
+
+          <div v-if="mode === 'register'">
+            <label for="sa-phone" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
+              {{ t('studentAuth.phoneLabel') }}
+            </label>
+            <input
+              id="sa-phone"
+              :value="form.phone"
+              @input="onPhoneInput"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              required
+              :disabled="submitting"
+              placeholder="(504) 373-9778"
               class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
             />
           </div>
@@ -122,6 +154,7 @@ const toggleTarget = computed(() => ({
               :placeholder="mode === 'register' ? t('studentAuth.passwordHintRegister') : t('studentAuth.passwordPlaceholder')"
               class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
             />
+            <p v-if="mode === 'register'" class="mt-1.5 font-body text-xs text-navy-400">{{ t('studentAuth.passwordHintSibling') }}</p>
           </div>
 
           <button

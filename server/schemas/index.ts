@@ -50,7 +50,9 @@ const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 export const studentCreateSchema = z.object({
   parentName: z.string().trim().min(2).max(100),
   studentName: z.string().trim().min(2).max(100),
-  gradeLevel: gradeLevelSchema,
+  // Optional — camp/STEM rosters stopped categorizing by grade, so their
+  // add-student form no longer asks for one.
+  gradeLevel: gradeLevelSchema.nullable().optional(),
   phoneNumber: phoneSchema.nullable().optional(),
   paid: z.boolean().optional(),
   paidFrom: isoDateSchema.nullable().optional(),
@@ -70,25 +72,19 @@ export const studentUpdateSchema = z.object({
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
-// Self-service student registration. Students pick their own display name,
-// username, and password. Lands as a pending (approved=false) regular student;
-// the admin sees the name only and approves. Username is the login handle.
+// Self-service student registration: student name + PARENT contact + password.
+// Login is parent email + password. The email is shared between siblings, so
+// uniqueness is enforced on the (email, password) pair at registration, not on
+// the email itself.
 export const studentRegisterSchema = z.object({
   name: z.string().trim().min(2).max(100),
-  username: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3)
-    .max(30)
-    // Letters, numbers, dot, underscore, hyphen — keeps usernames clean and
-    // case-insensitive (stored lowercased) so "Aisha" and "aisha" don't collide.
-    .regex(/^[a-z0-9._-]+$/, 'Username can use letters, numbers, dots, underscores, and hyphens.'),
+  parentEmail: z.string().trim().toLowerCase().email().max(200),
+  parentPhone: phoneSchema,
   password: z.string().min(6).max(200),
 })
 
 export const studentLoginSchema = z.object({
-  username: z.string().trim().toLowerCase().min(1).max(30),
+  email: z.string().trim().toLowerCase().email().max(200),
   password: z.string().min(1).max(200),
 })
 

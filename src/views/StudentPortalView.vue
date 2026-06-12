@@ -104,7 +104,7 @@ async function handleLogout() {
         <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-navy-900 tracking-tight mb-1">
           {{ t('portal.greeting', { name: student.name }) }}
         </h1>
-        <p class="font-body text-navy-500 mb-10">@{{ student.username }}</p>
+        <p class="font-body text-navy-500 mb-10">{{ student.parentEmail }}</p>
 
         <!-- Approval status -->
         <div

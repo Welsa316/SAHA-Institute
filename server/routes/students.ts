@@ -15,10 +15,11 @@ import { logger } from '../lib/log.js'
 // storage and schema; only the `program` enum value differs.
 
 // Explicit column list so we NEVER ship password_hash to the client (the
-// students table carries credential columns (username + password_hash) for
-// self-service accounts. The admin dashboard shows the student NAME only —
-// neither the username nor the password hash is in this projection, so they
-// never reach the admin client. Reused across GET / POST / PATCH `.returning()`.
+// Explicit projection reused across GET / POST / PATCH `.returning()`.
+// parent_email + phone_number are PARENT CONTACT info collected at
+// registration — the admin needs them to verify a pending registration is
+// real and to reach the family. The password hash is the only credential and
+// is deliberately absent so it can never reach a client.
 const publicColumns = {
   id: students.id,
   program: students.program,
@@ -26,6 +27,7 @@ const publicColumns = {
   studentName: students.studentName,
   gradeLevel: students.gradeLevel,
   phoneNumber: students.phoneNumber,
+  parentEmail: students.parentEmail,
   approved: students.approved,
   paid: students.paid,
   paidFrom: students.paidFrom,
@@ -66,7 +68,7 @@ export function studentsRouter(program: Program): Router {
           program,
           parentName: input.parentName,
           studentName: input.studentName,
-          gradeLevel: input.gradeLevel,
+          gradeLevel: input.gradeLevel ?? null,
           phoneNumber: input.phoneNumber ?? null,
           paid: input.paid ?? false,
           paidFrom: input.paidFrom ?? null,

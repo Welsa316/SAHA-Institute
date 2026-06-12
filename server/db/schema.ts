@@ -58,40 +58,42 @@ export const workshopSignups = pgTable('workshop_signups', {
 // stays in a single shape.
 //
 // This table also backs self-service STUDENT ACCOUNTS: a student who registers
-// at /register creates a `program='regular'` row carrying `username` +
-// `password_hash` (they pick both, plus their display name). Those credentials
-// authenticate them at /login. Admin-created roster rows (camp / STEM, or manual
-// regular adds) leave username + password_hash null. New registrations land
-// `approved=false` and wait in the admin's pending queue. `parent_name` and
-// `grade_level` are nullable — a self-registration only supplies a name; the
-// admin assigns the rest. The admin dashboard shows the student NAME only,
-// never the username or password.
+// at /register creates a `program='regular'` row carrying the student's name,
+// the PARENT's email + phone, and a password hash. Login is parent email +
+// password — the email is deliberately NOT unique (migration 0010) because
+// siblings register under the same parent email; the (email, password) pair
+// identifies the student, and registration rejects a duplicate pair.
+// Admin-created roster rows (camp / STEM) leave the credential fields null.
+// New registrations land `approved=false` and wait in the admin's pending
+// queue, where the parent contact info is shown so the team can verify the
+// registration is real. The password hash never leaves the server.
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
   program: programEnum('program').notNull(),
-  // Nullable since 0005 — self-signup accounts don't provide a parent name.
+  // Parent display name. Set by admin entry on camp/STEM rows; null on
+  // self-registered accounts (registration collects parent email + phone,
+  // not the parent's name).
   parentName: text('parent_name'),
   studentName: text('student_name').notNull(),
-  // Nullable since 0005 — self-signup accounts don't provide a grade. Admin
-  // assigns one later; until then the row shows in an "Unassigned" group.
+  // Nullable — self-registrations don't pick a grade. Admin assigns one later
+  // on the Students tab; until then the row shows in an "Unassigned" group.
   gradeLevel: gradeLevelEnum('grade_level'),
-  // Nullable — added retroactively, so existing summer_camp / stem_program rows have NULL.
+  // Parent phone. Required at registration (formatted client-side); optional
+  // on admin-entered camp/STEM rows.
   phoneNumber: text('phone_number'),
-  // Self-signups land unapproved (false) and sit in a "Pending approval"
+  // Self-registrations land unapproved (false) and sit in a "Pending approval"
   // section in the admin until a real person is confirmed — a spam/fake-name
-  // gate. Everything admin-created (camp / STEM / manual regular adds) defaults
-  // to true, so only public name-only signups start pending.
+  // gate. Everything admin-created defaults to true.
   approved: boolean('approved').notNull().default(true),
-  // ---- Self-service login credentials. Set only on rows created via
-  // /register; null on admin-created roster rows. Renamed from `email` in
-  // migration 0007 once students chose their own username instead. ----
-  username: text('username').unique(),
+  // ---- Login credentials (self-registered accounts only). parent_email was
+  // `username` until migration 0010; NOT unique — see header comment. ----
+  parentEmail: text('parent_email'),
   passwordHash: text('password_hash'),
+  // One-time payment flag. Camp/STEM rosters use this as a simple paid/unpaid
+  // toggle. Regular (tutoring) rows don't track payment on the site at all —
+  // the columns below are vestigial for them and unused by the UI.
   paid: boolean('paid').notNull().default(false),
-  // paid_from is mainly used for the year-round students roster — when the current billing
-  // window started — but the column lives here for all three programs so we never have to
-  // schema-fork later.
   paidFrom: date('paid_from'),
   paidUntil: date('paid_until'),
   notes: text('notes'),

@@ -29,12 +29,12 @@ async function ensureChecked() {
   }
 }
 
-async function register({ name, username, password }) {
+async function register({ name, parentEmail, parentPhone, password }) {
   const res = await fetch('/api/student-auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
-    body: JSON.stringify({ name, username, password }),
+    body: JSON.stringify({ name, parentEmail, parentPhone, password }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || 'Could not create your account.')
@@ -43,12 +43,12 @@ async function register({ name, username, password }) {
   return data.student
 }
 
-async function login({ username, password }) {
+async function login({ email, password }) {
   const res = await fetch('/api/student-auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ email, password }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || 'Could not log in.')

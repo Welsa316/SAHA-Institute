@@ -77,7 +77,9 @@ export const clearSessionCookieOptions = {
 
 export interface StudentJwtPayload {
   studentId: number
-  username: string
+  // The parent email the account was registered under (login identifier; not
+  // unique per student — studentId is the authority).
+  email: string
 }
 
 export const STUDENT_COOKIE_NAME = 'saha_student'
@@ -93,10 +95,10 @@ export function verifyStudentSession(token: string): StudentJwtPayload | null {
   try {
     const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
     if (typeof decoded === 'string') return null
-    const { studentId, username, type } = decoded as Record<string, unknown>
+    const { studentId, email, type } = decoded as Record<string, unknown>
     if (type !== 'student') return null
-    if (typeof studentId !== 'number' || typeof username !== 'string') return null
-    return { studentId, username }
+    if (typeof studentId !== 'number' || typeof email !== 'string') return null
+    return { studentId, email }
   } catch {
     return null
   }
