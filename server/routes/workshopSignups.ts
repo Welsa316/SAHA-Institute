@@ -116,7 +116,7 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
     if (!isAdmin) {
       // Fire-and-forget email — don't make the parent wait on Resend latency.
       const siteOrigin = process.env.SITE_ORIGIN ?? 'https://sahainstituteforlearning.com'
-      const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning1675@gmail.com'
+      const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning@gmail.com'
       void sendEmail({
         to: [adminEmail],
         // Subject falls back to the parent/registrant name when no separate

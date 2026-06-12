@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 import { useI18n } from '../composables/useI18n'
+import { formatPhoneInput } from '../utils/phone.js'
 
 const { t } = useI18n()
 
@@ -12,6 +13,11 @@ const form = ref({
   subject: '',
   message: '',
 })
+
+function onPhoneInput(e) {
+  // Live-format to (504) 373-9778 as the user types.
+  form.value.phone = formatPhoneInput(e.target.value)
+}
 
 const sending = ref(false)
 const sent = ref(false)
@@ -155,7 +161,7 @@ function resetForm() {
               </div>
               <div>
                 <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.emailLabel') }}</p>
-                <a href="mailto:sahaforlearning1675@gmail.com" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors">sahaforlearning1675@gmail.com</a>
+                <a href="mailto:sahaforlearning@gmail.com" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors">sahaforlearning@gmail.com</a>
               </div>
             </div>
 
@@ -246,8 +252,10 @@ function resetForm() {
                     <label for="contact-phone" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">{{ t('contact.phoneFieldLabel') }}</label>
                     <input
                       id="contact-phone"
-                      v-model="form.phone"
+                      :value="form.phone"
+                      @input="onPhoneInput"
                       type="tel"
+                      inputmode="tel"
                       :disabled="sending"
                       :placeholder="t('contact.phonePlaceholder')"
                       class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"

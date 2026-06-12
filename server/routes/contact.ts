@@ -32,7 +32,7 @@ function stripNewlines(str: string): string {
 contactRouter.post('/', contactLimiter, async (req, res, next) => {
   try {
     const input = contactSchema.parse(req.body)
-    const adminEmail = process.env.CONTACT_EMAIL || 'sahaforlearning1675@gmail.com'
+    const adminEmail = process.env.CONTACT_EMAIL || 'sahaforlearning@gmail.com'
 
     const safe = {
       name: escapeHtml(input.name),
