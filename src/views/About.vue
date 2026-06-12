@@ -13,6 +13,7 @@ const tutors = [
   { name: 'Dua Cheema', role: '', initials: 'DC', photo: '/tutors/dua-cheema.jpg', pos: 'top' },
   { name: 'Aisha Siddiqui', role: '', initials: 'AS', photo: '/tutors/aisha-siddiqui.jpg', pos: 'top' },
   { name: 'Lena Hussein', role: '', initials: 'LH', photo: '/tutors/lena-hussein.jpg', pos: 'top' },
+  { name: 'Tahreem Fatima', role: '', initials: 'TF', photo: '/tutors/tahreem-fatima.jpg', pos: 'top' },
   { name: 'Walid Elsayed', role: '', initials: 'WE', photo: '/tutors/walid-elsayed.jpg', pos: '0%' },
 ]
 </script>
