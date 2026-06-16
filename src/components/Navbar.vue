@@ -72,7 +72,7 @@ function closeMenu() {
           </div>
           <img
             v-else
-            src="/logo.png"
+            src="/logo.svg"
             alt="SAHA Institute — home"
             class="w-40 h-auto transition-all duration-500 group-hover:scale-105 logo-sharp"
           />

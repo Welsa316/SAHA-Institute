@@ -132,7 +132,7 @@ const toggleTarget = computed(() => ({
 
     <div class="relative w-full max-w-md">
       <router-link to="/" class="flex justify-center mb-8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none rounded-lg">
-        <img src="/logo.png" alt="SAHA Institute — home" class="h-12 w-auto brightness-0 invert opacity-95" width="464" height="114" />
+        <img src="/logo.svg" alt="SAHA Institute — home" class="h-12 w-auto brightness-0 invert opacity-95" width="1806" height="594" />
       </router-link>
 
       <div class="bg-white rounded-3xl shadow-2xl shadow-black/30 p-8 md:p-10">

@@ -92,7 +92,7 @@ async function handleLogout() {
   <main class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
     <header class="bg-[#001B3D] px-6 md:px-10 py-4 flex items-center justify-between">
       <router-link to="/" class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none rounded">
-        <img src="/logo.png" alt="SAHA Institute — home" class="h-8 w-auto brightness-0 invert opacity-95" width="464" height="114" />
+        <img src="/logo.svg" alt="SAHA Institute — home" class="h-8 w-auto brightness-0 invert opacity-95" width="1806" height="594" />
       </router-link>
       <button
         type="button"

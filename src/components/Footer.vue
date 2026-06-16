@@ -12,7 +12,7 @@ const { t } = useI18n()
       <div class="grid md:grid-cols-3 gap-12 mb-12">
         <div class="flex flex-col items-center md:items-start">
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="SAHA Institute logo"
             class="w-36 h-auto brightness-0 invert opacity-90 mb-4 logo-sharp"
           />

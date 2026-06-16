@@ -55,11 +55,11 @@ async function handleLogout() {
              instead of typesetting "SAHA" on its own. Image is white-trimmed and reads
              on the navy background. -->
         <img
-          src="/logo.png"
+          src="/logo.svg"
           alt="SAHA Institute For Learning"
           class="h-10 w-auto brightness-0 invert opacity-95"
-          width="464"
-          height="114"
+          width="1806"
+          height="594"
         />
         <p class="font-body text-[10px] tracking-[0.25em] uppercase text-white/40 font-medium mt-3">
           Admin Portal
@@ -133,11 +133,11 @@ async function handleLogout() {
           </svg>
         </button>
         <img
-          src="/logo.png"
+          src="/logo.svg"
           alt="SAHA Institute For Learning"
           class="h-7 w-auto"
-          width="464"
-          height="114"
+          width="1806"
+          height="594"
         />
         <span class="w-9" /> <!-- spacer to balance the hamburger -->
       </div>
