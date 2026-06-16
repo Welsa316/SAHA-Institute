@@ -93,3 +93,23 @@ the targeted fix commits. Each should be its own PR.
   StudentPortalView, and the admin billing logic. One module, imported everywhere. Also
   hoist the dummy-bcrypt-hash constant (duplicated in `routes/auth.ts` and
   `routes/studentAuth.ts`) into `lib/auth.ts`.
+- **Give family accounts an immutable `account_id` instead of keying on the password
+  hash.** Family membership in `routes/studentAuth.ts` is currently "rows with the same
+  `parent_email` AND the same `password_hash` string." That works, but it has two
+  low-likelihood edge cases the June `/review` surfaced (both deferred — fixing them
+  properly is this refactor, not a patch):
+  - *Register race:* the 409 duplicate check is a non-atomic read-then-insert with no DB
+    constraint behind it (and none is possible — siblings deliberately share
+    `(parent_email, password_hash)`, so a unique index there would reject the 2nd
+    sibling). Two genuinely concurrent identical registrations both pass the check and
+    both insert; only one family is reachable at login, the other is orphaned in the
+    pending queue. The frontend already disables submit during the request, so this needs
+    two tabs/devices to trigger.
+  - *Shared email + password collision:* if two unrelated people ever used the same email
+    AND chose the same password, the 409 "log in instead" lets the second log into the
+    first's children (full read + toggle). Near-impossible in practice (email ownership ≈
+    one family), but it's real.
+  Fix: add an `account_id` column set once at first registration, store it in the student
+  JWT, and resolve the family by `account_id` instead of hash-string equality. Then a
+  unique-ish constraint / advisory lock on registration closes the race cleanly. Touches
+  the schema, a migration, the JWT payload, and `familyOf`/login/register — its own PR.
