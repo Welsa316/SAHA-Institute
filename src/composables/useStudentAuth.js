@@ -9,6 +9,15 @@ const account = ref(null)
 const checking = ref(false)
 const checked = ref(false)
 
+// Carry the HTTP status on the thrown error so callers can map a failure to
+// localized copy by status (401/409/429) instead of surfacing the server's
+// English message string. A network failure has no status (left undefined).
+function httpError(status, message) {
+  const err = new Error(message)
+  err.status = status
+  return err
+}
+
 async function fetchSession() {
   checking.value = true
   try {
@@ -38,7 +47,7 @@ async function register({ names, parentEmail, parentPhone, password }) {
     body: JSON.stringify({ names, parentEmail, parentPhone, password }),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || 'Could not create your account.')
+  if (!res.ok) throw httpError(res.status, data.error || 'Could not create your account.')
   account.value = data.account
   checked.value = true
   return data.account
@@ -52,7 +61,7 @@ async function login({ email, password }) {
     body: JSON.stringify({ email, password }),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || 'Could not log in.')
+  if (!res.ok) throw httpError(res.status, data.error || 'Could not log in.')
   account.value = data.account
   checked.value = true
   return data.account

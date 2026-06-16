@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useStudentAuth } from '../composables/useStudentAuth.js'
@@ -18,30 +18,55 @@ const { register, login } = useStudentAuth()
 
 const mode = computed(() => (route.name === 'StudentRegister' ? 'register' : 'login'))
 
-const form = ref({ names: [''], email: '', phone: '', password: '' })
+// Each name field carries a stable id so the v-for keys on identity, not index.
+// Removing a middle field then keeps focus/IME state on the correct inputs
+// instead of shifting them down a slot. `value` holds the typed name.
+let nameUid = 0
+const newName = () => ({ id: nameUid++, value: '' })
+
+const form = ref({ names: [newName()], email: '', phone: '', password: '' })
 const multipleStudents = ref(false)
 const submitting = ref(false)
 const error = ref('')
+const liveMsg = ref('') // surfaced through an aria-live region on add/remove
 
 const MAX_STUDENTS = 6
+
+// Adding/removing name fields is otherwise silent and leaves focus stranded:
+// move focus to a sensible field after the DOM updates, and announce the change.
+async function focusNameAt(i) {
+  await nextTick()
+  document.getElementById(`sa-name-${i}`)?.focus()
+}
+function announce(msg) {
+  liveMsg.value = ''
+  nextTick(() => { liveMsg.value = msg })
+}
 
 function onMultipleToggle(e) {
   multipleStudents.value = e.target.checked
   if (multipleStudents.value && form.value.names.length === 1) {
-    form.value.names.push('')
+    form.value.names.push(newName())
+    focusNameAt(form.value.names.length - 1)
   } else if (!multipleStudents.value) {
     // Back to a single student — keep the first name only.
-    form.value.names = [form.value.names[0] ?? '']
+    form.value.names = [form.value.names[0] ?? newName()]
   }
 }
 
 function addName() {
-  if (form.value.names.length < MAX_STUDENTS) form.value.names.push('')
+  if (form.value.names.length < MAX_STUDENTS) {
+    form.value.names.push(newName())
+    announce(t('studentAuth.nameAdded'))
+    focusNameAt(form.value.names.length - 1)
+  }
 }
 
 function removeName(i) {
   form.value.names.splice(i, 1)
   if (form.value.names.length === 1) multipleStudents.value = false
+  announce(t('studentAuth.nameRemoved'))
+  focusNameAt(Math.min(i, form.value.names.length - 1))
 }
 
 function onPhoneInput(e) {
@@ -49,10 +74,22 @@ function onPhoneInput(e) {
   form.value.phone = formatPhoneInput(e.target.value)
 }
 
+// Map a failure to localized copy by HTTP status instead of surfacing the
+// server's hardcoded English message (which would otherwise render verbatim,
+// including inside the Urdu/RTL form). A network error has no status -> generic.
+function errorMessage(err) {
+  switch (err?.status) {
+    case 401: return t('studentAuth.errors.invalidCredentials')
+    case 409: return t('studentAuth.errors.accountExists')
+    case 429: return t('studentAuth.errors.rateLimited')
+    default: return t('studentAuth.errors.generic')
+  }
+}
+
 async function onSubmit() {
   error.value = ''
+  const names = form.value.names.map((n) => n.value.trim()).filter((v) => v.length > 0)
   if (mode.value === 'register') {
-    const names = form.value.names.map((n) => n.trim()).filter((n) => n.length > 0)
     if (names.length === 0 || names.some((n) => n.length < 2)) {
       error.value = t('studentAuth.errors.nameRequired')
       return
@@ -66,7 +103,7 @@ async function onSubmit() {
   try {
     if (mode.value === 'register') {
       await register({
-        names: form.value.names.map((n) => n.trim()).filter((n) => n.length > 0),
+        names,
         parentEmail: form.value.email.trim(),
         parentPhone: form.value.phone,
         password: form.value.password,
@@ -77,7 +114,7 @@ async function onSubmit() {
     const next = typeof route.query.next === 'string' ? route.query.next : '/portal'
     router.push(next)
   } catch (err) {
-    error.value = err?.message || t('studentAuth.errors.generic')
+    error.value = errorMessage(err)
   } finally {
     submitting.value = false
   }
@@ -112,14 +149,14 @@ const toggleTarget = computed(() => ({
 
         <form @submit.prevent="onSubmit" class="space-y-4">
           <template v-if="mode === 'register'">
-            <div v-for="(n, i) in form.names" :key="`name-${i}`">
+            <div v-for="(n, i) in form.names" :key="n.id">
               <label :for="`sa-name-${i}`" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
                 {{ form.names.length > 1 ? t('studentAuth.nameLabelN', { n: i + 1 }) : t('studentAuth.nameLabel') }}
               </label>
               <div class="flex gap-2">
                 <input
                   :id="`sa-name-${i}`"
-                  v-model="form.names[i]"
+                  v-model="n.value"
                   type="text"
                   autocomplete="off"
                   required
@@ -169,6 +206,7 @@ const toggleTarget = computed(() => ({
               </button>
             </div>
             <p v-if="multipleStudents" class="font-body text-xs text-navy-400 -mt-1">{{ t('studentAuth.multipleHint') }}</p>
+            <p class="sr-only" role="status" aria-live="polite">{{ liveMsg }}</p>
           </template>
 
           <div>

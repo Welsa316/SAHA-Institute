@@ -183,6 +183,8 @@ export default {
     multipleHint: 'All students share this one login — their homework shows up together on one dashboard.',
     addStudent: 'Add another student',
     removeStudent: 'Remove this student',
+    nameAdded: 'Added a student name field.',
+    nameRemoved: 'Removed a student name field.',
     emailLabel: 'Parent Email',
     emailPlaceholder: 'parent@example.com',
     emailHint: 'One account covers the whole family — you\'ll log in with this email.',
@@ -200,6 +202,9 @@ export default {
     errors: {
       nameRequired: 'Please enter the student\'s name.',
       phoneRequired: 'Please enter a full 10-digit phone number.',
+      invalidCredentials: 'Invalid email or password.',
+      accountExists: 'An account with this email and password already exists. Please log in instead.',
+      rateLimited: 'Too many attempts. Please try again in an hour.',
       generic: 'Something went wrong. Please try again.',
     },
   },
