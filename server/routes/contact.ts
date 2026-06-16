@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
-import { escapeHtml, sendEmail } from '../lib/email.js'
+import { adminContactEmail, escapeHtml, sendEmail } from '../lib/email.js'
 import { logger } from '../lib/log.js'
 
 // Public contact form endpoint — same behaviour as the original server.js version,
@@ -32,7 +32,7 @@ function stripNewlines(str: string): string {
 contactRouter.post('/', contactLimiter, async (req, res, next) => {
   try {
     const input = contactSchema.parse(req.body)
-    const adminEmail = process.env.CONTACT_EMAIL || 'sahaforlearning@gmail.com'
+    const adminEmail = adminContactEmail()
 
     const safe = {
       name: escapeHtml(input.name),

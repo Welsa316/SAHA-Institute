@@ -10,7 +10,7 @@ import {
 } from '../schemas/index.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
-import { escapeHtml, sendEmail } from '../lib/email.js'
+import { adminContactEmail, escapeHtml, sendEmail, siteOrigin } from '../lib/email.js'
 import { logger } from '../lib/log.js'
 import { SESSION_COOKIE_NAME, verifySession } from '../lib/auth.js'
 
@@ -115,10 +115,8 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
 
     if (!isAdmin) {
       // Fire-and-forget email — don't make the parent wait on Resend latency.
-      const siteOrigin = process.env.SITE_ORIGIN ?? 'https://sahainstituteforlearning.com'
-      const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning@gmail.com'
       void sendEmail({
-        to: [adminEmail],
+        to: [adminContactEmail()],
         // Subject falls back to the parent/registrant name when no separate
         // student name was provided.
         subject: `New Workshop Signup — ${input.studentName ?? input.parentName}`,
@@ -128,7 +126,7 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
           workshops: input.workshops,
           additionalNotes: input.additionalNotes,
           submittedAt: row.createdAt,
-          adminUrl: `${siteOrigin}${ADMIN_PATH}`,
+          adminUrl: `${siteOrigin()}${ADMIN_PATH}`,
         }),
       })
     }

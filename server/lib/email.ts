@@ -14,6 +14,18 @@ interface SendArgs {
 
 const DEFAULT_FROM = 'SAHA Institute <contact@sahainstituteforlearning.com>'
 
+// Single source of truth for the public contact address and site origin, used
+// by every route that emails the admin or links back to the site. Keeping the
+// defaults here means an address change is a one-line edit, not a sweep across
+// routes. `.trim() ||` (not `??`) so a blank env var falls back to the default.
+export function adminContactEmail(): string {
+  return process.env.CONTACT_EMAIL?.trim() || 'sahaforlearning@gmail.com'
+}
+
+export function siteOrigin(): string {
+  return process.env.SITE_ORIGIN?.trim() || 'https://sahainstituteforlearning.com'
+}
+
 export async function sendEmail({ to, subject, html, from = DEFAULT_FROM }: SendArgs): Promise<boolean> {
   const key = process.env.RESEND_API_KEY
   if (!key) {

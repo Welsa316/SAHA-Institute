@@ -14,7 +14,6 @@ import { logger } from '../lib/log.js'
 // One factory backs both /api/summer-camp and /api/stem-program. The two programs share
 // storage and schema; only the `program` enum value differs.
 
-// Explicit column list so we NEVER ship password_hash to the client (the
 // Explicit projection reused across GET / POST / PATCH `.returning()`.
 // parent_email + phone_number are PARENT CONTACT info collected at
 // registration — the admin needs them to verify a pending registration is
