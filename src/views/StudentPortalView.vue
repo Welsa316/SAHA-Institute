@@ -108,10 +108,10 @@ async function handleLogout() {
 
       <template v-else-if="account">
         <p class="font-body text-[11px] tracking-[0.28em] uppercase text-academic-600 font-bold mb-2">{{ t('portal.eyebrow') }}</p>
-        <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-navy-900 tracking-tight mb-1">
+        <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-navy-900 tracking-tight mb-1 break-words">
           {{ students.length === 1 ? t('portal.greeting', { name: students[0].name }) : t('portal.greetingFamily') }}
         </h1>
-        <p class="font-body text-navy-500 mb-10">{{ account.parentEmail }}</p>
+        <p class="font-body text-navy-500 mb-10 break-all">{{ account.parentEmail }}</p>
 
         <div v-if="assignmentsError" role="alert" class="mb-6 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
           {{ assignmentsError }}
@@ -153,6 +153,7 @@ async function handleLogout() {
                 <button
                   type="button"
                   @click="toggleDone(a)"
+                  :aria-pressed="a.completed"
                   :aria-label="a.completed ? t('portal.markNotDone') : t('portal.markDone')"
                   class="mt-0.5 w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
                   :class="a.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-navy-300 hover:border-academic-400'"

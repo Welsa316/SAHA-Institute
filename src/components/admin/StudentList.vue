@@ -525,6 +525,7 @@ function dueBadge(a) {
                 <button
                   type="button"
                   @click="toggleAssignmentDone(a)"
+                  :aria-pressed="a.completed"
                   :aria-label="a.completed ? 'Mark not done' : 'Mark done'"
                   class="mt-0.5 w-5 h-5 shrink-0 rounded border flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
                   :class="a.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-navy-300 hover:border-academic-400'"
