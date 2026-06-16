@@ -5,13 +5,13 @@
 //
 // Run against local dev:
 //   DATABASE_URL=postgresql://... \
-//   ADMIN_EMAIL=sahaforlearning1675@gmail.com \
+//   ADMIN_EMAIL=sahaforlearning@gmail.com \
 //   ADMIN_PASSWORD=localtest123 \
 //   tsx scripts/seed-workshop-signups.ts
 //
 // Run against Railway:
 //   API_BASE=https://sahainstituteforlearning.com \
-//   ADMIN_EMAIL=sahaforlearning1675@gmail.com \
+//   ADMIN_EMAIL=sahaforlearning@gmail.com \
 //   ADMIN_PASSWORD=<production password> \
 //   tsx scripts/seed-workshop-signups.ts
 //

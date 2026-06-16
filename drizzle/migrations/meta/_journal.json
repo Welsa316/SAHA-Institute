@@ -78,6 +78,13 @@
       "when": 1781400000000,
       "tag": "0010_parent_email_and_sibling_split",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781500000000,
+      "tag": "0011_admin_email_unify",
+      "breakpoints": true
     }
   ]
 }
