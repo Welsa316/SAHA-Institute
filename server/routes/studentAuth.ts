@@ -19,7 +19,7 @@ import {
 } from '../lib/auth.js'
 import { requireStudentAuth } from '../middleware/requireStudentAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
-import { escapeHtml, sendEmail } from '../lib/email.js'
+import { adminContactEmail, escapeHtml, sendEmail, siteOrigin } from '../lib/email.js'
 import { SESSION_COOKIE_NAME, verifySession } from '../lib/auth.js'
 import { logger } from '../lib/log.js'
 
@@ -46,6 +46,10 @@ const authLimiter = rateLimit({
   message: { error: 'Too many attempts from this address. Please try again in an hour.' },
 })
 
+// Fixed hash for a constant-time compare when no credential matches, so a login
+// miss costs the same bcrypt work whether or not the email is registered.
+const DUMMY_HASH = '$2b$12$abcdefghijklmnopqrstuuVQT1XfXr5p9oN1OkONjJtJrJZJZJZJZ.'
+
 // Per-student shape inside the account payload — never the password hash, and
 // no payment fields (the site doesn't track tutoring payments).
 function publicStudent(row: typeof students.$inferSelect) {
@@ -64,11 +68,17 @@ function accountPayload(rows: (typeof students.$inferSelect)[]) {
   }
 }
 
+// Bounded: parent_email is non-unique, so without a cap a flooded email could
+// make login iterate an unbounded number of (blocking, CPU-bound) bcrypt
+// compares. Families are at most MAX_STUDENTS, so 20 is comfortably above any
+// real account.
+const MAX_CREDENTIAL_ROWS = 20
 function credentialRowsByEmail(email: string) {
   return db
     .select()
     .from(students)
     .where(and(eq(students.parentEmail, email), isNotNull(students.passwordHash)))
+    .limit(MAX_CREDENTIAL_ROWS)
 }
 
 // The family = every row sharing the session row's email AND exact hash
@@ -84,12 +94,10 @@ async function familyOf(sessionRow: typeof students.$inferSelect) {
 
 function notifyAdminOfRegistration(args: { names: string[]; parentEmail: string; parentPhone: string; submittedAt: Date }): void {
   const { names, parentEmail, parentPhone, submittedAt } = args
-  const siteOrigin = process.env.SITE_ORIGIN ?? 'https://sahainstituteforlearning.com'
-  const adminEmail = process.env.CONTACT_EMAIL ?? 'sahaforlearning@gmail.com'
-  const adminUrl = `${siteOrigin}/admin/students`
+  const adminUrl = `${siteOrigin()}/admin/students`
   const nameList = names.map((n) => `<li style="margin: 4px 0;">${escapeHtml(n)}</li>`).join('')
   void sendEmail({
-    to: [adminEmail],
+    to: [adminContactEmail()],
     subject: `New Student Registration (pending) — ${names.join(', ')}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -187,16 +195,29 @@ studentAuthRouter.post('/login', authLimiter, async (req, res, next) => {
 
     const candidates = await credentialRowsByEmail(email)
 
+    // Siblings registered together share one hash, so compare against DISTINCT
+    // hashes only. A normal family is then a single bcrypt compare — the same
+    // cost as an unregistered email (the dummy compare below) — which closes
+    // the timing oracle that iterating every row would open (it would leak
+    // whether the email exists and roughly how many students it has).
+    const seenHashes = new Set<string>()
+    const distinct: (typeof students.$inferSelect)[] = []
+    for (const row of candidates) {
+      if (row.passwordHash && !seenHashes.has(row.passwordHash)) {
+        seenHashes.add(row.passwordHash)
+        distinct.push(row)
+      }
+    }
+
     let matched: typeof students.$inferSelect | null = null
-    for (const account of candidates) {
+    for (const account of distinct) {
       if (await verifyPassword(password, account.passwordHash!)) {
         matched = account
         break
       }
     }
-    if (candidates.length === 0) {
-      const dummyHash = '$2b$12$abcdefghijklmnopqrstuuVQT1XfXr5p9oN1OkONjJtJrJZJZJZJZ.'
-      await verifyPassword(password, dummyHash)
+    if (distinct.length === 0) {
+      await verifyPassword(password, DUMMY_HASH)
     }
 
     if (!matched) {
