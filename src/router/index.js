@@ -5,6 +5,7 @@ import { useStudentAuth } from '../composables/useStudentAuth.js'
 
 const BASE_TITLE = 'SAHA Institute For Learning'
 const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep for ages 4 to 17.'
+const SITE_ORIGIN = 'https://sahainstituteforlearning.com'
 
 const routes = [
   // ---------- Public site ----------
@@ -200,6 +201,19 @@ router.afterEach((to) => {
     }
     desc.setAttribute('content', to.meta.description)
   }
+  // Keep canonical + og:url on the actual route. index.html hardcodes the
+  // homepage for both, so without this every route would self-canonicalize to
+  // "/" (telling Google the sub-pages are duplicates of the homepage).
+  const canonicalUrl = SITE_ORIGIN + (to.path === '/' ? '/' : to.path.replace(/\/$/, ''))
+  let canonical = document.querySelector('link[rel="canonical"]')
+  if (!canonical) {
+    canonical = document.createElement('link')
+    canonical.setAttribute('rel', 'canonical')
+    document.head.appendChild(canonical)
+  }
+  canonical.setAttribute('href', canonicalUrl)
+  const ogUrl = document.querySelector('meta[property="og:url"]')
+  if (ogUrl) ogUrl.setAttribute('content', canonicalUrl)
   // Admin routes shouldn't be indexed.
   let robots = document.querySelector('meta[name="robots"]')
   if (to.meta?.noindex) {
