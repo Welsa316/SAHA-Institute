@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
+import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import { fileURLToPath } from 'url'
 import { dirname, join, sep } from 'path'
@@ -21,6 +22,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3000)
+
+// Don't advertise the framework.
+app.disable('x-powered-by')
+
+// Security response headers (HSTS, X-Content-Type-Options, frameguard, etc.).
+// CSP is left off for now — the SPA pulls Google Fonts and embeds a Google Maps
+// iframe, so a real policy needs to be authored deliberately rather than guessed.
+// CORP is cross-origin so the OG image / static assets stay embeddable elsewhere.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  }),
+)
 
 // Railway terminates TLS at its proxy. Tell Express so req.ip and rate-limit work right.
 app.set('trust proxy', 1)
