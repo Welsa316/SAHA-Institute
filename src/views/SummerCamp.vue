@@ -75,14 +75,17 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
           :class="overviewVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <div class="rounded-2xl overflow-hidden shadow-xl shadow-navy-900/10 border border-navy-100 bg-white">
-            <img
-              src="/summer-camp-2026.jpg"
-              alt="SAHA Summer Camp & STEM 2026 main flyer"
-              width="532"
-              height="751"
-              class="w-full h-auto"
-              loading="lazy"
-            />
+            <picture>
+              <source srcset="/summer-camp-2026.webp" type="image/webp" />
+              <img
+                src="/summer-camp-2026.jpg"
+                alt="SAHA Summer Camp & STEM 2026 main flyer"
+                width="532"
+                height="751"
+                class="w-full h-auto"
+                loading="lazy"
+              />
+            </picture>
           </div>
         </div>
       </div>
@@ -98,14 +101,17 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
           :class="scheduleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <div class="rounded-2xl overflow-hidden shadow-xl shadow-navy-900/10 border border-navy-100 bg-white">
-            <img
-              src="/summer-camp/daily-schedule.jpg"
-              alt="Daily camp schedule with morning, midday, and afternoon STEM block"
-              width="900"
-              height="1350"
-              class="w-full h-auto"
-              loading="lazy"
-            />
+            <picture>
+              <source srcset="/summer-camp/daily-schedule.webp" type="image/webp" />
+              <img
+                src="/summer-camp/daily-schedule.jpg"
+                alt="Daily camp schedule with morning, midday, and afternoon STEM block"
+                width="900"
+                height="1350"
+                class="w-full h-auto"
+                loading="lazy"
+              />
+            </picture>
           </div>
         </div>
         <div
@@ -122,6 +128,15 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
           <div class="space-y-4 font-body text-navy-500 leading-relaxed">
             <p>{{ t('summerCamp.scheduleP1') }}</p>
             <p>{{ t('summerCamp.scheduleP2') }}</p>
+          </div>
+          <div class="mt-6">
+            <p class="font-body text-[10px] tracking-[0.2em] uppercase text-navy-500 font-bold mb-3">{{ t('summerCamp.scheduleListLabel') }}</p>
+            <ul class="rounded-xl border border-navy-100 bg-white/70 divide-y divide-navy-100 overflow-hidden">
+              <li v-for="item in t('summerCamp.scheduleItems')" :key="item.time" class="flex items-baseline gap-3 px-4 py-2.5">
+                <span class="font-body text-xs font-semibold text-academic-700 tabular-nums w-36 shrink-0">{{ item.time }}</span>
+                <span class="font-body text-sm text-navy-700 break-words">{{ item.activity }}</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -153,14 +168,17 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
           :class="workshopsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <div class="rounded-2xl overflow-hidden shadow-xl shadow-navy-900/10 border border-navy-100 bg-white max-w-sm">
-            <img
-              src="/summer-camp/workshops-note.jpg"
-              alt="Workshops information note"
-              width="279"
-              height="356"
-              class="w-full h-auto"
-              loading="lazy"
-            />
+            <picture>
+              <source srcset="/summer-camp/workshops-note.webp" type="image/webp" />
+              <img
+                src="/summer-camp/workshops-note.jpg"
+                alt="Workshops run Tuesday–Thursday, 10:30 AM to 12:00 PM, led by guest experts"
+                width="279"
+                height="356"
+                class="w-full h-auto"
+                loading="lazy"
+              />
+            </picture>
           </div>
         </div>
       </div>
@@ -177,14 +195,17 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
           :class="stemVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <div class="rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10">
-            <img
-              src="/summer-camp/stem-flyer.jpg"
-              alt="STEM 2026 flyer with dates, dress code, pricing, and contact info"
-              width="900"
-              height="1350"
-              class="w-full h-auto"
-              loading="lazy"
-            />
+            <picture>
+              <source srcset="/summer-camp/stem-flyer.webp" type="image/webp" />
+              <img
+                src="/summer-camp/stem-flyer.jpg"
+                alt="STEM 2026 flyer with dates, dress code, pricing, and contact info"
+                width="900"
+                height="1350"
+                class="w-full h-auto"
+                loading="lazy"
+              />
+            </picture>
           </div>
         </div>
         <div
@@ -238,30 +259,48 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
             {{ t('summerCamp.lunchWeekA') }}
           </p>
           <div class="rounded-2xl overflow-hidden shadow-xl shadow-navy-900/10 border border-navy-100 bg-white">
-            <img
-              src="/summer-camp/lunch-week-a.jpg"
-              alt="Week A lunch menu, Monday through Friday"
-              width="396"
-              height="458"
-              class="w-full h-auto"
-              loading="lazy"
-            />
+            <picture>
+              <source srcset="/summer-camp/lunch-week-a.webp" type="image/webp" />
+              <img
+                src="/summer-camp/lunch-week-a.jpg"
+                alt="Week A lunch menu, Monday through Friday"
+                width="396"
+                height="458"
+                class="w-full h-auto"
+                loading="lazy"
+              />
+            </picture>
           </div>
+          <ul class="mt-4 space-y-1.5">
+            <li v-for="m in t('summerCamp.lunchWeekAItems')" :key="m.day" class="flex justify-between gap-3 font-body text-sm">
+              <span class="text-navy-500 font-semibold">{{ m.day }}</span>
+              <span class="text-navy-700 text-end break-words">{{ m.meal }}</span>
+            </li>
+          </ul>
         </div>
         <div>
           <p class="text-center font-body text-xs tracking-[0.2em] uppercase text-navy-500 font-bold mb-3">
             {{ t('summerCamp.lunchWeekB') }}
           </p>
           <div class="rounded-2xl overflow-hidden shadow-xl shadow-navy-900/10 border border-navy-100 bg-white">
-            <img
-              src="/summer-camp/lunch-week-b.jpg"
-              alt="Week B lunch menu, Monday through Friday"
-              width="392"
-              height="511"
-              class="w-full h-auto"
-              loading="lazy"
-            />
+            <picture>
+              <source srcset="/summer-camp/lunch-week-b.webp" type="image/webp" />
+              <img
+                src="/summer-camp/lunch-week-b.jpg"
+                alt="Week B lunch menu, Monday through Friday"
+                width="392"
+                height="511"
+                class="w-full h-auto"
+                loading="lazy"
+              />
+            </picture>
           </div>
+          <ul class="mt-4 space-y-1.5">
+            <li v-for="m in t('summerCamp.lunchWeekBItems')" :key="m.day" class="flex justify-between gap-3 font-body text-sm">
+              <span class="text-navy-500 font-semibold">{{ m.day }}</span>
+              <span class="text-navy-700 text-end break-words">{{ m.meal }}</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
