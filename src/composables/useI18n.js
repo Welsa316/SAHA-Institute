@@ -1,9 +1,35 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import en from '../i18n/en.js'
 import ur from '../i18n/ur.js'
 
 const translations = { en, ur }
-const locale = ref(localStorage.getItem('saha-locale') || 'en')
+
+// Default to 'en' for the first render so the server-prerendered HTML and the
+// client's first (hydration) render match. The visitor's saved locale is applied
+// after mount via initLocale() — see App.vue. (SSR-safe: no localStorage/document
+// access at module load.)
+const locale = ref('en')
+let initialized = false
+
+function applyHtmlAttrs(val) {
+  if (typeof document === 'undefined') return
+  document.documentElement.dir = val === 'ur' ? 'rtl' : 'ltr'
+  document.documentElement.lang = val
+}
+
+function setLocale(val) {
+  locale.value = val
+  applyHtmlAttrs(val)
+  if (typeof localStorage !== 'undefined') localStorage.setItem('saha-locale', val)
+}
+
+// Client-only: read the stored locale once after hydration and apply it.
+function initLocale() {
+  if (initialized || typeof window === 'undefined') return
+  initialized = true
+  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('saha-locale') : null
+  setLocale(stored === 'ur' || stored === 'en' ? stored : 'en')
+}
 
 export function useI18n() {
   const isRTL = computed(() => locale.value === 'ur')
@@ -27,14 +53,8 @@ export function useI18n() {
   }
 
   function toggleLocale() {
-    locale.value = locale.value === 'en' ? 'ur' : 'en'
+    setLocale(locale.value === 'en' ? 'ur' : 'en')
   }
 
-  watch(locale, (val) => {
-    localStorage.setItem('saha-locale', val)
-    document.documentElement.dir = val === 'ur' ? 'rtl' : 'ltr'
-    document.documentElement.lang = val
-  }, { immediate: true })
-
-  return { locale, isRTL, t, toggleLocale }
+  return { locale, isRTL, t, toggleLocale, setLocale, initLocale }
 }

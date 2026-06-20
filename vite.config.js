@@ -7,6 +7,18 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
+  // vite-ssg: prerender the public, indexable routes to static HTML. Flat output
+  // (/about.html) avoids colliding with the public/summer-camp/ image directory.
+  ssgOptions: {
+    script: 'async',
+    formatting: 'minify',
+    dirStyle: 'flat',
+    crittersOptions: false, // skip critical-CSS inlining (avoids the optional beasties/critters dep)
+    includedRoutes(paths) {
+      const prerender = new Set(['/', '/about', '/summer-camp', '/enroll', '/contact', '/register'])
+      return paths.filter((p) => prerender.has(p))
+    },
+  },
   server: {
     proxy: {
       '/api': {

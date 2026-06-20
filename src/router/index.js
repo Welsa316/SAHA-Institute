@@ -1,13 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import { useAdminAuth } from '../composables/useAdminAuth.js'
 import { useStudentAuth } from '../composables/useStudentAuth.js'
 
+// vite-ssg owns the router instance (it picks web vs memory history for client
+// vs prerender). This module exports the route table + the guard wiring; head
+// tags (title/description/canonical/og) are handled by useHead in App.vue.
+
 const BASE_TITLE = 'SAHA Institute For Learning'
 const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep for ages 4 to 17.'
-const SITE_ORIGIN = 'https://sahainstituteforlearning.com'
 
-const routes = [
+export const routes = [
   // ---------- Public site ----------
   {
     path: '/',
@@ -152,103 +154,63 @@ const routes = [
   },
 ]
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes,
-  scrollBehavior(to, from, savedPosition) {
-    if (to.hash) {
-      return { el: to.hash, behavior: 'smooth' }
+export function scrollBehavior(to, from, savedPosition) {
+  if (to.hash) {
+    return { el: to.hash, behavior: 'smooth' }
+  }
+  if (savedPosition) return savedPosition
+  return { top: 0, behavior: 'smooth' }
+}
+
+// Wire guards + client-only recovery onto the router vite-ssg created.
+// `isClient` is false during the build-time prerender (no window/sessionStorage).
+export function setupRouter(router, isClient) {
+  // Auth guards. Admin routes check the admin session; the student portal checks
+  // the (separate) student session. Each hits its /me endpoint once per session —
+  // `ensureChecked` is a no-op after the first call. Prerendered routes are all
+  // public, so this never runs the auth fetch during the build.
+  router.beforeEach(async (to) => {
+    if (to.meta?.requiresAuth) {
+      const { isAuthenticated, ensureChecked } = useAdminAuth()
+      await ensureChecked()
+      if (!isAuthenticated.value) {
+        return { name: 'AdminLogin', query: { next: to.fullPath } }
+      }
     }
-    if (savedPosition) return savedPosition
-    return { top: 0, behavior: 'smooth' }
-  },
-})
 
-// Auth guards. Admin routes check the admin session; the student portal checks
-// the (separate) student session. Each hits its /me endpoint once per session —
-// `ensureChecked` is a no-op after the first call.
-router.beforeEach(async (to) => {
-  if (to.meta?.requiresAuth) {
-    const { isAuthenticated, ensureChecked } = useAdminAuth()
-    await ensureChecked()
-    if (!isAuthenticated.value) {
-      return { name: 'AdminLogin', query: { next: to.fullPath } }
+    if (to.meta?.requiresStudentAuth) {
+      const { isAuthenticated, ensureChecked } = useStudentAuth()
+      await ensureChecked()
+      if (!isAuthenticated.value) {
+        return { name: 'StudentLogin', query: { next: to.fullPath } }
+      }
     }
-  }
 
-  if (to.meta?.requiresStudentAuth) {
-    const { isAuthenticated, ensureChecked } = useStudentAuth()
-    await ensureChecked()
-    if (!isAuthenticated.value) {
-      return { name: 'StudentLogin', query: { next: to.fullPath } }
+    return true
+  })
+
+  if (!isClient) return
+
+  // Recover from stale-deploy chunk failures. Lazy routes import hashed chunk
+  // files; after a redeploy the old hashes are gone, so a browser holding a
+  // cached index.html gets a failed dynamic import and navigation silently
+  // aborts (this is how the admin Students tab once "showed nothing"). One
+  // hard reload fetches the fresh index.html with current hashes. The
+  // sessionStorage flag stops a reload loop if something else is broken.
+  router.onError((error, to) => {
+    const chunkFailed =
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed') ||
+      error?.message?.includes('error loading dynamically imported module')
+    if (chunkFailed && !sessionStorage.getItem('saha-chunk-reload')) {
+      sessionStorage.setItem('saha-chunk-reload', '1')
+      window.location.assign(to?.fullPath ?? window.location.pathname)
     }
-  }
+  })
 
-  return true
-})
-
-// Title + description sync on route change.
-router.afterEach((to) => {
-  if (to.meta?.title) {
-    document.title = to.meta.title
-  }
-  if (to.meta?.description) {
-    let desc = document.querySelector('meta[name="description"]')
-    if (!desc) {
-      desc = document.createElement('meta')
-      desc.setAttribute('name', 'description')
-      document.head.appendChild(desc)
-    }
-    desc.setAttribute('content', to.meta.description)
-  }
-  // Keep canonical + og:url on the actual route. index.html hardcodes the
-  // homepage for both, so without this every route would self-canonicalize to
-  // "/" (telling Google the sub-pages are duplicates of the homepage).
-  const canonicalUrl = SITE_ORIGIN + (to.path === '/' ? '/' : to.path.replace(/\/$/, ''))
-  let canonical = document.querySelector('link[rel="canonical"]')
-  if (!canonical) {
-    canonical = document.createElement('link')
-    canonical.setAttribute('rel', 'canonical')
-    document.head.appendChild(canonical)
-  }
-  canonical.setAttribute('href', canonicalUrl)
-  const ogUrl = document.querySelector('meta[property="og:url"]')
-  if (ogUrl) ogUrl.setAttribute('content', canonicalUrl)
-  // Admin routes shouldn't be indexed.
-  let robots = document.querySelector('meta[name="robots"]')
-  if (to.meta?.noindex) {
-    if (!robots) {
-      robots = document.createElement('meta')
-      robots.setAttribute('name', 'robots')
-      document.head.appendChild(robots)
-    }
-    robots.setAttribute('content', 'noindex, nofollow')
-  } else if (robots) {
-    robots.remove()
-  }
-})
-
-// Recover from stale-deploy chunk failures. Lazy routes import hashed chunk
-// files; after a redeploy the old hashes are gone, so a browser holding a
-// cached index.html gets a failed dynamic import and navigation silently
-// aborts (this is how the admin Students tab once "showed nothing"). One
-// hard reload fetches the fresh index.html with current hashes. The
-// sessionStorage flag stops a reload loop if something else is broken.
-router.onError((error, to) => {
-  const chunkFailed =
-    error?.message?.includes('Failed to fetch dynamically imported module') ||
-    error?.message?.includes('Importing a module script failed') ||
-    error?.message?.includes('error loading dynamically imported module')
-  if (chunkFailed && !sessionStorage.getItem('saha-chunk-reload')) {
-    sessionStorage.setItem('saha-chunk-reload', '1')
-    window.location.assign(to?.fullPath ?? window.location.pathname)
-  }
-})
-
-router.afterEach(() => {
-  // Navigation succeeded — clear the reload guard so a future deploy can
-  // trigger recovery again.
-  sessionStorage.removeItem('saha-chunk-reload')
-})
-
-export default router
+  router.afterEach(() => {
+    // Navigation succeeded — clear the reload guard so a future deploy can
+    // trigger recovery again.
+    sessionStorage.removeItem('saha-chunk-reload')
+  })
+}

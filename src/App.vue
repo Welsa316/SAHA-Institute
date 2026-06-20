@@ -1,12 +1,35 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import { useI18n } from './composables/useI18n'
 
-const { locale, toggleLocale, isRTL } = useI18n()
+const { locale, toggleLocale, isRTL, initLocale } = useI18n()
 const route = useRoute()
+
+// Per-route head, baked into the prerendered HTML at build and kept reactive on
+// the client. This is what makes each page declare its OWN canonical/title/og
+// instead of inheriting the homepage's (and is what non-JS crawlers read).
+const SITE_ORIGIN = 'https://sahainstituteforlearning.com'
+useHead(() => {
+  const canonical = SITE_ORIGIN + (route.path === '/' ? '/' : route.path.replace(/\/$/, ''))
+  const title = route.meta?.title || 'SAHA Institute For Learning'
+  const description =
+    route.meta?.description ||
+    'One-on-one tutoring in academics, Islamic studies, and standardized test prep for students ages 4 to 17. Located in Kenner, Louisiana.'
+  const meta = [
+    { name: 'description', content: description },
+    { property: 'og:title', content: title },
+    { property: 'og:description', content: description },
+    { property: 'og:url', content: canonical },
+    { name: 'twitter:title', content: title },
+    { name: 'twitter:description', content: description },
+  ]
+  if (route.meta?.noindex) meta.push({ name: 'robots', content: 'noindex, nofollow' })
+  return { title, link: [{ rel: 'canonical', href: canonical }], meta }
+})
 
 // Admin routes have their own chrome (the AdminLayout sidebar). Hide the public
 // site's Navbar, Footer, WhatsApp widget, and language toggle on those pages.
@@ -23,6 +46,7 @@ function handleScroll() {
 }
 
 onMounted(() => {
+  initLocale() // apply the visitor's saved locale after hydration (SSR renders 'en')
   window.addEventListener('scroll', handleScroll, { passive: true })
 })
 

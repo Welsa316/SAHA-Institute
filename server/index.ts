@@ -95,16 +95,24 @@ app.use(
 // the 404 below. A request for a stale hashed asset (old deploy) must 404 rather than
 // receive index.html-as-JavaScript, so the chunk-error handler in the frontend can
 // detect the failure and reload.
+// Public routes vite-ssg prerendered to flat <route>.html files. Everything else
+// (auth/admin) gets the clean empty shell to hydrate client-side. ('/' is served
+// as the prerendered dist/index.html by express.static above.)
+const PRERENDERED_ROUTES = new Set(['/about', '/summer-camp', '/enroll', '/contact', '/register'])
+
 app.get(/^(?!\/api).*/, (req, res) => {
   if (req.path.startsWith('/assets/')) {
     res.status(404).send('Asset not found (stale deploy reference).')
     return
   }
   res.setHeader('Cache-Control', 'no-cache')
-  res.sendFile(join(distPath, 'index.html'), (err) => {
-    if (err) {
-      res.status(404).send('Not found.')
-    }
+  const fallback = PRERENDERED_ROUTES.has(req.path) ? `${req.path.slice(1)}.html` : 'app-shell.html'
+  res.sendFile(join(distPath, fallback), (err) => {
+    if (!err) return
+    // Prerendered/shell file missing (e.g. dev with no build) — serve index.html.
+    res.sendFile(join(distPath, 'index.html'), (err2) => {
+      if (err2) res.status(404).send('Not found.')
+    })
   })
 })
 
