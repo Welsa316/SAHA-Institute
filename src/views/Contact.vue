@@ -120,7 +120,7 @@ function resetForm() {
               </div>
               <div>
                 <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.addressLabel') }}</p>
-                <p class="font-body text-sm text-navy-500 leading-relaxed">1201 Vintage Drive, 70065</p>
+                <p class="font-body text-sm text-navy-500 leading-relaxed">{{ t('footer.address') }}</p>
               </div>
             </div>
 

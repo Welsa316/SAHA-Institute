@@ -295,7 +295,7 @@ export default {
     est: 'Est. 2020',
     quickLinks: 'Quick Links',
     contactTitle: 'Contact',
-    address: '1201 Vintage Drive, 70065',
+    address: '1201 Vintage Drive, Kenner, LA 70065',
     hours: 'Mon–Fri, 3:15 – 9:00 PM',
     copyright: '© 2026 SAHA Institute For Learning. All rights reserved.',
   },

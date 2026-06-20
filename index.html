@@ -37,7 +37,8 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "EducationalOrganization",
+        "@type": ["EducationalOrganization", "LocalBusiness"],
+        "@id": "https://sahainstituteforlearning.com/#org",
         "name": "SAHA Institute For Learning",
         "alternateName": "SAHA",
         "description": "One-on-one tutoring in academics, Islamic studies, and standardized test prep for students ages 4 to 17.",
@@ -45,6 +46,7 @@
         "logo": "https://sahainstituteforlearning.com/logo.png",
         "image": "https://sahainstituteforlearning.com/logo.png",
         "foundingDate": "2020",
+        "priceRange": "$$",
         "address": {
           "@type": "PostalAddress",
           "streetAddress": "1201 Vintage Drive",
@@ -53,12 +55,73 @@
           "postalCode": "70065",
           "addressCountry": "US"
         },
+        "areaServed": [
+          { "@type": "City", "name": "Kenner" },
+          { "@type": "City", "name": "Metairie" },
+          { "@type": "AdministrativeArea", "name": "Jefferson Parish" }
+        ],
         "telephone": "+1-504-667-3625",
         "email": "sahaforlearning@gmail.com",
-        "openingHours": "Mo-Fr 15:15-21:00",
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "15:15",
+            "closes": "21:00"
+          }
+        ],
         "founder": {
           "@type": "Person",
           "name": "Anila Siddiqui"
+        },
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Tutoring Programs",
+          "itemListElement": [
+            {
+              "@type": "Course",
+              "name": "Academics Tutoring",
+              "description": "One-on-one tutoring in mathematics, science, and reading & writing.",
+              "provider": { "@id": "https://sahainstituteforlearning.com/#org" },
+              "offers": {
+                "@type": "Offer",
+                "priceCurrency": "USD",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "30",
+                  "priceCurrency": "USD",
+                  "unitText": "HOUR"
+                }
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Islamic Studies",
+              "description": "One-on-one Quran recitation, Tajwid, and memorization.",
+              "provider": { "@id": "https://sahainstituteforlearning.com/#org" },
+              "offers": {
+                "@type": "Offer",
+                "price": "250",
+                "priceCurrency": "USD"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Standardized Test Prep",
+              "description": "One-on-one AP, ACT, and LEAP preparation.",
+              "provider": { "@id": "https://sahainstituteforlearning.com/#org" },
+              "offers": {
+                "@type": "Offer",
+                "priceCurrency": "USD",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "30",
+                  "priceCurrency": "USD",
+                  "unitText": "HOUR"
+                }
+              }
+            }
+          ]
         }
       }
     </script>
