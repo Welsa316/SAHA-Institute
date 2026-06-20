@@ -133,9 +133,9 @@ function resetForm() {
               </div>
               <div>
                 <p class="font-body text-sm font-semibold text-navy-800">{{ t('contact.phoneLabel') }}</p>
-                <a href="tel:+15046673625" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors">(504) 667-3625</a>
+                <a href="tel:+15046673625" class="font-body text-sm text-navy-500 hover:text-academic-600 transition-colors"><span class="text-navy-400">{{ t('footer.phoneCall') }}:</span> (504) 667-3625</a>
                 <br/>
-                <a href="tel:+15043739778" class="font-body text-sm text-navy-400 hover:text-academic-600 transition-colors">(504) 373-9778</a>
+                <a href="https://wa.me/15043739778" target="_blank" rel="noopener" class="font-body text-sm text-navy-400 hover:text-academic-600 transition-colors"><span class="text-navy-400">{{ t('footer.phoneText') }}:</span> (504) 373-9778</a>
               </div>
             </div>
 

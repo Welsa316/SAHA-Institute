@@ -283,6 +283,8 @@ export default {
     quickLinks: 'فوری لنکس',
     contactTitle: 'رابطہ',
     address: '1201 ونٹیج ڈرائیو، کینر، LA 70065',
+    phoneCall: 'کال',
+    phoneText: 'ٹیکسٹ / واٹس ایپ',
     hours: 'پیر تا جمعہ، 3:15 تا 9:00 شام',
     copyright: '© 2026 ساہا ادارہ برائے تعلیم۔ جملہ حقوق محفوظ ہیں۔',
   },
