@@ -72,14 +72,17 @@ const tutors = [
           :class="missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
         >
           <div class="aspect-[3/4] md:aspect-auto md:h-full md:min-h-[550px] rounded-3xl overflow-hidden bg-navy-50 border border-navy-100">
-            <img
-              src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=1000&fit=crop&crop=faces"
-              alt="Students learning together"
-              width="800"
-              height="1000"
-              class="w-full h-full object-cover"
-              loading="lazy"
-            />
+            <picture class="block w-full h-full">
+              <source srcset="/about/learning-together.webp" type="image/webp" />
+              <img
+                src="/about/learning-together.jpg"
+                alt="Students learning together at SAHA Institute"
+                width="800"
+                height="1000"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </picture>
           </div>
         </div>
       </div>
@@ -109,16 +112,18 @@ const tutors = [
             :style="{ transitionDelay: teamVisible ? `${index * 100 + 200}ms` : '0ms' }"
           >
             <div class="aspect-[2/3] bg-gradient-to-b from-navy-800 to-navy-900 flex items-center justify-center">
-              <img
-                v-if="tutor.photo"
-                :src="tutor.photo"
-                :alt="tutor.name"
-                width="600"
-                height="900"
-                class="w-full h-full object-cover"
-                :style="{ objectPosition: `center ${tutor.pos}` }"
-                loading="lazy"
-              />
+              <picture v-if="tutor.photo" class="block w-full h-full">
+                <source :srcset="tutor.photo.replace('.jpg', '.webp')" type="image/webp" />
+                <img
+                  :src="tutor.photo"
+                  :alt="`${tutor.name}, ${tutor.role || 'tutor'} at SAHA Institute`"
+                  width="600"
+                  height="900"
+                  class="w-full h-full object-cover"
+                  :style="{ objectPosition: `center ${tutor.pos}` }"
+                  loading="lazy"
+                />
+              </picture>
               <span v-else class="font-heading text-4xl md:text-5xl font-bold text-white/10">{{ tutor.initials }}</span>
             </div>
             <div class="absolute bottom-3 left-3 right-3 px-4 py-3 rounded-xl backdrop-blur-2xl bg-academic-500/[0.15] border border-academic-300/[0.25] shadow-[inset_0_1px_1px_rgba(140,200,255,0.2),0_8px_32px_rgba(0,0,0,0.3)]">

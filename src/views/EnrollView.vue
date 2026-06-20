@@ -123,14 +123,17 @@ onMounted(() => {
             :class="summerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
           >
             <div class="rounded-2xl overflow-hidden shadow-2xl shadow-black/30 border border-white/10">
-              <img
-                src="/summer-camp-2026.jpg"
-                :alt="t('enroll.summerImageAlt')"
-                width="532"
-                height="751"
-                class="w-full h-auto"
-                loading="lazy"
-              />
+              <picture>
+                <source srcset="/summer-camp-2026.webp" type="image/webp" />
+                <img
+                  src="/summer-camp-2026.jpg"
+                  :alt="t('enroll.summerImageAlt')"
+                  width="532"
+                  height="751"
+                  class="w-full h-auto"
+                  loading="lazy"
+                />
+              </picture>
             </div>
           </div>
 
