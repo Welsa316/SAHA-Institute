@@ -3,7 +3,7 @@ import { asc, eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { teachers, users } from '../db/schema.js'
 import { teacherCreateSchema, idParamSchema } from '../schemas/index.js'
-import { signInviteToken } from '../lib/auth.js'
+import { signInviteToken, signResetToken, passwordFingerprint } from '../lib/auth.js'
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { logger } from '../lib/log.js'
@@ -84,6 +84,27 @@ teachersRouter.post('/:id/invite', async (req, res, next) => {
 
     const inviteToken = signInviteToken(teacher.id)
     res.json({ inviteToken })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/teachers/:id/reset — issue a one-time password-RESET link for a
+// teacher who already has an account. The teacher opens it and sets a new
+// password themselves (we never handle it). The token is fingerprint-bound to
+// the current password hash, so it's spent the instant the password changes.
+teachersRouter.post('/:id/reset', async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params)
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id)).limit(1)
+    if (!teacher) throw new HttpError(404, 'Teacher not found.')
+
+    const [account] = await db.select().from(users).where(eq(users.teacherId, id)).limit(1)
+    if (!account) throw new HttpError(409, "This teacher hasn't set up their account yet — send the invite link instead.")
+
+    const resetToken = signResetToken(teacher.id, passwordFingerprint(account.passwordHash))
+    logger.info('teachers', 'reset link issued', { teacherId: teacher.id })
+    res.json({ resetToken })
   } catch (err) {
     next(err)
   }

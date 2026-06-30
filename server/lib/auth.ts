@@ -3,6 +3,7 @@
 // password hashes keep working. Trade: ~30% slower verify than the native lib,
 // which is invisible at our scale (a handful of admin logins per day) and saves
 // ~90 seconds on every cold Railway build by skipping the node-gyp compile.
+import { createHash } from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
@@ -142,6 +143,45 @@ export function verifyInviteToken(token: string): InvitePayload | null {
     if (type !== 'teacher-invite') return null
     if (typeof teacherId !== 'number') return null
     return { teacherId }
+  } catch {
+    return null
+  }
+}
+
+// ---------- Teacher password-reset tokens ----------
+// An admin can reset an EXISTING teacher's password by issuing a one-time reset
+// link (same UX as an invite, but for an account that already exists). The token
+// carries a fingerprint `pv` of the account's current password hash; the setup
+// flow accepts it only while that fingerprint still matches, so the moment the
+// password changes — i.e. the moment the link is used — the token (and any other
+// outstanding reset links for that account) becomes inert. 24h expiry on top.
+const RESET_TTL_SECONDS = 60 * 60 * 24
+
+export interface ResetPayload {
+  teacherId: number
+  pv: string
+}
+
+// Short, stable fingerprint of a password hash. Changes iff the password changes.
+export function passwordFingerprint(passwordHash: string): string {
+  return createHash('sha256').update(passwordHash).digest('hex').slice(0, 16)
+}
+
+export function signResetToken(teacherId: number, pv: string): string {
+  return jwt.sign({ teacherId, pv, type: 'teacher-reset' }, getJwtSecret(), {
+    algorithm: JWT_ALGORITHM,
+    expiresIn: RESET_TTL_SECONDS,
+  })
+}
+
+export function verifyResetToken(token: string): ResetPayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
+    if (typeof decoded === 'string') return null
+    const { teacherId, pv, type } = decoded as Record<string, unknown>
+    if (type !== 'teacher-reset') return null
+    if (typeof teacherId !== 'number' || typeof pv !== 'string') return null
+    return { teacherId, pv }
   } catch {
     return null
   }
