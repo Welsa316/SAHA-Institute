@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useSchedule } from '../../composables/useSchedule.js'
 
-const { fetchTeachers, createTeacher, regenerateInvite } = useSchedule()
+const { fetchTeachers, createTeacher, regenerateInvite, resetTeacherPassword } = useSchedule()
 
 // Same palette the env-var seeding uses, so UI-created teachers get on-brand
 // calendar colours. New teachers default to the first colour not already taken.
@@ -12,8 +12,9 @@ const teachers = ref([])
 const loading = ref(false)
 const error = ref('')
 
-// Most recently generated invite link, shown in a copyable panel.
-const invite = ref(null) // { name, url }
+// Most recently generated link, shown in a copyable panel. kind drives the copy:
+// 'invite' (set first password) vs 'reset' (set a new password).
+const linkPanel = ref(null) // { name, url, kind: 'invite' | 'reset' }
 const copied = ref(false)
 
 const form = ref({ name: '', email: '', color: PALETTE[0] })
@@ -68,7 +69,7 @@ async function submit() {
       color: form.value.color,
     })
     const url = inviteUrl(inviteToken)
-    invite.value = { name: teacher.name, url }
+    linkPanel.value = { name: teacher.name, url, kind: 'invite' }
     await copyLink(url)
     form.value = { name: '', email: '', color: PALETTE[0] }
     await load()
@@ -85,12 +86,27 @@ async function copyExistingInvite(teacher) {
   try {
     const token = await regenerateInvite(teacher.id)
     const url = inviteUrl(token)
-    invite.value = { name: teacher.name, url }
+    linkPanel.value = { name: teacher.name, url, kind: 'invite' }
     await copyLink(url)
   } catch (err) {
     error.value = err?.message || 'Could not generate an invite link.'
   } finally {
     regenBusyId.value = null
+  }
+}
+
+const resetBusyId = ref(null)
+async function copyResetLink(teacher) {
+  resetBusyId.value = teacher.id
+  try {
+    const token = await resetTeacherPassword(teacher.id)
+    const url = inviteUrl(token)
+    linkPanel.value = { name: teacher.name, url, kind: 'reset' }
+    await copyLink(url)
+  } catch (err) {
+    error.value = err?.message || 'Could not generate a reset link.'
+  } finally {
+    resetBusyId.value = null
   }
 }
 </script>
@@ -106,25 +122,26 @@ async function copyExistingInvite(teacher) {
 
     <div v-if="error" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ error }}</div>
 
-    <!-- Invite link panel (after create / re-copy) -->
-    <div v-if="invite" class="mb-6 p-4 rounded-2xl border border-academic-300 bg-academic-50">
+    <!-- Link panel (after create / re-copy invite, or reset) -->
+    <div v-if="linkPanel" class="mb-6 p-4 rounded-2xl border border-academic-300 bg-academic-50">
       <div class="flex items-start justify-between gap-3">
         <p class="font-body text-sm text-navy-700">
-          Invite link for <span class="font-bold">{{ invite.name }}</span> — share it with them.
-          <span class="text-navy-500">Works once, expires in 14 days.</span>
+          {{ linkPanel.kind === 'reset' ? 'Password reset link' : 'Invite link' }} for
+          <span class="font-bold">{{ linkPanel.name }}</span> — share it with them.
+          <span class="text-navy-500">Works once, expires in {{ linkPanel.kind === 'reset' ? '24 hours' : '14 days' }}.</span>
         </p>
-        <button type="button" @click="invite = null" aria-label="Dismiss" class="text-navy-400 hover:text-navy-700 shrink-0">
+        <button type="button" @click="linkPanel = null" aria-label="Dismiss" class="text-navy-400 hover:text-navy-700 shrink-0">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
       <div class="flex gap-2 mt-3">
         <input
-          :value="invite.url"
+          :value="linkPanel.url"
           readonly
           @focus="(e) => e.target.select()"
           class="flex-1 px-3 py-2 rounded-lg border border-navy-200 bg-white font-mono text-xs text-navy-700 focus:outline-none focus:ring-2 focus:ring-academic-400/40"
         />
-        <button type="button" @click="copyLink(invite.url)" class="px-4 py-2 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold whitespace-nowrap">
+        <button type="button" @click="copyLink(linkPanel.url)" class="px-4 py-2 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold whitespace-nowrap">
           {{ copied ? 'Copied!' : 'Copy link' }}
         </button>
       </div>
@@ -194,6 +211,15 @@ async function copyExistingInvite(teacher) {
               class="px-3 py-1.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-xs font-semibold whitespace-nowrap transition-colors disabled:opacity-60"
             >
               {{ regenBusyId === t.id ? '…' : 'Copy invite link' }}
+            </button>
+            <button
+              v-if="t.status === 'active' && t.email"
+              type="button"
+              @click="copyResetLink(t)"
+              :disabled="resetBusyId === t.id"
+              class="px-3 py-1.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-xs font-semibold whitespace-nowrap transition-colors disabled:opacity-60"
+            >
+              {{ resetBusyId === t.id ? '…' : 'Reset password' }}
             </button>
           </div>
         </li>

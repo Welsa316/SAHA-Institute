@@ -28,6 +28,9 @@ export function useSchedule() {
     regenerateInvite(id) {
       return api(`/api/teachers/${id}/invite`, { method: 'POST' }).then((d) => d.inviteToken)
     },
+    resetTeacherPassword(id) {
+      return api(`/api/teachers/${id}/reset`, { method: 'POST' }).then((d) => d.resetToken)
+    },
     fetchStudents() {
       return api('/api/students').then((d) => d.students)
     },
