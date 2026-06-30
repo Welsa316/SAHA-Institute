@@ -15,9 +15,10 @@ const {
   cancelDay,
 } = useSchedule()
 
-// Grid runs 8:00–21:00 (the institute's hours), one absolutely-positioned block
-// per class so any start time / duration renders correctly.
-const START_HOUR = 8
+// Grid runs 15:00–21:00 — it's an after-school institute, so classes start at
+// 3pm. One absolutely-positioned block per class so any start time / duration
+// renders correctly.
+const START_HOUR = 15
 const END_HOUR = 21
 const PX_PER_HOUR = 56
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
