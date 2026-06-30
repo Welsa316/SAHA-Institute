@@ -20,6 +20,7 @@ import { contactRouter } from './routes/contact.js'
 import { enrollmentsRouter } from './routes/enrollments.js'
 import { teachersRouter } from './routes/teachers.js'
 import { instancesRouter } from './routes/instances.js'
+import { scheduleRouter, studentScheduleRouter } from './routes/schedule.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -59,6 +60,7 @@ app.use('/api/contact', contactRouter)
 app.use('/api/workshop-signups', workshopSignupsRouter)
 app.use('/api/summer-camp', studentsRouter('summer_camp'))
 app.use('/api/stem-program', studentsRouter('stem_program'))
+app.use('/api/students', studentScheduleRouter) // POST /:id/cancel-schedule (before the CRUD factory)
 app.use('/api/students', studentsRouter('regular'))
 app.use('/api/student-auth', studentAuthRouter)
 app.use('/api/assignments', assignmentsRouter)
@@ -66,6 +68,7 @@ app.use('/api/payments', paymentsRouter)
 app.use('/api/enrollments', enrollmentsRouter)
 app.use('/api/teachers', teachersRouter)
 app.use('/api/instances', instancesRouter)
+app.use('/api/schedule', scheduleRouter)
 
 // ---------- Static frontend ----------
 // In production the Vite build lands in /dist. In dev (`npm run dev`) Vite serves the
