@@ -5,7 +5,7 @@ import { enrollments, classInstances } from '../db/schema.js'
 import { cancelDaySchema, idParamSchema } from '../schemas/index.js'
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { centralDateRangeToUtc } from '../lib/schedule.js'
-import { notifyCancellation } from '../lib/notifyCancellation.js'
+import { notifyCancellation } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 // Mounted at /api/students — the whole-student schedule cancellation lives under

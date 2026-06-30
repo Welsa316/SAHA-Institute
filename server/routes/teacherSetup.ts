@@ -5,6 +5,7 @@ import { db } from '../db/index.js'
 import { teachers, users } from '../db/schema.js'
 import { teacherSetupSchema } from '../schemas/index.js'
 import { verifyInviteToken, verifyResetToken, passwordFingerprint, hashPassword } from '../lib/auth.js'
+import { notifyTeacherReady } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 // Public, token-gated. Two flows share this surface:
@@ -101,6 +102,7 @@ teacherSetupRouter.post('/', setupLimiter, async (req, res, next) => {
         res.status(409).json({ error: 'An account with this email already exists. Please log in.' })
         return
       }
+      notifyTeacherReady(r.teacher.id)
       logger.info('teacherSetup', 'account created', { teacherId: r.teacher.id })
       res.status(201).json({ ok: true, mode: 'invite', username: r.teacher.email })
       return

@@ -6,7 +6,7 @@ import { instancesQuerySchema, idParamSchema } from '../schemas/index.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { centralDateRangeToUtc } from '../lib/schedule.js'
-import { notifyCancellation } from '../lib/notifyCancellation.js'
+import { notifyCancellation, notifyAdminOfTeacherCancellation } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 export const instancesRouter: Router = Router()
@@ -81,6 +81,11 @@ instancesRouter.post('/:id/cancel', async (req, res, next) => {
       .returning()
 
     notifyCancellation({ type: 'student_off', instanceIds: [id], studentIds: [inst.studentId] })
+    // When a TEACHER cancels their own class, give the admin a heads-up so
+    // closures don't happen without their awareness.
+    if (user.role === 'teacher' && user.teacherId != null) {
+      notifyAdminOfTeacherCancellation({ teacherId: user.teacherId, instanceId: id })
+    }
     logger.info('instance', 'cancelled', { id, by: user.username, role: user.role })
     res.json({ instance: updated })
   } catch (err) {

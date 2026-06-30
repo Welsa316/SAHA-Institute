@@ -6,6 +6,7 @@ import { enrollmentCreateSchema } from '../schemas/index.js'
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { generateOccurrenceInstants, sixMonthsLater } from '../lib/schedule.js'
+import { notifyStudentScheduled } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 export const enrollmentsRouter: Router = Router()
@@ -71,6 +72,14 @@ enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
       return row
     })
 
+    notifyStudentScheduled({
+      studentId: input.studentId,
+      teacherId: input.teacherId,
+      daysOfWeek: input.daysOfWeek,
+      startTimeLocal: input.startTimeLocal,
+      durationMinutes: input.durationMinutes,
+      startDate: input.startDate,
+    })
     logger.info('enrollment', 'created', {
       id: enrollment.id,
       instances: instants.length,

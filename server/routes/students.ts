@@ -9,6 +9,7 @@ import {
 } from '../schemas/index.js'
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
+import { notifyStudentApproved } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 // One factory backs both /api/summer-camp and /api/stem-program. The two programs share
@@ -97,6 +98,19 @@ export function studentsRouter(program: Program): Router {
         if (patch.paidFrom === undefined) patch.paidFrom = null
       }
 
+      // Detect a false→true approval transition so the family is emailed exactly
+      // once (a re-save with approved:true on an already-approved student won't
+      // re-fire). Only for regular tutoring students.
+      let wasUnapproved = false
+      if (patch.approved === true && program === 'regular') {
+        const [prev] = await db
+          .select({ approved: students.approved })
+          .from(students)
+          .where(and(eq(students.id, id), eq(students.program, program)))
+          .limit(1)
+        wasUnapproved = prev?.approved === false
+      }
+
       const [row] = await db
         .update(students)
         .set({ ...patch, updatedAt: new Date() })
@@ -104,6 +118,7 @@ export function studentsRouter(program: Program): Router {
         .returning(publicColumns)
 
       if (!row) throw new HttpError(404, 'Student not found.')
+      if (wasUnapproved && row.approved) notifyStudentApproved(id)
       logger.info('student', 'updated', { id, program, fields: Object.keys(patch), user: res.locals.user?.username })
       res.json({ student: row })
     } catch (err) {
