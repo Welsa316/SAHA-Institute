@@ -136,13 +136,31 @@ function prevWeek() { weekStart.value = weekStart.value.minus({ weeks: 1 }); loa
 function nextWeek() { weekStart.value = weekStart.value.plus({ weeks: 1 }); loadWeek() }
 function thisWeek() { weekStart.value = DateTime.now().setZone(tz.value).startOf('week'); loadWeek() }
 
+// The class form's student + teacher pickers. Loaded independently (one failing
+// must not blank the other) and re-loadable, so a transient hiccup or a session
+// that resolves admin after mount never leaves the form with empty dropdowns.
+const lookupsLoading = ref(false)
+const lookupsError = ref(false)
+async function loadLookups() {
+  if (!isAdmin.value) return
+  lookupsLoading.value = true
+  lookupsError.value = false
+  const [t, s] = await Promise.allSettled([fetchTeachers(), fetchStudents()])
+  if (t.status === 'fulfilled') teachers.value = t.value || []
+  if (s.status === 'fulfilled') students.value = s.value || []
+  lookupsError.value = t.status === 'rejected' || s.status === 'rejected'
+  lookupsLoading.value = false
+}
+
 onMounted(async () => {
-  if (isAdmin.value) {
-    try {
-      ;[teachers.value, students.value] = await Promise.all([fetchTeachers(), fetchStudents()])
-    } catch (_err) { /* non-fatal — calendar still loads */ }
-  }
+  await loadLookups()
   await loadWeek()
+})
+
+// If the admin session only resolves after mount, or the first load failed,
+// (re)fetch the pickers as soon as we know we're admin.
+watch(isAdmin, (v) => {
+  if (v && (!teachers.value.length || !students.value.length)) loadLookups()
 })
 
 // ---------- New class form (admin) ----------
@@ -155,6 +173,9 @@ function openForm() {
   form.value = { studentId: '', teacherId: '', days: [], startTime: '16:00', durationChoice: '60', customDuration: 45 }
   formError.value = ''
   showForm.value = true
+  // Belt-and-suspenders: if the initial load missed (race/transient failure),
+  // fetch the pickers now so the form is never stuck with empty dropdowns.
+  if (!teachers.value.length || !students.value.length) loadLookups()
 }
 function toggleDay(d) {
   const i = form.value.days.indexOf(d)
@@ -406,6 +427,11 @@ function canCancel(inst) {
         <h2 class="font-heading text-xl font-bold text-navy-900 mb-1">New recurring class</h2>
         <p class="font-body text-xs text-navy-500 mb-5">Generates classes for 6 months. Same start time on every selected weekday.</p>
         <div v-if="formError" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ formError }}</div>
+        <div v-if="lookupsLoading" class="mb-4 p-3 rounded-lg bg-navy-50 border border-navy-100 text-navy-500 text-sm font-body">Loading students and teachers…</div>
+        <div v-else-if="!students.length || !teachers.length" role="alert" class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm font-body flex items-center justify-between gap-3">
+          <span>Couldn't load the {{ !students.length && !teachers.length ? 'student and teacher lists' : !students.length ? 'student list' : 'teacher list' }}.</span>
+          <button type="button" @click="loadLookups" class="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700">Retry</button>
+        </div>
         <form @submit.prevent="submitForm" class="space-y-4">
           <div>
             <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Student</label>
