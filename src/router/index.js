@@ -90,6 +90,19 @@ export const routes = [
       noindex: true,
     },
   },
+  // Teacher invite completion. A teacher reaches this via a one-time link the
+  // admin shares; the token in the path authorises setting their password. Bare
+  // (no public nav/footer) like the student auth flows. Not indexed.
+  {
+    path: '/teacher-setup/:token',
+    name: 'TeacherSetup',
+    component: () => import('../views/TeacherSetupView.vue'),
+    meta: {
+      bare: true,
+      title: `Set Up Your Account | ${BASE_TITLE}`,
+      noindex: true,
+    },
+  },
   {
     path: '/contact',
     name: 'Contact',
@@ -129,6 +142,12 @@ export const routes = [
         name: 'AdminSchedule',
         component: () => import('../views/admin/ScheduleView.vue'),
         meta: { admin: true, requiresAuth: true, title: `Schedule | ${BASE_TITLE}` },
+      },
+      {
+        path: 'teachers',
+        name: 'AdminTeachers',
+        component: () => import('../views/admin/TeachersView.vue'),
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Teachers | ${BASE_TITLE}` },
       },
       {
         path: 'workshop-signups',

@@ -12,6 +12,7 @@ const mobileNavOpen = ref(false)
 // `adminOnly` items are hidden from teacher accounts, which only see Schedule.
 const navItems = [
   { to: '/admin/schedule', label: 'Schedule', icon: 'calendar', adminOnly: false },
+  { to: '/admin/teachers', label: 'Teachers', icon: 'cap', adminOnly: true },
   { to: '/admin/workshop-signups', label: 'Workshop Signups', icon: 'clipboard', adminOnly: true },
   { to: '/admin/summer-camp', label: 'Summer Camp', icon: 'sun', adminOnly: true },
   { to: '/admin/stem-program', label: 'STEM Program', icon: 'beaker', adminOnly: true },
@@ -63,6 +64,9 @@ async function handleLogout() {
           <!-- Icons drawn inline so we don't need an icon library. -->
           <svg v-if="item.icon === 'calendar'" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          <svg v-if="item.icon === 'cap'" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
           </svg>
           <svg v-if="item.icon === 'clipboard'" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 2.25h6m-6 0a1.5 1.5 0 00-1.5 1.5v.75h9V3.75a1.5 1.5 0 00-1.5-1.5m-6 0c-.621 0-1.125.504-1.125 1.125v1.125H7.5m9-3v.75M7.5 5.25H6.75A2.25 2.25 0 004.5 7.5v12a2.25 2.25 0 002.25 2.25h10.5A2.25 2.25 0 0019.5 19.5v-12a2.25 2.25 0 00-2.25-2.25H16.5" />

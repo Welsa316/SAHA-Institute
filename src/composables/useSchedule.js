@@ -22,6 +22,12 @@ export function useSchedule() {
     fetchTeachers() {
       return api('/api/teachers').then((d) => d.teachers)
     },
+    createTeacher(body) {
+      return api('/api/teachers', { method: 'POST', body: JSON.stringify(body) })
+    },
+    regenerateInvite(id) {
+      return api(`/api/teachers/${id}/invite`, { method: 'POST' }).then((d) => d.inviteToken)
+    },
     fetchStudents() {
       return api('/api/students').then((d) => d.students)
     },
