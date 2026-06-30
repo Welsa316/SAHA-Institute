@@ -107,6 +107,15 @@ See [`.env.example`](.env.example) for the canonical list. Required at runtime:
 - `ADMIN_PASSWORD` — only read at boot. Used to seed or rotate the bcrypt hash in the
   `users` table. Safe to remove from the Railway env after first deploy; the hash
   persists in the DB.
+- **Teacher accounts** (for the scheduling module) — numbered, seeded at boot. Add as
+  many as you have teachers; seeding loops `TEACHER1_*`, `TEACHER2_*`, … and stops at
+  the first missing `TEACHERn_USERNAME`. Like `ADMIN_PASSWORD`, the passwords are only
+  read at boot to seed/rotate the bcrypt hash, then can be removed from the env.
+  - `TEACHERn_USERNAME` — login username for teacher _n_ (required to seed that teacher).
+  - `TEACHERn_PASSWORD` — login password for teacher _n_ (required).
+  - `TEACHERn_NAME` — display name shown on the calendar. Optional; defaults to the username.
+  - `TEACHERn_COLOR` — hex colour for that teacher's blocks. Optional; defaults to a
+    colour from the built-in palette by index.
 - `RESEND_API_KEY` — for the contact form and admin signup notifications.
 - `CONTACT_EMAIL` — where contact form submissions and admin signup notifications go.
 - `SITE_ORIGIN` — used in admin-notification email links. Defaults to the prod URL.
@@ -119,8 +128,10 @@ See [`.env.example`](.env.example) for the canonical list. Required at runtime:
 3. Set the remaining env vars listed above in the service's variables tab.
 4. **Build command:** `npm run build`
 5. **Start command:** `npm start`
-6. First boot will run migrations (`drizzle/migrations/*.sql`) and seed the admin user
-   from `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Migrations are idempotent.
+6. First boot will run migrations (`drizzle/migrations/*.sql`), seed the admin user
+   from `ADMIN_EMAIL` / `ADMIN_PASSWORD`, and seed any teacher accounts from the
+   `TEACHERn_*` vars. Seeding is idempotent — re-running rotates passwords and refreshes
+   names/colours without creating duplicates.
 7. Once the admin is seeded you can delete `ADMIN_PASSWORD` from Railway — the hash is
    in the DB. Re-set it later to rotate the admin password.
 
