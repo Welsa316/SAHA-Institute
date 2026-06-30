@@ -50,7 +50,7 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
     const token = signSession({ userId: user.id, role: user.role, teacherId: user.teacherId, username: user.username })
     res.cookie(SESSION_COOKIE_NAME, token, sessionCookieOptions)
     logger.info('auth', 'login ok', { username, role: user.role })
-    res.json({ user: { id: user.id, username: user.username, role: user.role, teacherId: user.teacherId } })
+    res.json({ user: { id: user.id, username: user.username, role: user.role, teacherId: user.teacherId, displayTimezone: user.displayTimezone } })
   } catch (err) {
     next(err)
   }
@@ -63,8 +63,30 @@ authRouter.post('/logout', (req, res) => {
   res.json({ ok: true })
 })
 
-// GET /api/auth/me — returns the current session info, or 401 if no/invalid cookie.
-// Used by the frontend on app load to decide whether to redirect to /admin/login.
-authRouter.get('/me', requireAuth, (req, res) => {
-  res.json({ user: res.locals.user })
+// GET /api/auth/me — current session info (incl. display_timezone for the
+// calendar), or 401 if no/invalid cookie. Reads the row fresh so role/timezone
+// changes take effect without re-login.
+authRouter.get('/me', requireAuth, async (_req, res, next) => {
+  try {
+    const userId = res.locals.user!.userId
+    const [row] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        role: users.role,
+        teacherId: users.teacherId,
+        displayTimezone: users.displayTimezone,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+    if (!row) {
+      res.clearCookie(SESSION_COOKIE_NAME, clearSessionCookieOptions)
+      res.status(401).json({ error: 'Account no longer exists.' })
+      return
+    }
+    res.json({ user: { id: row.id, username: row.username, role: row.role, teacherId: row.teacherId, displayTimezone: row.displayTimezone } })
+  } catch (err) {
+    next(err)
+  }
 })

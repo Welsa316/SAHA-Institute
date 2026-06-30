@@ -73,6 +73,7 @@ export function useAdminAuth() {
     isAdmin: computed(() => user.value?.role === 'admin'),
     isTeacher: computed(() => user.value?.role === 'teacher'),
     teacherId: computed(() => user.value?.teacherId ?? null),
+    displayTimezone: computed(() => user.value?.displayTimezone ?? 'America/Chicago'),
     fetchSession,
     ensureChecked,
     login,
