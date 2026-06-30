@@ -12,9 +12,17 @@ const JWT_ALGORITHM = 'HS256'
 // 30-day session per spec.
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 
+export type UserRole = 'admin' | 'teacher'
+
+// Admin/teacher session claims. teacherId is null for admin, the linked
+// teachers.id for a teacher. username is carried for display/logging only — the
+// authoritative scope is role + teacherId, which every teacher-scoped query
+// enforces server-side.
 export interface JwtPayload {
   userId: number
-  email: string
+  role: UserRole
+  teacherId: number | null
+  username: string
 }
 
 function getJwtSecret(): string {
@@ -44,9 +52,12 @@ export function verifySession(token: string): JwtPayload | null {
   try {
     const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
     if (typeof decoded === 'string') return null
-    const { userId, email } = decoded as Record<string, unknown>
-    if (typeof userId !== 'number' || typeof email !== 'string') return null
-    return { userId, email }
+    const { userId, role, teacherId, username } = decoded as Record<string, unknown>
+    if (typeof userId !== 'number') return null
+    if (role !== 'admin' && role !== 'teacher') return null
+    if (teacherId !== null && typeof teacherId !== 'number') return null
+    if (typeof username !== 'string') return null
+    return { userId, role, teacherId, username }
   } catch {
     return null
   }
@@ -99,6 +110,38 @@ export function verifyStudentSession(token: string): StudentJwtPayload | null {
     if (type !== 'student') return null
     if (typeof studentId !== 'number' || typeof email !== 'string') return null
     return { studentId, email }
+  } catch {
+    return null
+  }
+}
+
+// ---------- Teacher invite tokens ----------
+// An admin invites a teacher; the teacher completes the account (sets their own
+// password) via a one-time link carrying this signed token. It is NOT a session
+// — it only authorises creating the one teacher account it names. "One-time" is
+// enforced at use: once a users row exists for the teacher, the token is inert
+// (the setup endpoint rejects it). 14-day expiry so stale links die on their own.
+const INVITE_TTL_SECONDS = 60 * 60 * 24 * 14
+
+export interface InvitePayload {
+  teacherId: number
+}
+
+export function signInviteToken(teacherId: number): string {
+  return jwt.sign({ teacherId, type: 'teacher-invite' }, getJwtSecret(), {
+    algorithm: JWT_ALGORITHM,
+    expiresIn: INVITE_TTL_SECONDS,
+  })
+}
+
+export function verifyInviteToken(token: string): InvitePayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
+    if (typeof decoded === 'string') return null
+    const { teacherId, type } = decoded as Record<string, unknown>
+    if (type !== 'teacher-invite') return null
+    if (typeof teacherId !== 'number') return null
+    return { teacherId }
   } catch {
     return null
   }

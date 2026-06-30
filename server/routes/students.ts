@@ -7,7 +7,7 @@ import {
   studentCreateSchema,
   studentUpdateSchema,
 } from '../schemas/index.js'
-import { requireAuth } from '../middleware/requireAuth.js'
+import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { logger } from '../lib/log.js'
 
@@ -40,7 +40,7 @@ export function studentsRouter(program: Program): Router {
   const router = Router()
 
   // All endpoints require the admin session — there's no public surface for student records.
-  router.use(requireAuth)
+  router.use(requireAuth, requireAdmin)
 
   // GET — list all students in this program, ordered by grade then last-updated.
   // The admin UI groups visually by grade, so we send a flat list and let the client group.
@@ -75,7 +75,7 @@ export function studentsRouter(program: Program): Router {
           notes: input.notes ?? null,
         })
         .returning(publicColumns)
-      logger.info('student', 'created', { id: row.id, program, user: res.locals.user?.email })
+      logger.info('student', 'created', { id: row.id, program, user: res.locals.user?.username })
       res.status(201).json({ student: row })
     } catch (err) {
       next(err)
@@ -104,7 +104,7 @@ export function studentsRouter(program: Program): Router {
         .returning(publicColumns)
 
       if (!row) throw new HttpError(404, 'Student not found.')
-      logger.info('student', 'updated', { id, program, fields: Object.keys(patch), user: res.locals.user?.email })
+      logger.info('student', 'updated', { id, program, fields: Object.keys(patch), user: res.locals.user?.username })
       res.json({ student: row })
     } catch (err) {
       next(err)
@@ -120,7 +120,7 @@ export function studentsRouter(program: Program): Router {
         .where(and(eq(students.id, id), eq(students.program, program)))
         .returning()
       if (result.length === 0) throw new HttpError(404, 'Student not found.')
-      logger.info('student', 'deleted', { id, program, user: res.locals.user?.email })
+      logger.info('student', 'deleted', { id, program, user: res.locals.user?.username })
       res.json({ ok: true })
     } catch (err) {
       next(err)

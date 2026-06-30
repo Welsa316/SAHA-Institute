@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join, sep } from 'path'
 
 import { runMigrations } from './db/migrate.js'
-import { seedAdmin } from './db/seed.js'
+import { seedAdmin, seedTeachers } from './db/seed.js'
 import { logger } from './lib/log.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -17,6 +17,11 @@ import { studentAuthRouter } from './routes/studentAuth.js'
 import { assignmentsRouter } from './routes/assignments.js'
 import { paymentsRouter } from './routes/payments.js'
 import { contactRouter } from './routes/contact.js'
+import { enrollmentsRouter } from './routes/enrollments.js'
+import { teachersRouter } from './routes/teachers.js'
+import { instancesRouter } from './routes/instances.js'
+import { scheduleRouter, studentScheduleRouter } from './routes/schedule.js'
+import { teacherSetupRouter } from './routes/teacherSetup.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -56,10 +61,16 @@ app.use('/api/contact', contactRouter)
 app.use('/api/workshop-signups', workshopSignupsRouter)
 app.use('/api/summer-camp', studentsRouter('summer_camp'))
 app.use('/api/stem-program', studentsRouter('stem_program'))
+app.use('/api/students', studentScheduleRouter) // POST /:id/cancel-schedule (before the CRUD factory)
 app.use('/api/students', studentsRouter('regular'))
 app.use('/api/student-auth', studentAuthRouter)
 app.use('/api/assignments', assignmentsRouter)
 app.use('/api/payments', paymentsRouter)
+app.use('/api/enrollments', enrollmentsRouter)
+app.use('/api/teachers', teachersRouter)
+app.use('/api/instances', instancesRouter)
+app.use('/api/schedule', scheduleRouter)
+app.use('/api/teacher-setup', teacherSetupRouter) // public, token-gated
 
 // ---------- Static frontend ----------
 // In production the Vite build lands in /dist. In dev (`npm run dev`) Vite serves the
@@ -129,6 +140,7 @@ async function start(): Promise<void> {
     if (process.env.DATABASE_URL) {
       await runMigrations()
       await seedAdmin()
+      await seedTeachers()
     } else {
       logger.warn('boot', 'DATABASE_URL is not set — DB-backed routes will 500 until configured')
     }

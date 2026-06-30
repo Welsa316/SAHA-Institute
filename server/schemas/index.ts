@@ -3,7 +3,9 @@ import { z } from 'zod'
 // ---------- Auth ----------
 
 export const loginSchema = z.object({
-  email: z.string().trim().email().max(200),
+  // Admin logs in with their (email-shaped) username; teachers with a plain
+  // username — so this is a generic identifier, not email-validated.
+  username: z.string().trim().min(1).max(200),
   password: z.string().min(1).max(200),
 })
 
@@ -120,6 +122,57 @@ export const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 })
 
+// ---------- Scheduling ----------
+
+// Create a recurring class. days_of_week are Mon-Fri only (1=Mon … 5=Fri),
+// one or more, unique. start_time_local is a Central wall-clock 'HH:mm' (24h).
+export const enrollmentCreateSchema = z.object({
+  studentId: z.number().int().positive(),
+  teacherId: z.number().int().positive(),
+  daysOfWeek: z
+    .array(z.number().int().min(1).max(5))
+    .min(1, 'Pick at least one weekday.')
+    .max(5)
+    .refine((a) => new Set(a).size === a.length, 'Weekdays must be unique.'),
+  startTimeLocal: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be HH:mm (24-hour).'),
+  durationMinutes: z.number().int().min(5).max(600).default(60),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be YYYY-MM-DD.'),
+})
+
+// Calendar range query. from/to are 'YYYY-MM-DD' (inclusive). teacher_id filters
+// (admin only; ignored/forced for teacher accounts server-side).
+export const instancesQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  teacher_id: z.coerce.number().int().positive().optional(),
+})
+
+// Emergency day closure — cancel everything on this Central-local date.
+export const cancelDaySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD.'),
+})
+
+// ---------- Teachers (admin-managed accounts) ----------
+
+const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Colour must be a #RRGGBB hex value.')
+
+// Admin creates a teacher (name + contact email + calendar colour). The email
+// doubles as the teacher's eventual login username, so it's email-validated and
+// lower-cased. The account itself (password) is set later by the teacher via the
+// invite link.
+export const teacherCreateSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().toLowerCase().email().max(200),
+  color: hexColorSchema,
+})
+
+// Teacher completes their invite: sets a password. The token authorises which
+// teacher account is being created (see signInviteToken).
+export const teacherSetupSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, 'Password must be at least 8 characters.').max(200),
+})
+
 export type LoginInput = z.infer<typeof loginSchema>
 export type WorkshopSignupCreate = z.infer<typeof workshopSignupCreateSchema>
 export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>
@@ -129,3 +182,5 @@ export type StudentRegister = z.infer<typeof studentRegisterSchema>
 export type StudentLogin = z.infer<typeof studentLoginSchema>
 export type AssignmentCreate = z.infer<typeof assignmentCreateSchema>
 export type AssignmentUpdate = z.infer<typeof assignmentUpdateSchema>
+export type TeacherCreate = z.infer<typeof teacherCreateSchema>
+export type TeacherSetup = z.infer<typeof teacherSetupSchema>

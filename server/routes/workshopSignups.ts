@@ -8,7 +8,7 @@ import {
   workshopSignupUpdateSchema,
   idParamSchema,
 } from '../schemas/index.js'
-import { requireAuth } from '../middleware/requireAuth.js'
+import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { adminContactEmail, escapeHtml, sendEmail, siteOrigin } from '../lib/email.js'
 import { logger } from '../lib/log.js'
@@ -138,7 +138,7 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
 })
 
 // GET /api/workshop-signups — admin, newest first.
-workshopSignupsRouter.get('/', requireAuth, async (_req, res, next) => {
+workshopSignupsRouter.get('/', requireAuth, requireAdmin, async (_req, res, next) => {
   try {
     const rows = await db
       .select()
@@ -153,7 +153,7 @@ workshopSignupsRouter.get('/', requireAuth, async (_req, res, next) => {
 // PATCH /api/workshop-signups/:id — admin. Partial update of teacher-side fields.
 // With per-workshop payment tracking there's no global paid flag to auto-clear
 // anymore; clients just send the new paidWorkshops array.
-workshopSignupsRouter.patch('/:id', requireAuth, async (req, res, next) => {
+workshopSignupsRouter.patch('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params)
     const patch = workshopSignupUpdateSchema.parse(req.body)
@@ -165,7 +165,7 @@ workshopSignupsRouter.patch('/:id', requireAuth, async (req, res, next) => {
       .returning()
 
     if (!row) throw new HttpError(404, 'Signup not found.')
-    logger.info('signup', 'updated', { id, fields: Object.keys(patch), user: res.locals.user?.email })
+    logger.info('signup', 'updated', { id, fields: Object.keys(patch), user: res.locals.user?.username })
     res.json({ signup: row })
   } catch (err) {
     next(err)
@@ -173,12 +173,12 @@ workshopSignupsRouter.patch('/:id', requireAuth, async (req, res, next) => {
 })
 
 // DELETE /api/workshop-signups/:id — admin. Spec lists this implicitly via the UI delete button.
-workshopSignupsRouter.delete('/:id', requireAuth, async (req, res, next) => {
+workshopSignupsRouter.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params)
     const result = await db.delete(workshopSignups).where(eq(workshopSignups.id, id)).returning()
     if (result.length === 0) throw new HttpError(404, 'Signup not found.')
-    logger.info('signup', 'deleted', { id, user: res.locals.user?.email })
+    logger.info('signup', 'deleted', { id, user: res.locals.user?.username })
     res.json({ ok: true })
   } catch (err) {
     next(err)

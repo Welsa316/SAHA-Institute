@@ -36,12 +36,12 @@ async function ensureChecked() {
   }
 }
 
-async function login({ email, password }) {
+async function login({ username, password }) {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
@@ -69,6 +69,11 @@ export function useAdminAuth() {
     checking: computed(() => checking.value),
     checked: computed(() => checked.value),
     isAuthenticated: computed(() => !!user.value),
+    role: computed(() => user.value?.role ?? null),
+    isAdmin: computed(() => user.value?.role === 'admin'),
+    isTeacher: computed(() => user.value?.role === 'teacher'),
+    teacherId: computed(() => user.value?.teacherId ?? null),
+    displayTimezone: computed(() => user.value?.displayTimezone ?? 'America/Chicago'),
     fetchSession,
     ensureChecked,
     login,

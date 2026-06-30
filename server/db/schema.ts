@@ -8,14 +8,46 @@ import { pgTable, serial, text, boolean, timestamp, date, integer, pgEnum } from
 export const programEnum = pgEnum('program', ['summer_camp', 'stem_program', 'regular'])
 export const gradeLevelEnum = pgEnum('grade_level', ['elementary', 'middle', 'high'])
 
-// ---------- users (admin auth) ----------
-// Single shared admin account, seeded on first boot from ADMIN_EMAIL + ADMIN_PASSWORD env vars.
+// Scheduling-module enums.
+export const userRoleEnum = pgEnum('user_role', ['admin', 'teacher'])
+export const enrollmentStatusEnum = pgEnum('enrollment_status', ['active', 'cancelled'])
+export const classInstanceStatusEnum = pgEnum('class_instance_status', ['scheduled', 'cancelled'])
+export const cancelTypeEnum = pgEnum('cancel_type', ['student_off', 'series_cancelled', 'day_closed'])
+
+// ---------- teachers ----------
+// One row per teaching staff member. `color` colour-codes this teacher's classes
+// on the master calendar. Teacher login accounts (users.role='teacher') link
+// here via users.teacher_id. The count is not fixed — more teachers can be added.
+
+export const teachers = pgTable('teachers', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').notNull(),
+  // Captured when an admin invites a teacher; reserved for future Resend emails
+  // and used as the login username once the invite is completed. Nullable —
+  // env-seeded teachers have none. Unique (NULLs exempt in Postgres).
+  email: text('email').unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ---------- users (admin + teacher auth) ----------
+// The shared admin account plus one account per teacher. Login identifier is
+// `username` (the admin's value carried over from the old `email` column on
+// migration 0012). `role` gates access; a teacher account carries `teacher_id`
+// and every teacher-scoped query filters by it server-side. Seeded on boot from
+// env vars — admin from ADMIN_EMAIL/ADMIN_PASSWORD, teachers from
+// TEACHER{n}_USERNAME/TEACHER{n}_PASSWORD (see db/seed.ts).
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  role: userRoleEnum('role').notNull().default('admin'),
+  teacherId: integer('teacher_id').references(() => teachers.id),
+  displayTimezone: text('display_timezone').notNull().default('America/Chicago'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
 // ---------- workshop_signups ----------
@@ -97,6 +129,9 @@ export const students = pgTable('students', {
   paidFrom: date('paid_from'),
   paidUntil: date('paid_until'),
   notes: text('notes'),
+  // Reserved for future student-facing schedule display (migration 0012). Not
+  // used yet — all display currently happens in the logged-in user's timezone.
+  timezone: text('timezone').notNull().default('America/Chicago'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
@@ -120,10 +155,63 @@ export const assignments = pgTable('assignments', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ---------- enrollments (the recurring class rule) ----------
+// One enrollment = one student, one teacher, one start time + duration, on one
+// or more Mon-Fri weekdays (days_of_week: 1=Mon … 5=Fri). On creation we set
+// end_date = start_date + 6 months and generate the individual class_instances.
+// Different times on different days = separate enrollments.
+
+export const enrollments = pgTable('enrollments', {
+  id: serial('id').primaryKey(),
+  studentId: integer('student_id').notNull().references(() => students.id),
+  teacherId: integer('teacher_id').notNull().references(() => teachers.id),
+  daysOfWeek: integer('days_of_week').array().notNull(),
+  // Wall-clock start time in Central, 'HH:mm'. Same start for every weekday in
+  // this enrollment.
+  startTimeLocal: text('start_time_local').notNull(),
+  durationMinutes: integer('duration_minutes').notNull().default(60),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date').notNull(),
+  status: enrollmentStatusEnum('status').notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ---------- class_instances (generated occurrences) ----------
+// What the calendar renders and what cancellation acts on. `starts_at_utc` is
+// the canonical instant — the Central wall-clock time converted to UTC at
+// generation, so DST (CST vs CDT) is correct per occurrence. teacher_id and
+// student_id are denormalised for cheap calendar range queries. Cancelled rows
+// are kept for history (status='cancelled' + cancel_type), never deleted.
+
+export const classInstances = pgTable('class_instances', {
+  id: serial('id').primaryKey(),
+  enrollmentId: integer('enrollment_id').notNull().references(() => enrollments.id),
+  studentId: integer('student_id').notNull().references(() => students.id),
+  teacherId: integer('teacher_id').notNull().references(() => teachers.id),
+  startsAtUtc: timestamp('starts_at_utc', { withTimezone: true }).notNull(),
+  durationMinutes: integer('duration_minutes').notNull(),
+  status: classInstanceStatusEnum('status').notNull().default('scheduled'),
+  cancelType: cancelTypeEnum('cancel_type'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ---------- Inferred row types for use in route handlers and the frontend ----------
 
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
+
+export type Teacher = typeof teachers.$inferSelect
+export type NewTeacher = typeof teachers.$inferInsert
+
+export type Enrollment = typeof enrollments.$inferSelect
+export type NewEnrollment = typeof enrollments.$inferInsert
+
+export type ClassInstance = typeof classInstances.$inferSelect
+export type NewClassInstance = typeof classInstances.$inferInsert
+
+export type UserRole = (typeof userRoleEnum.enumValues)[number]
 
 export type Assignment = typeof assignments.$inferSelect
 export type NewAssignment = typeof assignments.$inferInsert

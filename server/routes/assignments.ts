@@ -8,7 +8,7 @@ import {
   idParamSchema,
   studentIdQuerySchema,
 } from '../schemas/index.js'
-import { requireAuth } from '../middleware/requireAuth.js'
+import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { logger } from '../lib/log.js'
 
@@ -18,7 +18,7 @@ import { logger } from '../lib/log.js'
 
 export const assignmentsRouter: Router = Router()
 
-assignmentsRouter.use(requireAuth)
+assignmentsRouter.use(requireAuth, requireAdmin)
 
 // GET /api/assignments?studentId=N — all assignments for one student,
 // newest first (open items are usually recent; the client groups/sorts
@@ -59,7 +59,7 @@ assignmentsRouter.post('/', async (req, res, next) => {
         dueDate: input.dueDate ?? null,
       })
       .returning()
-    logger.info('assignment', 'created', { id: row.id, studentId: input.studentId, user: res.locals.user?.email })
+    logger.info('assignment', 'created', { id: row.id, studentId: input.studentId, user: res.locals.user?.username })
     res.status(201).json({ assignment: row })
   } catch (err) {
     next(err)
@@ -80,7 +80,7 @@ assignmentsRouter.patch('/:id', async (req, res, next) => {
       .where(eq(assignments.id, id))
       .returning()
     if (!row) throw new HttpError(404, 'Assignment not found.')
-    logger.info('assignment', 'updated', { id, fields: Object.keys(patch), user: res.locals.user?.email })
+    logger.info('assignment', 'updated', { id, fields: Object.keys(patch), user: res.locals.user?.username })
     res.json({ assignment: row })
   } catch (err) {
     next(err)
@@ -93,7 +93,7 @@ assignmentsRouter.delete('/:id', async (req, res, next) => {
     const { id } = idParamSchema.parse(req.params)
     const result = await db.delete(assignments).where(eq(assignments.id, id)).returning()
     if (result.length === 0) throw new HttpError(404, 'Assignment not found.')
-    logger.info('assignment', 'deleted', { id, user: res.locals.user?.email })
+    logger.info('assignment', 'deleted', { id, user: res.locals.user?.username })
     res.json({ ok: true })
   } catch (err) {
     next(err)
