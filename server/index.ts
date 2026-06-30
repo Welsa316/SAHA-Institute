@@ -17,6 +17,7 @@ import { studentAuthRouter } from './routes/studentAuth.js'
 import { assignmentsRouter } from './routes/assignments.js'
 import { paymentsRouter } from './routes/payments.js'
 import { contactRouter } from './routes/contact.js'
+import { enrollmentsRouter } from './routes/enrollments.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -60,6 +61,7 @@ app.use('/api/students', studentsRouter('regular'))
 app.use('/api/student-auth', studentAuthRouter)
 app.use('/api/assignments', assignmentsRouter)
 app.use('/api/payments', paymentsRouter)
+app.use('/api/enrollments', enrollmentsRouter)
 
 // ---------- Static frontend ----------
 // In production the Vite build lands in /dist. In dev (`npm run dev`) Vite serves the
