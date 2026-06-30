@@ -164,6 +164,11 @@ watch(isAdmin, (v) => {
 })
 
 // ---------- New class form (admin) ----------
+// Only approved students can be scheduled (the server enforces this too); pending
+// registrations are hidden from the picker.
+const approvedStudents = computed(() => students.value.filter((s) => s.approved))
+const pendingStudentCount = computed(() => students.value.length - approvedStudents.value.length)
+
 const showForm = ref(false)
 const form = ref({ studentId: '', teacherId: '', days: [], startTime: '16:00', durationChoice: '60', customDuration: 45 })
 const formError = ref('')
@@ -437,8 +442,11 @@ function canCancel(inst) {
             <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Student</label>
             <select v-model="form.studentId" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-400/40">
               <option value="" disabled>Select a student…</option>
-              <option v-for="s in students" :key="s.id" :value="s.id">{{ s.studentName }}</option>
+              <option v-for="s in approvedStudents" :key="s.id" :value="s.id">{{ s.studentName }}</option>
             </select>
+            <p v-if="pendingStudentCount > 0" class="font-body text-[11px] text-navy-400 mt-1">
+              {{ pendingStudentCount }} student{{ pendingStudentCount === 1 ? '' : 's' }} awaiting approval {{ pendingStudentCount === 1 ? 'is' : 'are' }} hidden — approve them in the Students tab first.
+            </p>
           </div>
           <div>
             <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Teacher</label>

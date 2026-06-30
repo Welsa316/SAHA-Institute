@@ -19,8 +19,19 @@ enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
   try {
     const input = enrollmentCreateSchema.parse(req.body)
 
-    const [student] = await db.select({ id: students.id }).from(students).where(eq(students.id, input.studentId)).limit(1)
+    const [student] = await db
+      .select({ id: students.id, approved: students.approved })
+      .from(students)
+      .where(eq(students.id, input.studentId))
+      .limit(1)
     if (!student) throw new HttpError(404, 'Student not found.')
+    // A student must be approved (by an admin/teacher) before they can be put on
+    // the schedule. Self-registrations land unapproved; admin-added students are
+    // approved by default. This is the authoritative gate — the form also hides
+    // unapproved students, but never trust the client.
+    if (!student.approved) {
+      throw new HttpError(409, 'This student hasn’t been approved yet. Approve them in the Students tab first, then schedule their classes.')
+    }
     const [teacher] = await db.select({ id: teachers.id }).from(teachers).where(eq(teachers.id, input.teacherId)).limit(1)
     if (!teacher) throw new HttpError(404, 'Teacher not found.')
 
