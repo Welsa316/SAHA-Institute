@@ -36,8 +36,27 @@ const error = ref('')
 const teacherFilter = ref('') // '' = all (admin only)
 
 const weekDays = computed(() => Array.from({ length: 5 }, (_, i) => weekStart.value.plus({ days: i })))
+// Each hour 8..20 owns a slot; used for the subtle half-hour lines.
 const hourRows = computed(() => Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i))
+// Every labelled hour line, 8 AM through 9 PM inclusive, so the grid is bounded
+// top and bottom by a labelled hour rather than a dangling unlabelled slot.
+const hourRowsInclusive = computed(() => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i))
+// Interior hour separators only — 8 AM is the card's top border, 9 PM its bottom,
+// so drawing lines there would double up with the border.
+const interiorHours = computed(() => Array.from({ length: END_HOUR - START_HOUR - 1 }, (_, i) => START_HOUR + 1 + i))
 const gridHeight = computed(() => (END_HOUR - START_HOUR) * PX_PER_HOUR)
+
+function fmtHour(h) {
+  return DateTime.fromObject({ hour: h }).toFormat('h a')
+}
+// Centre each hour label on its line, except the first/last, which tuck just
+// inside the top/bottom edge so they're never clipped.
+function hourLabelStyle(h) {
+  const top = (h - START_HOUR) * PX_PER_HOUR + 'px'
+  if (h === START_HOUR) return { top }
+  if (h === END_HOUR) return { top, transform: 'translateY(-100%)' }
+  return { top, transform: 'translateY(-50%)' }
+}
 const weekRangeLabel = computed(
   () => `${weekDays.value[0].toFormat('LLL d')} – ${weekDays.value[4].toFormat('LLL d, yyyy')}`,
 )
@@ -308,12 +327,12 @@ function canCancel(inst) {
           <!-- gutter -->
           <div class="relative" :style="{ height: gridHeight + 'px' }">
             <div
-              v-for="h in hourRows"
+              v-for="h in hourRowsInclusive"
               :key="h"
-              class="absolute right-2 -translate-y-1/2 font-body text-[11px] text-navy-400 tabular-nums"
-              :style="{ top: (h - START_HOUR) * PX_PER_HOUR + 'px' }"
+              class="absolute right-2 font-body text-[11px] leading-none text-navy-400 tabular-nums"
+              :style="hourLabelStyle(h)"
             >
-              {{ DateTime.fromObject({ hour: h }).toFormat('h a') }}
+              {{ fmtHour(h) }}
             </div>
           </div>
           <!-- day columns -->
@@ -323,11 +342,18 @@ function canCancel(inst) {
             class="relative border-l border-navy-100 bg-academic-50/20"
             :style="{ height: gridHeight + 'px' }"
           >
-            <!-- hour gridlines -->
+            <!-- half-hour gridlines (faint, for reading :30 starts) -->
             <div
               v-for="h in hourRows"
-              :key="h"
+              :key="'half-' + h"
               class="absolute left-0 right-0 border-t border-navy-50"
+              :style="{ top: (h - START_HOUR) * PX_PER_HOUR + PX_PER_HOUR / 2 + 'px' }"
+            ></div>
+            <!-- hour gridlines (interior only; 8 AM / 9 PM are the card edges) -->
+            <div
+              v-for="h in interiorHours"
+              :key="'hour-' + h"
+              class="absolute left-0 right-0 border-t border-navy-100"
               :style="{ top: (h - START_HOUR) * PX_PER_HOUR + 'px' }"
             ></div>
             <!-- class blocks -->
