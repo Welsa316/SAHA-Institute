@@ -23,6 +23,10 @@ export const teachers = pgTable('teachers', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   color: text('color').notNull(),
+  // Captured when an admin invites a teacher; reserved for future Resend emails
+  // and used as the login username once the invite is completed. Nullable —
+  // env-seeded teachers have none. Unique (NULLs exempt in Postgres).
+  email: text('email').unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

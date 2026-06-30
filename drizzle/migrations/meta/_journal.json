@@ -92,6 +92,13 @@
       "when": 1781600000000,
       "tag": "0012_scheduling_module",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1781700000000,
+      "tag": "0013_teacher_email",
+      "breakpoints": true
     }
   ]
 }
