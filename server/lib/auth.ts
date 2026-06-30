@@ -114,3 +114,35 @@ export function verifyStudentSession(token: string): StudentJwtPayload | null {
     return null
   }
 }
+
+// ---------- Teacher invite tokens ----------
+// An admin invites a teacher; the teacher completes the account (sets their own
+// password) via a one-time link carrying this signed token. It is NOT a session
+// — it only authorises creating the one teacher account it names. "One-time" is
+// enforced at use: once a users row exists for the teacher, the token is inert
+// (the setup endpoint rejects it). 14-day expiry so stale links die on their own.
+const INVITE_TTL_SECONDS = 60 * 60 * 24 * 14
+
+export interface InvitePayload {
+  teacherId: number
+}
+
+export function signInviteToken(teacherId: number): string {
+  return jwt.sign({ teacherId, type: 'teacher-invite' }, getJwtSecret(), {
+    algorithm: JWT_ALGORITHM,
+    expiresIn: INVITE_TTL_SECONDS,
+  })
+}
+
+export function verifyInviteToken(token: string): InvitePayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] })
+    if (typeof decoded === 'string') return null
+    const { teacherId, type } = decoded as Record<string, unknown>
+    if (type !== 'teacher-invite') return null
+    if (typeof teacherId !== 'number') return null
+    return { teacherId }
+  } catch {
+    return null
+  }
+}

@@ -152,6 +152,27 @@ export const cancelDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD.'),
 })
 
+// ---------- Teachers (admin-managed accounts) ----------
+
+const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Colour must be a #RRGGBB hex value.')
+
+// Admin creates a teacher (name + contact email + calendar colour). The email
+// doubles as the teacher's eventual login username, so it's email-validated and
+// lower-cased. The account itself (password) is set later by the teacher via the
+// invite link.
+export const teacherCreateSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().toLowerCase().email().max(200),
+  color: hexColorSchema,
+})
+
+// Teacher completes their invite: sets a password. The token authorises which
+// teacher account is being created (see signInviteToken).
+export const teacherSetupSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, 'Password must be at least 8 characters.').max(200),
+})
+
 export type LoginInput = z.infer<typeof loginSchema>
 export type WorkshopSignupCreate = z.infer<typeof workshopSignupCreateSchema>
 export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>
@@ -161,3 +182,5 @@ export type StudentRegister = z.infer<typeof studentRegisterSchema>
 export type StudentLogin = z.infer<typeof studentLoginSchema>
 export type AssignmentCreate = z.infer<typeof assignmentCreateSchema>
 export type AssignmentUpdate = z.infer<typeof assignmentUpdateSchema>
+export type TeacherCreate = z.infer<typeof teacherCreateSchema>
+export type TeacherSetup = z.infer<typeof teacherSetupSchema>
