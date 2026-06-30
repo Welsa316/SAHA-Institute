@@ -12,6 +12,16 @@ export function sixMonthsLater(startDate: string): string {
   return dt.plus({ months: 6 }).toISODate() as string
 }
 
+// Convert an INCLUSIVE Central date range to UTC bounds for querying
+// starts_at_utc on the calendar: [fromUtc, toExclusiveUtc). Both ends are
+// anchored to Central midnight so the range covers full Central days regardless
+// of DST.
+export function centralDateRangeToUtc(from: string, to: string): { fromUtc: Date; toExclusiveUtc: Date } {
+  const fromUtc = DateTime.fromISO(from, { zone: CENTRAL_ZONE }).startOf('day').toJSDate()
+  const toExclusiveUtc = DateTime.fromISO(to, { zone: CENTRAL_ZONE }).startOf('day').plus({ days: 1 }).toJSDate()
+  return { fromUtc, toExclusiveUtc }
+}
+
 // Generate the UTC start instants for a recurring class: for every date from
 // startDate through endDate (inclusive) whose weekday is in daysOfWeek
 // (1=Mon … 5=Fri, matching Luxon's weekday numbering), combine the date with the
