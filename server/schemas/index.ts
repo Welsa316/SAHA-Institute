@@ -3,7 +3,9 @@ import { z } from 'zod'
 // ---------- Auth ----------
 
 export const loginSchema = z.object({
-  email: z.string().trim().email().max(200),
+  // Admin logs in with their (email-shaped) username; teachers with a plain
+  // username — so this is a generic identifier, not email-validated.
+  username: z.string().trim().min(1).max(200),
   password: z.string().min(1).max(200),
 })
 

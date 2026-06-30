@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { and, asc, desc, eq, ne } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { students, workshopSignups } from '../db/schema.js'
-import { requireAuth } from '../middleware/requireAuth.js'
+import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 
 // Read-only aggregated view for the Payments admin tab: every record that has
 // actually been PAID (fully or, for workshops, partially), across the sources
@@ -18,7 +18,7 @@ import { requireAuth } from '../middleware/requireAuth.js'
 
 export const paymentsRouter = Router()
 
-paymentsRouter.use(requireAuth)
+paymentsRouter.use(requireAuth, requireAdmin)
 
 interface PaymentRow {
   id: number

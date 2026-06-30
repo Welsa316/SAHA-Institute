@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join, sep } from 'path'
 
 import { runMigrations } from './db/migrate.js'
-import { seedAdmin } from './db/seed.js'
+import { seedAdmin, seedTeachers } from './db/seed.js'
 import { logger } from './lib/log.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -129,6 +129,7 @@ async function start(): Promise<void> {
     if (process.env.DATABASE_URL) {
       await runMigrations()
       await seedAdmin()
+      await seedTeachers()
     } else {
       logger.warn('boot', 'DATABASE_URL is not set — DB-backed routes will 500 until configured')
     }

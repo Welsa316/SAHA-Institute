@@ -118,37 +118,47 @@ export const routes = [
     path: '/admin',
     component: () => import('../components/admin/AdminLayout.vue'),
     meta: { admin: true, requiresAuth: true, noindex: true },
+    // Admins land on Workshop Signups; teachers are redirected to Schedule by
+    // the role guard in setupRouter (workshop-signups is adminOnly).
     redirect: '/admin/workshop-signups',
     children: [
+      {
+        // Both roles. Admin sees the master calendar; a teacher sees only their
+        // own classes (enforced server-side by teacher_id from the token).
+        path: 'schedule',
+        name: 'AdminSchedule',
+        component: () => import('../views/admin/ScheduleView.vue'),
+        meta: { admin: true, requiresAuth: true, title: `Schedule | ${BASE_TITLE}` },
+      },
       {
         path: 'workshop-signups',
         name: 'AdminWorkshopSignups',
         component: () => import('../views/admin/WorkshopSignupsView.vue'),
-        meta: { admin: true, requiresAuth: true, title: `Workshop Signups | ${BASE_TITLE}` },
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Workshop Signups | ${BASE_TITLE}` },
       },
       {
         path: 'summer-camp',
         name: 'AdminSummerCamp',
         component: () => import('../views/admin/SummerCampView.vue'),
-        meta: { admin: true, requiresAuth: true, title: `Summer Camp | ${BASE_TITLE}` },
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Summer Camp | ${BASE_TITLE}` },
       },
       {
         path: 'stem-program',
         name: 'AdminStemProgram',
         component: () => import('../views/admin/StemProgramView.vue'),
-        meta: { admin: true, requiresAuth: true, title: `STEM Program | ${BASE_TITLE}` },
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `STEM Program | ${BASE_TITLE}` },
       },
       {
         path: 'students',
         name: 'AdminStudents',
         component: () => import('../views/admin/StudentsView.vue'),
-        meta: { admin: true, requiresAuth: true, title: `Students | ${BASE_TITLE}` },
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Students | ${BASE_TITLE}` },
       },
       {
         path: 'payments',
         name: 'AdminPayments',
         component: () => import('../views/admin/PaymentsView.vue'),
-        meta: { admin: true, requiresAuth: true, title: `Payments | ${BASE_TITLE}` },
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Payments | ${BASE_TITLE}` },
       },
     ],
   },
@@ -171,10 +181,15 @@ export function setupRouter(router, isClient) {
   // public, so this never runs the auth fetch during the build.
   router.beforeEach(async (to) => {
     if (to.meta?.requiresAuth) {
-      const { isAuthenticated, ensureChecked } = useAdminAuth()
+      const { isAuthenticated, isAdmin, ensureChecked } = useAdminAuth()
       await ensureChecked()
       if (!isAuthenticated.value) {
         return { name: 'AdminLogin', query: { next: to.fullPath } }
+      }
+      // Teachers may only reach shared routes (the Schedule). Admin-only
+      // management tabs bounce them to their calendar.
+      if (to.meta?.adminOnly && !isAdmin.value) {
+        return { name: 'AdminSchedule' }
       }
     }
 

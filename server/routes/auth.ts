@@ -27,31 +27,30 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Please try again in a few minutes.' },
 })
 
-// POST /api/auth/login — body: { email, password }
-// Always returns within ~constant time whether the user exists or not (verifyPassword still runs)
-// so we don't leak account existence through response timing.
+// POST /api/auth/login — body: { username, password }
+// Works for both admin and teacher accounts. Always runs a bcrypt compare
+// whether the user exists or not, so response timing doesn't leak which
+// usernames are registered.
 authRouter.post('/login', loginLimiter, async (req, res, next) => {
   try {
-    const { email, password } = loginSchema.parse(req.body)
+    const { username, password } = loginSchema.parse(req.body)
 
-    const rows = await db.select().from(users).where(eq(users.email, email)).limit(1)
+    const rows = await db.select().from(users).where(eq(users.username, username)).limit(1)
     const user = rows[0]
 
-    // Always run bcrypt compare against *something* so failed lookups take the same time
-    // as failed passwords.
     const dummyHash = '$2b$12$abcdefghijklmnopqrstuuVQT1XfXr5p9oN1OkONjJtJrJZJZJZJZ.'
     const ok = await verifyPassword(password, user?.passwordHash ?? dummyHash)
 
     if (!user || !ok) {
-      logger.warn('auth', 'login failed', { email })
-      res.status(401).json({ error: 'Invalid email or password.' })
+      logger.warn('auth', 'login failed', { username })
+      res.status(401).json({ error: 'Invalid username or password.' })
       return
     }
 
-    const token = signSession({ userId: user.id, email: user.email })
+    const token = signSession({ userId: user.id, role: user.role, teacherId: user.teacherId, username: user.username })
     res.cookie(SESSION_COOKIE_NAME, token, sessionCookieOptions)
-    logger.info('auth', 'login ok', { email })
-    res.json({ user: { id: user.id, email: user.email } })
+    logger.info('auth', 'login ok', { username, role: user.role })
+    res.json({ user: { id: user.id, username: user.username, role: user.role, teacherId: user.teacherId } })
   } catch (err) {
     next(err)
   }

@@ -7,7 +7,7 @@ const router = useRouter()
 const route = useRoute()
 const { login, ensureChecked, isAuthenticated } = useAdminAuth()
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const error = ref('')
 const submitting = ref(false)
@@ -22,13 +22,13 @@ onMounted(async () => {
 
 async function handleSubmit() {
   error.value = ''
-  if (!email.value || !password.value) {
-    error.value = 'Please enter your email and password.'
+  if (!username.value || !password.value) {
+    error.value = 'Please enter your username and password.'
     return
   }
   submitting.value = true
   try {
-    await login({ email: email.value.trim(), password: password.value })
+    await login({ username: username.value.trim(), password: password.value })
     const next = typeof route.query.next === 'string' ? route.query.next : '/admin'
     router.replace(next)
   } catch (err) {
@@ -55,7 +55,7 @@ async function handleSubmit() {
 
       <div class="bg-white/[0.04] backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl shadow-black/30">
         <h1 class="font-heading text-2xl font-bold text-white tracking-tight mb-1">Sign in</h1>
-        <p class="font-body text-sm text-white/50 mb-8">Enter the shared admin credentials.</p>
+        <p class="font-body text-sm text-white/50 mb-8">Enter your username and password.</p>
 
         <div v-if="error" class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-400/30">
           <p class="font-body text-sm text-red-300">{{ error }}</p>
@@ -63,18 +63,18 @@ async function handleSubmit() {
 
         <form @submit.prevent="handleSubmit" class="space-y-5">
           <div>
-            <label for="admin-email" class="block font-body text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
-              Email
+            <label for="admin-username" class="block font-body text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
+              Username
             </label>
             <input
-              id="admin-email"
-              v-model="email"
-              type="email"
+              id="admin-username"
+              v-model="username"
+              type="text"
               autocomplete="username"
               required
               :disabled="submitting"
               class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-body text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
-              placeholder="you@example.com"
+              placeholder="your username"
             />
           </div>
 
