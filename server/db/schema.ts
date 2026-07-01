@@ -27,6 +27,10 @@ export const teachers = pgTable('teachers', {
   // and used as the login username once the invite is completed. Nullable —
   // env-seeded teachers have none. Unique (NULLs exempt in Postgres).
   email: text('email').unique(),
+  // Set when a teacher is "removed" but has history that can't be hard-deleted.
+  // Archived teachers keep their row (so past classes still resolve) but drop
+  // out of the active calendar filter / picker / list and have no login.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
