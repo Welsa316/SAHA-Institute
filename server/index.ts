@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join, sep } from 'path'
 
 import { runMigrations } from './db/migrate.js'
-import { seedAdmin, seedTeachers } from './db/seed.js'
+import { seedAdmin } from './db/seed.js'
 import { logger } from './lib/log.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -140,7 +140,10 @@ async function start(): Promise<void> {
     if (process.env.DATABASE_URL) {
       await runMigrations()
       await seedAdmin()
-      await seedTeachers()
+      // Teachers are managed entirely from the admin Teachers tab now (invite,
+      // reset, remove). Env-based seeding is retired: it would resurrect a
+      // removed teacher on every boot and duplicate UI-created ones. The
+      // TEACHER*_ env vars are now inert and can be deleted from the host.
     } else {
       logger.warn('boot', 'DATABASE_URL is not set — DB-backed routes will 500 until configured')
     }

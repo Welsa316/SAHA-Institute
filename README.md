@@ -107,21 +107,14 @@ See [`.env.example`](.env.example) for the canonical list. Required at runtime:
 - `ADMIN_PASSWORD` — only read at boot. Used to seed or rotate the bcrypt hash in the
   `users` table. Safe to remove from the Railway env after first deploy; the hash
   persists in the DB.
-- **Teacher accounts** (for the scheduling module) — two ways to add them:
-  - **Admin Teachers tab** (the everyday way) — in the dashboard under **Teachers**, the
-    admin adds a teacher (name, email, colour) and shares the generated one-time invite
-    link; the teacher opens it and sets their own password. No env vars, no redeploy.
-    The email is stored on the teacher and becomes their login username.
-  - **`TEACHERn_*` env vars** (optional bootstrap) — seed teachers at boot without the UI.
-    Seeding loops `TEACHER1_*`, `TEACHER2_*`, … and stops at the first missing
-    `TEACHERn_USERNAME`. Like `ADMIN_PASSWORD`, passwords are only read at boot to
-    seed/rotate the hash, then can be removed from the env. These seeded teachers log in
-    with their `USERNAME` (no email on file unless added later via the UI).
-    - `TEACHERn_USERNAME` — login username for teacher _n_ (required to seed that teacher).
-    - `TEACHERn_PASSWORD` — login password for teacher _n_ (required).
-    - `TEACHERn_NAME` — display name shown on the calendar. Optional; defaults to the username.
-    - `TEACHERn_COLOR` — hex colour for that teacher's blocks. Optional; defaults to a
-      colour from the built-in palette by index.
+- **Teacher accounts** (for the scheduling module) are managed entirely from the admin
+  **Teachers** tab: the admin adds a teacher (name, email, colour) and shares the generated
+  one-time invite link; the teacher opens it and sets their own password. The email is
+  stored on the teacher and becomes their login username. Teachers can also be given a
+  password-reset link or removed (archived) from the same tab.
+  - The old `TEACHERn_*` env-seeding is **retired** — it would resurrect a removed teacher
+    on every boot and duplicate UI-created ones. Any `TEACHERn_*` variables still set in the
+    host are now inert and can be deleted.
 - `RESEND_API_KEY` — for the contact form and admin signup notifications.
 - `CONTACT_EMAIL` — where contact form submissions and admin signup notifications go.
 - `SITE_ORIGIN` — used in admin-notification email links. Defaults to the prod URL.
