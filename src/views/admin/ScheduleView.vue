@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DateTime } from 'luxon'
 import { useAdminAuth } from '../../composables/useAdminAuth.js'
 import { useSchedule } from '../../composables/useSchedule.js'
@@ -20,8 +20,24 @@ const {
 // renders correctly.
 const START_HOUR = 15
 const END_HOUR = 21
-const PX_PER_HOUR = 56
+const HOURS = END_HOUR - START_HOUR
+// Each day is its own card; this is the card header (weekday + date) height,
+// which the time gutter mirrors as a top spacer so hour labels line up.
+const HEADER_PX = 64
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+
+// The board fills the viewport: px-per-hour is derived from the space left
+// below the toolbar, clamped so short laptops stay usable and huge monitors
+// don't stretch absurdly. Blocks reposition reactively when it changes.
+const gridShellRef = ref(null)
+const pxPerHour = ref(84)
+function sizeGrid() {
+  const el = gridShellRef.value
+  if (!el) return
+  const top = el.getBoundingClientRect().top
+  const avail = window.innerHeight - top - 56 // legend row + breathing room
+  pxPerHour.value = Math.round(Math.min(136, Math.max(64, (avail - HEADER_PX) / HOURS)))
+}
 
 const tz = computed(() => displayTimezone.value || 'America/Chicago')
 
@@ -37,23 +53,25 @@ const error = ref('')
 const teacherFilter = ref('') // '' = all (admin only)
 
 const weekDays = computed(() => Array.from({ length: 5 }, (_, i) => weekStart.value.plus({ days: i })))
-// Each hour 8..20 owns a slot; used for the subtle half-hour lines.
-const hourRows = computed(() => Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i))
-// Every labelled hour line, 8 AM through 9 PM inclusive, so the grid is bounded
+// Each hour 15..20 owns a slot; used for zebra bands + half-hour lines.
+const hourRows = computed(() => Array.from({ length: HOURS }, (_, i) => START_HOUR + i))
+// Every labelled hour line, 3 PM through 9 PM inclusive, so the grid is bounded
 // top and bottom by a labelled hour rather than a dangling unlabelled slot.
-const hourRowsInclusive = computed(() => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i))
-// Interior hour separators only — 8 AM is the card's top border, 9 PM its bottom,
-// so drawing lines there would double up with the border.
-const interiorHours = computed(() => Array.from({ length: END_HOUR - START_HOUR - 1 }, (_, i) => START_HOUR + 1 + i))
-const gridHeight = computed(() => (END_HOUR - START_HOUR) * PX_PER_HOUR)
+const hourRowsInclusive = computed(() => Array.from({ length: HOURS + 1 }, (_, i) => START_HOUR + i))
+// Interior hour separators only — 3 PM is the card's top border, 9 PM its bottom.
+const interiorHours = computed(() => Array.from({ length: HOURS - 1 }, (_, i) => START_HOUR + 1 + i))
+// Alternate hour bands (4-5pm, 6-7pm, 8-9pm) get a whisper of tint so the eye
+// can count hours across all five day cards at a glance.
+const zebraHours = computed(() => hourRows.value.filter((_, i) => i % 2 === 1))
+const gridHeight = computed(() => HOURS * pxPerHour.value)
 
 function fmtHour(h) {
   return DateTime.fromObject({ hour: h }).toFormat('h a')
 }
-// Centre each hour label on its line, except the first/last, which tuck just
-// inside the top/bottom edge so they're never clipped.
+// Centre each hour label on its line (offset by the card-header spacer), except
+// the first/last, which tuck just inside the top/bottom edge so they never clip.
 function hourLabelStyle(h) {
-  const top = (h - START_HOUR) * PX_PER_HOUR + 'px'
+  const top = HEADER_PX + (h - START_HOUR) * pxPerHour.value + 'px'
   if (h === START_HOUR) return { top }
   if (h === END_HOUR) return { top, transform: 'translateY(-100%)' }
   return { top, transform: 'translateY(-50%)' }
@@ -61,6 +79,22 @@ function hourLabelStyle(h) {
 const weekRangeLabel = computed(
   () => `${weekDays.value[0].toFormat('LLL d')} – ${weekDays.value[4].toFormat('LLL d, yyyy')}`,
 )
+
+// ---------- "Now" line ----------
+// A minute-ticking clock so today's card carries a live time indicator during
+// teaching hours. Instantly orients "where are we in the day".
+const nowTick = ref(DateTime.now().setZone('America/Chicago'))
+let nowTimer = null
+
+function isToday(day) {
+  return day.hasSame(nowTick.value, 'day')
+}
+const nowOffset = computed(() => {
+  const n = nowTick.value.setZone(tz.value)
+  const mins = n.hour * 60 + n.minute
+  if (mins < START_HOUR * 60 || mins > END_HOUR * 60) return null
+  return ((mins - START_HOUR * 60) / 60) * pxPerHour.value
+})
 
 function localOf(inst) {
   return DateTime.fromISO(inst.startsAtUtc, { zone: 'utc' }).setZone(tz.value)
@@ -104,8 +138,9 @@ const instancesByDay = computed(() => {
     const wd = local.weekday
     if (wd < 1 || wd > 5) continue
     const startMin = local.hour * 60 + local.minute
-    const top = (startMin / 60 - START_HOUR) * PX_PER_HOUR
-    const height = Math.max((inst.durationMinutes / 60) * PX_PER_HOUR, 24)
+    const top = (startMin / 60 - START_HOUR) * pxPerHour.value
+    const height = Math.max((inst.durationMinutes / 60) * pxPerHour.value, 26)
+    const ends = local.plus({ minutes: inst.durationMinutes })
     byDay[wd].push({
       ...inst,
       _start: startMin,
@@ -113,6 +148,7 @@ const instancesByDay = computed(() => {
       _top: top,
       _height: height,
       _timeLabel: local.toFormat('h:mm a'),
+      _timeRange: `${local.toFormat('h:mm')} – ${ends.toFormat('h:mm a')}`,
     })
   }
   for (const wd of [1, 2, 3, 4, 5]) byDay[wd] = layoutOverlaps(byDay[wd])
@@ -154,8 +190,16 @@ async function loadLookups() {
 }
 
 onMounted(async () => {
+  sizeGrid()
+  window.addEventListener('resize', sizeGrid)
+  nowTimer = setInterval(() => { nowTick.value = DateTime.now().setZone('America/Chicago') }, 60_000)
   await loadLookups()
   await loadWeek()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', sizeGrid)
+  if (nowTimer) clearInterval(nowTimer)
 })
 
 // If the admin session only resolves after mount, or the first load failed,
@@ -283,147 +327,194 @@ function canCancel(inst) {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-    <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
-      <div>
-        <h1 class="font-heading text-2xl md:text-3xl font-extrabold text-navy-900 tracking-tight">Schedule</h1>
-        <p class="font-body text-sm text-navy-500 mt-1">
+  <div class="w-full px-3 md:px-6 py-5">
+    <!-- Header + toolbar: one compact band so the board owns the viewport -->
+    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-4">
+      <div class="min-w-[200px]">
+        <h1 class="font-heading text-2xl md:text-[28px] font-extrabold text-navy-900 tracking-tight leading-none">Schedule</h1>
+        <p class="font-body text-[13px] text-navy-500 mt-1.5">
           {{ isAdmin ? 'Master calendar — all teachers.' : 'Your weekly calendar.' }}
-          <span class="text-navy-400">Times shown in {{ tz.replace('America/', '').replace('_', ' ') }} (Central).</span>
+          <span class="text-navy-400">Times in {{ tz.replace('America/', '').replace('_', ' ') }} (Central).</span>
         </p>
       </div>
-      <div v-if="isAdmin" class="flex flex-wrap items-center gap-2">
-        <select
-          v-model="teacherFilter"
-          @change="loadWeek"
-          class="px-3 py-2 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-700 focus:outline-none focus:ring-2 focus:ring-academic-400/40"
-        >
-          <option value="">All teachers</option>
-          <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
-        </select>
-        <button
-          type="button"
-          @click="openCloseDay"
-          class="px-4 py-2 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
-        >
-          Close a day
-        </button>
-        <button
-          type="button"
-          @click="openForm"
-          class="px-4 py-2 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
-        >
-          + New class
-        </button>
-      </div>
-    </div>
 
-    <!-- Week nav -->
-    <div class="flex items-center gap-3 mb-4">
-      <button type="button" @click="prevWeek" aria-label="Previous week" class="w-9 h-9 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-50 flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-      </button>
-      <button type="button" @click="thisWeek" class="px-3 py-2 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">Today</button>
-      <button type="button" @click="nextWeek" aria-label="Next week" class="w-9 h-9 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-50 flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-      </button>
-      <p class="font-body text-sm font-semibold text-navy-700 tabular-nums">{{ weekRangeLabel }}</p>
-      <span v-if="loading" class="font-body text-xs text-navy-400">Loading…</span>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- segmented week nav -->
+        <div class="flex items-stretch rounded-xl border border-navy-200 bg-white shadow-sm overflow-hidden">
+          <button type="button" @click="prevWeek" aria-label="Previous week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <button type="button" @click="thisWeek" class="px-3.5 h-9 border-x border-navy-100 font-body text-xs font-bold text-navy-700 hover:bg-navy-50 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">Today</button>
+          <button type="button" @click="nextWeek" aria-label="Next week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+        <p class="font-heading text-base md:text-lg font-bold text-navy-800 tabular-nums whitespace-nowrap px-0.5">{{ weekRangeLabel }}</p>
+        <span v-if="loading" class="font-body text-xs text-navy-400">Loading…</span>
+
+        <template v-if="isAdmin">
+          <span class="hidden md:block w-px h-6 bg-navy-100 mx-0.5" aria-hidden="true"></span>
+          <select
+            v-model="teacherFilter"
+            @change="loadWeek"
+            aria-label="Filter by teacher"
+            class="h-9 px-3 rounded-xl border border-navy-200 bg-white font-body text-sm text-navy-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-academic-400/40"
+          >
+            <option value="">All teachers</option>
+            <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
+          </select>
+          <button
+            type="button"
+            @click="openCloseDay"
+            class="h-9 px-3.5 rounded-xl border border-navy-200 bg-white text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+          >
+            Close a day
+          </button>
+          <button
+            type="button"
+            @click="openForm"
+            class="h-9 px-4 rounded-xl bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+          >
+            + New class
+          </button>
+        </template>
+      </div>
     </div>
 
     <div v-if="error" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ error }}</div>
 
-    <!-- Calendar grid -->
-    <div class="rounded-2xl border border-navy-100 bg-white overflow-x-auto shadow-sm">
-      <div class="min-w-[760px]">
-        <!-- Day headers -->
-        <div class="grid" style="grid-template-columns: 64px repeat(5, 1fr)">
-          <div class="border-b border-navy-100"></div>
+    <!-- Week board: time gutter + five floating day cards -->
+    <div ref="gridShellRef" class="relative overflow-x-auto pb-1">
+      <div class="flex gap-2 md:gap-2.5 min-w-[900px]">
+        <!-- time gutter — sticky so the hour scale stays put while the board
+             scrolls horizontally on narrow screens -->
+        <div class="w-11 md:w-12 shrink-0 relative sticky left-0 z-30 bg-slate-50" :style="{ height: HEADER_PX + gridHeight + 'px' }">
           <div
-            v-for="(day, i) in weekDays"
-            :key="i"
-            class="border-b border-l border-navy-100 px-3 py-2 text-center"
+            v-for="h in hourRowsInclusive"
+            :key="h"
+            class="absolute right-1 font-body text-[11px] font-semibold leading-none text-navy-400 tabular-nums whitespace-nowrap"
+            :style="hourLabelStyle(h)"
           >
-            <p class="font-body text-[11px] tracking-[0.15em] uppercase text-navy-500 font-bold">{{ WEEKDAY_LABELS[i] }}</p>
-            <p class="font-body text-sm font-semibold text-navy-800 tabular-nums">{{ day.toFormat('MMM d') }}</p>
+            {{ fmtHour(h) }}
           </div>
         </div>
-        <!-- Body: time gutter + 5 day columns -->
-        <div class="grid" style="grid-template-columns: 64px repeat(5, 1fr)">
-          <!-- gutter -->
-          <div class="relative" :style="{ height: gridHeight + 'px' }">
-            <div
-              v-for="h in hourRowsInclusive"
-              :key="h"
-              class="absolute right-2 font-body text-[11px] leading-none text-navy-400 tabular-nums"
-              :style="hourLabelStyle(h)"
-            >
-              {{ fmtHour(h) }}
-            </div>
-          </div>
-          <!-- day columns -->
-          <div
-            v-for="wd in [1, 2, 3, 4, 5]"
-            :key="wd"
-            class="relative border-l border-navy-100 bg-academic-50/20"
-            :style="{ height: gridHeight + 'px' }"
+
+        <!-- day cards -->
+        <section
+          v-for="(day, i) in weekDays"
+          :key="day.toISODate()"
+          class="flex-1 min-w-[158px] rounded-2xl bg-white flex flex-col overflow-hidden"
+          :class="isToday(day)
+            ? 'border-2 border-academic-400/60 shadow-[0_12px_32px_-12px_rgba(2,27,61,0.35)]'
+            : 'border border-navy-100 shadow-[0_2px_12px_-6px_rgba(2,27,61,0.18)]'"
+        >
+          <!-- card header: weekday tag + serif date numeral -->
+          <header
+            class="shrink-0 px-3 flex items-center justify-between border-b"
+            :style="{ height: HEADER_PX + 'px' }"
+            :class="isToday(day) ? 'bg-academic-50/80 border-academic-100' : 'bg-navy-50/40 border-navy-100'"
           >
-            <!-- half-hour gridlines (faint, for reading :30 starts) -->
+            <div>
+              <p class="font-body text-[10px] tracking-[0.22em] uppercase font-bold" :class="isToday(day) ? 'text-academic-600' : 'text-navy-400'">
+                {{ WEEKDAY_LABELS[i] }}
+              </p>
+              <p class="font-heading text-[22px] font-extrabold leading-none mt-0.5 text-navy-900 tabular-nums">
+                {{ day.toFormat('d') }}<span class="font-body text-[11px] font-semibold text-navy-400 ml-1">{{ day.toFormat('MMM') }}</span>
+              </p>
+            </div>
+            <span v-if="isToday(day)" class="px-2 py-1 rounded-full bg-academic-500 text-white font-body text-[9px] font-bold uppercase tracking-[0.14em]">Today</span>
+            <span v-else-if="instancesByDay[i + 1].length" class="min-w-[22px] h-[22px] px-1.5 rounded-full bg-navy-100/80 text-navy-500 font-body text-[10px] font-bold flex items-center justify-center tabular-nums" :title="`${instancesByDay[i + 1].length} classes`">
+              {{ instancesByDay[i + 1].length }}
+            </span>
+          </header>
+
+          <!-- card body: hour bands, lines, now-line, class blocks -->
+          <div class="relative" :style="{ height: gridHeight + 'px' }">
+            <!-- alternate-hour zebra bands -->
+            <div
+              v-for="h in zebraHours"
+              :key="'band-' + h"
+              class="absolute left-0 right-0 bg-academic-50/40 pointer-events-none"
+              :style="{ top: (h - START_HOUR) * pxPerHour + 'px', height: pxPerHour + 'px' }"
+            ></div>
+            <!-- half-hour gridlines -->
             <div
               v-for="h in hourRows"
               :key="'half-' + h"
-              class="absolute left-0 right-0 border-t border-navy-50"
-              :style="{ top: (h - START_HOUR) * PX_PER_HOUR + PX_PER_HOUR / 2 + 'px' }"
+              class="absolute left-0 right-0 border-t border-dashed border-navy-100/70 pointer-events-none"
+              :style="{ top: (h - START_HOUR) * pxPerHour + pxPerHour / 2 + 'px' }"
             ></div>
-            <!-- hour gridlines (interior only; 8 AM / 9 PM are the card edges) -->
+            <!-- hour gridlines -->
             <div
               v-for="h in interiorHours"
               :key="'hour-' + h"
-              class="absolute left-0 right-0 border-t border-navy-100"
-              :style="{ top: (h - START_HOUR) * PX_PER_HOUR + 'px' }"
+              class="absolute left-0 right-0 border-t border-navy-100 pointer-events-none"
+              :style="{ top: (h - START_HOUR) * pxPerHour + 'px' }"
             ></div>
+            <!-- live now-line (today, during teaching hours) -->
+            <div
+              v-if="isToday(day) && nowOffset !== null"
+              class="absolute left-0 right-0 z-20 pointer-events-none"
+              :style="{ top: nowOffset + 'px' }"
+            >
+              <div class="h-[2px] bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"></div>
+              <div class="absolute -top-[3px] left-0 w-2 h-2 rounded-full bg-red-400"></div>
+            </div>
+
             <!-- class blocks -->
             <button
-              v-for="inst in instancesByDay[wd]"
+              v-for="inst in instancesByDay[i + 1]"
               :key="inst.id"
               type="button"
               @click="openCancel(inst)"
               :disabled="!canCancel(inst)"
-              class="absolute rounded-lg px-2 py-1 text-left overflow-hidden transition-shadow focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-academic-500 focus:outline-none"
-              :class="inst.status === 'cancelled' ? 'opacity-50 cursor-default' : 'hover:shadow-md cursor-pointer'"
+              class="absolute z-10 rounded-[10px] px-2 py-1.5 text-left overflow-hidden transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-academic-500 focus:outline-none"
+              :class="inst.status === 'cancelled' ? 'opacity-55 cursor-default' : 'shadow-sm hover:shadow-lg hover:-translate-y-px cursor-pointer'"
               :style="{
                 top: inst._top + 'px',
                 height: inst._height + 'px',
-                left: `calc(${(inst._col / inst._cols) * 100}% + 2px)`,
-                width: `calc(${(1 / inst._cols) * 100}% - 4px)`,
-                backgroundColor: inst.status === 'cancelled' ? '#E5E7EB' : inst.teacherColor + '26',
+                left: `calc(${(inst._col / inst._cols) * 100}% + 3px)`,
+                width: `calc(${(1 / inst._cols) * 100}% - 6px)`,
+                backgroundColor: inst.status === 'cancelled' ? '#EDEFF3' : inst.teacherColor + '22',
                 borderLeft: `3px solid ${inst.status === 'cancelled' ? '#9CA3AF' : inst.teacherColor}`,
               }"
-              :title="`${inst.studentName} · ${inst.teacherName} · ${inst._timeLabel}`"
+              :title="`${inst.studentName} · ${inst.teacherName} · ${inst._timeRange}`"
             >
               <p
-                class="font-body text-[12px] font-bold leading-tight truncate"
+                class="font-body text-[12.5px] font-bold leading-tight truncate"
                 :class="inst.status === 'cancelled' ? 'text-navy-400 line-through' : 'text-navy-900'"
               >
                 {{ inst.studentName }}
               </p>
-              <p class="font-body text-[10px] leading-tight truncate" :class="inst.status === 'cancelled' ? 'text-navy-400' : 'text-navy-600'">
-                {{ inst._timeLabel }}<span v-if="isAdmin"> · {{ inst.teacherName }}</span>
+              <p class="font-body text-[10.5px] leading-tight tabular-nums truncate" :class="inst.status === 'cancelled' ? 'text-navy-400' : 'text-navy-600'">
+                {{ inst._timeRange }}
+              </p>
+              <p v-if="isAdmin && inst.status !== 'cancelled'" class="font-body text-[10px] leading-tight truncate text-navy-500">
+                {{ inst.teacherName }}
               </p>
               <p v-if="inst.status === 'cancelled'" class="font-body text-[9px] uppercase tracking-wide text-red-500 font-bold">Cancelled</p>
             </button>
           </div>
-        </div>
+        </section>
+      </div>
+
+      <!-- empty-week note -->
+      <div v-if="!loading && instances.length === 0" class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none">
+        <p class="px-4 py-2 rounded-full bg-white/95 border border-navy-100 shadow-sm font-body text-sm text-navy-400">
+          No classes this week — every slot is open.
+        </p>
       </div>
     </div>
 
-    <!-- Teacher colour legend (admin) -->
-    <div v-if="isAdmin && teachers.length" class="flex flex-wrap items-center gap-4 mt-4">
-      <div v-for="t in teachers" :key="t.id" class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: t.color }"></span>
-        <span class="font-body text-xs text-navy-600">{{ t.name }}</span>
-      </div>
+    <!-- legend + hint -->
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 px-1">
+      <template v-if="isAdmin && teachers.length">
+        <div v-for="t in teachers" :key="t.id" class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: t.color }"></span>
+          <span class="font-body text-xs text-navy-500">{{ t.name }}</span>
+        </div>
+      </template>
+      <p class="ml-auto font-body text-[11px] text-navy-300">Click a class to manage it.</p>
     </div>
 
     <!-- New class modal (admin) -->
