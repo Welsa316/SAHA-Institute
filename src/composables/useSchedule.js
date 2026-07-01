@@ -8,7 +8,12 @@ async function api(url, opts = {}) {
     ...opts,
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || 'Something went wrong.')
+  if (!res.ok) {
+    const err = new Error(data.error || 'Something went wrong.')
+    err.status = res.status
+    err.data = data
+    throw err
+  }
   return data
 }
 
@@ -19,8 +24,14 @@ export function useSchedule() {
       if (teacherId) q.set('teacher_id', String(teacherId))
       return api(`/api/instances?${q.toString()}`).then((d) => d.instances)
     },
-    fetchTeachers() {
-      return api('/api/teachers').then((d) => d.teachers)
+    fetchTeachers(includeArchived = false) {
+      return api(`/api/teachers${includeArchived ? '?all=1' : ''}`).then((d) => d.teachers)
+    },
+    cancelTeacherClasses(id) {
+      return api(`/api/teachers/${id}/cancel-classes`, { method: 'POST' })
+    },
+    removeTeacher(id) {
+      return api(`/api/teachers/${id}`, { method: 'DELETE' })
     },
     createTeacher(body) {
       return api('/api/teachers', { method: 'POST', body: JSON.stringify(body) })
