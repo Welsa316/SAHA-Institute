@@ -24,8 +24,8 @@ export function useSchedule() {
       if (teacherId) q.set('teacher_id', String(teacherId))
       return api(`/api/instances?${q.toString()}`).then((d) => d.instances)
     },
-    fetchTeachers(includeArchived = false) {
-      return api(`/api/teachers${includeArchived ? '?all=1' : ''}`).then((d) => d.teachers)
+    fetchTeachers() {
+      return api('/api/teachers').then((d) => d.teachers)
     },
     cancelTeacherClasses(id) {
       return api(`/api/teachers/${id}/cancel-classes`, { method: 'POST' })

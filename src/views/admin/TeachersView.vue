@@ -30,8 +30,8 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    teachers.value = await fetchTeachers(true) // include archived (Removed) in the tab
-    form.value.color = nextColor(teachers.value.filter((t) => t.status !== 'archived'))
+    teachers.value = await fetchTeachers()
+    form.value.color = nextColor(teachers.value)
   } catch (err) {
     error.value = err?.message || 'Could not load teachers.'
   } finally {
@@ -239,7 +239,7 @@ async function doCancelClasses() {
       <div v-if="loading" class="p-6 font-body text-sm text-navy-400">Loading…</div>
       <div v-else-if="!teachers.length" class="p-6 font-body text-sm text-navy-400">No teachers yet. Add one above.</div>
       <ul v-else class="divide-y divide-navy-100">
-        <li v-for="t in teachers" :key="t.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-5 py-4" :class="t.status === 'archived' ? 'opacity-60' : ''">
+        <li v-for="t in teachers" :key="t.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-5 py-4">
           <span class="w-4 h-4 rounded-full shrink-0" :style="{ backgroundColor: t.color }" :aria-hidden="true"></span>
           <div class="min-w-[8rem] flex-1">
             <p class="font-body text-sm font-bold text-navy-900 truncate">{{ t.name }}</p>
@@ -248,9 +248,9 @@ async function doCancelClasses() {
           <div class="flex items-center gap-2 shrink-0 ml-auto">
             <span
               class="px-2.5 py-1 rounded-full font-body text-[11px] font-bold uppercase tracking-wide whitespace-nowrap"
-              :class="t.status === 'archived' ? 'bg-navy-100 text-navy-500' : t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+              :class="t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
             >
-              {{ t.status === 'archived' ? 'Removed' : t.status === 'active' ? 'Active' : 'Invite pending' }}
+              {{ t.status === 'active' ? 'Active' : 'Invite pending' }}
             </span>
             <button
               v-if="t.status === 'pending' && t.email"
@@ -271,7 +271,6 @@ async function doCancelClasses() {
               {{ resetBusyId === t.id ? '…' : 'Reset password' }}
             </button>
             <button
-              v-if="t.status !== 'archived'"
               type="button"
               @click="openRemove(t)"
               class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 font-body text-xs font-semibold whitespace-nowrap transition-colors"
@@ -311,7 +310,7 @@ async function doCancelClasses() {
         <!-- Confirm remove -->
         <template v-else>
           <p class="font-body text-sm text-navy-600 my-4">
-            This revokes {{ removeTarget.name }}'s login and takes them off the calendar filter and scheduling form. Their past classes are kept as history.
+            This permanently deletes <span class="font-semibold">{{ removeTarget.name }}</span> and all their class records from the database. This can't be undone.
           </p>
           <div class="flex gap-3">
             <button type="button" @click="closeRemove" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Cancel</button>
