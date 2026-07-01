@@ -140,6 +140,27 @@ export function notifyAdminOfTeacherCancellation(args: { teacherId: number; inst
   })
 }
 
+// ---------- Teacher's classes cancelled, e.g. on teacher removal (→ parents) ----------
+export function notifyTeacherClassesCancelled(studentIds: number[], teacherName: string): void {
+  fire('teacher-classes-cancelled', async () => {
+    if (studentIds.length === 0) return
+    const rows = await db
+      .select({ name: students.studentName, email: students.parentEmail })
+      .from(students)
+      .where(inArray(students.id, studentIds))
+    let sent = 0
+    for (const s of rows) {
+      if (!s.email) continue
+      const html = layout('Classes cancelled', `
+        <p><strong>${escapeHtml(s.name)}</strong>'s upcoming classes with ${escapeHtml(teacherName)} have been cancelled.</p>
+        <p>Please reach out to set up a new schedule.</p>`)
+      await sendEmail({ to: [s.email], subject: `${s.name}'s upcoming classes are cancelled`, html })
+      sent += 1
+    }
+    logger.info('notify', 'teacher classes cancelled', { affected: rows.length, sent, teacherName })
+  })
+}
+
 // ---------- Cancellations (→ affected parents) ----------
 export type CancelType = 'student_off' | 'series_cancelled' | 'day_closed'
 
