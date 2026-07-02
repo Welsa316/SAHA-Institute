@@ -17,20 +17,23 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 //   mornings: [{ src: '/camp-gallery/mornings-1.webp', alt: 'Morning Quran circle' }],
 // Until a chapter has photos, it shows "photos coming soon" tiles.
 const galleries = {
-  mornings: [],
-  arts: [],
-  stem: [],
-  lunch: [],
+  week1: [],
+  week2: [],
+  week3: [],
+  week4: [],
+  week5: [],
 }
 
-// computed so chapter titles follow live locale switches. NOTE: no Workshops
-// chapter — workshops belong to the STEM program (still running through July,
-// workshops not started yet), not to the June camp this page recaps.
-const chapters = computed(() => [
-  { id: 'mornings', title: t('summerCamp.chMorningsTitle') },
-  { id: 'arts', title: t('summerCamp.chArtsTitle') },
-  { id: 'stem', title: t('summerCamp.chStemTitle') },
-  { id: 'lunch', title: t('summerCamp.chLunchTitle') },
+// The timeline runs CHRONOLOGICALLY — the four Mon–Fri weeks of June plus the
+// final two days. Each entry is a photo grid for now; per-week write-ups get
+// added along with the photos once the camera roll is sorted. (computed so
+// titles follow live locale switches.)
+const weeks = computed(() => [
+  { id: 'week1', title: t('summerCamp.wk1Title'), meta: t('summerCamp.wk1Range') },
+  { id: 'week2', title: t('summerCamp.wk2Title'), meta: t('summerCamp.wk2Range') },
+  { id: 'week3', title: t('summerCamp.wk3Title'), meta: t('summerCamp.wk3Range') },
+  { id: 'week4', title: t('summerCamp.wk4Title'), meta: t('summerCamp.wk4Range') },
+  { id: 'week5', title: t('summerCamp.wk5Title'), meta: t('summerCamp.wk5Range') },
 ])
 </script>
 
@@ -91,68 +94,61 @@ const chapters = computed(() => [
     </div>
   </section>
 
-  <!-- The month, chapter by chapter -->
-  <CampTimeline :entries="chapters">
-    <template #mornings>
-      <div class="space-y-4 font-body text-navy-500 text-sm md:text-base leading-relaxed mb-8">
+  <!-- The daily rhythm — the recap facts that aren't tied to any one week:
+       what a camp day looked like, the menus, and the STEM note. -->
+  <section class="relative py-14 md:py-20 overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6 md:px-12">
+      <h2 class="font-heading text-2xl md:text-3xl font-extrabold text-[#001B3D] tracking-tight mb-4">
+        {{ t('summerCamp.dailyHeading') }}
+      </h2>
+      <div class="space-y-3 font-body text-navy-500 leading-relaxed max-w-2xl mb-10">
         <p>{{ t('summerCamp.scheduleP1') }}</p>
         <p>{{ t('summerCamp.scheduleP2') }}</p>
       </div>
-      <CampGalleryGrid :photos="galleries.mornings" />
-      <div class="mt-8">
-        <p class="font-body text-[10px] tracking-[0.2em] uppercase text-navy-500 font-bold mb-3">{{ t('summerCamp.scheduleListLabel') }}</p>
-        <ul class="rounded-xl border border-navy-100 bg-white/70 divide-y divide-navy-100 overflow-hidden">
-          <li v-for="item in t('summerCamp.scheduleItems')" :key="item.time" class="flex items-baseline gap-3 px-4 py-2.5">
-            <span class="font-body text-xs font-semibold text-academic-700 tabular-nums w-36 shrink-0">{{ item.time }}</span>
-            <span class="font-body text-sm text-navy-700 break-words">{{ item.activity }}</span>
-          </li>
-        </ul>
-      </div>
-    </template>
-
-    <template #arts>
-      <div class="space-y-4 font-body text-navy-500 text-sm md:text-base leading-relaxed mb-8">
-        <p>{{ t('summerCamp.artsP1') }}</p>
-        <p>{{ t('summerCamp.artsP2') }}</p>
-      </div>
-      <CampGalleryGrid :photos="galleries.arts" />
-    </template>
-
-    <template #stem>
-      <div class="space-y-4 font-body text-navy-500 text-sm md:text-base leading-relaxed mb-8">
-        <p>{{ t('summerCamp.stemP1') }}</p>
-        <p class="font-semibold text-academic-700">{{ t('summerCamp.stemContinues') }}</p>
-        <p class="font-semibold text-academic-700">{{ t('summerCamp.stemCoordinator') }}</p>
-      </div>
-      <CampGalleryGrid :photos="galleries.stem" />
-    </template>
-
-    <template #lunch>
-      <div class="space-y-4 font-body text-navy-500 text-sm md:text-base leading-relaxed mb-8">
-        <p>{{ t('summerCamp.lunchP1') }}</p>
-        <p>{{ t('summerCamp.lunchP2') }}</p>
-      </div>
-      <CampGalleryGrid :photos="galleries.lunch" />
-      <div class="grid sm:grid-cols-2 gap-6 mt-8 max-w-xl">
+      <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
         <div>
-          <p class="font-body text-xs tracking-[0.2em] uppercase text-navy-500 font-bold mb-2">{{ t('summerCamp.lunchWeekA') }}</p>
-          <ul class="space-y-1.5">
-            <li v-for="m in t('summerCamp.lunchWeekAItems')" :key="m.day" class="flex justify-between gap-3 font-body text-sm">
-              <span class="text-navy-500 font-semibold">{{ m.day }}</span>
-              <span class="text-navy-700 text-end break-words">{{ m.meal }}</span>
+          <p class="font-body text-[10px] tracking-[0.2em] uppercase text-navy-500 font-bold mb-3">{{ t('summerCamp.scheduleListLabel') }}</p>
+          <ul class="rounded-xl border border-navy-100 bg-white/70 divide-y divide-navy-100 overflow-hidden">
+            <li v-for="item in t('summerCamp.scheduleItems')" :key="item.time" class="flex items-baseline gap-3 px-4 py-2.5">
+              <span class="font-body text-xs font-semibold text-academic-700 tabular-nums w-36 shrink-0">{{ item.time }}</span>
+              <span class="font-body text-sm text-navy-700 break-words">{{ item.activity }}</span>
             </li>
           </ul>
+          <p class="font-body text-sm font-semibold text-academic-700 mt-4">{{ t('summerCamp.stemContinues') }}</p>
+          <p class="font-body text-sm font-semibold text-academic-700 mt-1">{{ t('summerCamp.stemCoordinator') }}</p>
         </div>
         <div>
-          <p class="font-body text-xs tracking-[0.2em] uppercase text-navy-500 font-bold mb-2">{{ t('summerCamp.lunchWeekB') }}</p>
-          <ul class="space-y-1.5">
-            <li v-for="m in t('summerCamp.lunchWeekBItems')" :key="m.day" class="flex justify-between gap-3 font-body text-sm">
-              <span class="text-navy-500 font-semibold">{{ m.day }}</span>
-              <span class="text-navy-700 text-end break-words">{{ m.meal }}</span>
-            </li>
-          </ul>
+          <p class="font-body text-[10px] tracking-[0.2em] uppercase text-navy-500 font-bold mb-3">{{ t('summerCamp.lunchHeading') }}</p>
+          <div class="grid sm:grid-cols-2 gap-6">
+            <div>
+              <p class="font-body text-xs tracking-[0.2em] uppercase text-navy-500 font-bold mb-2">{{ t('summerCamp.lunchWeekA') }}</p>
+              <ul class="space-y-1.5">
+                <li v-for="m in t('summerCamp.lunchWeekAItems')" :key="m.day" class="flex justify-between gap-3 font-body text-sm">
+                  <span class="text-navy-500 font-semibold">{{ m.day }}</span>
+                  <span class="text-navy-700 text-end break-words">{{ m.meal }}</span>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p class="font-body text-xs tracking-[0.2em] uppercase text-navy-500 font-bold mb-2">{{ t('summerCamp.lunchWeekB') }}</p>
+              <ul class="space-y-1.5">
+                <li v-for="m in t('summerCamp.lunchWeekBItems')" :key="m.day" class="flex justify-between gap-3 font-body text-sm">
+                  <span class="text-navy-500 font-semibold">{{ m.day }}</span>
+                  <span class="text-navy-700 text-end break-words">{{ m.meal }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p class="font-body text-sm text-navy-500 leading-relaxed mt-4">{{ t('summerCamp.lunchP1') }}</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- The month, week by week -->
+  <CampTimeline :entries="weeks">
+    <template v-for="w in weeks" :key="w.id" #[w.id]>
+      <CampGalleryGrid :photos="galleries[w.id]" />
     </template>
   </CampTimeline>
 

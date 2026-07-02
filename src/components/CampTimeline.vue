@@ -75,16 +75,26 @@ onBeforeUnmount(() => {
           <div class="h-10 w-10 absolute left-3 rounded-full bg-white flex items-center justify-center shadow-sm border border-navy-100">
             <div class="h-3.5 w-3.5 rounded-full bg-academic-100 border border-academic-300"></div>
           </div>
-          <h3 class="hidden md:block font-heading text-xl md:pl-20 md:text-5xl font-extrabold text-navy-200">
-            {{ entry.title }}
-          </h3>
+          <div class="hidden md:block md:pl-20">
+            <h3 class="font-heading text-xl md:text-5xl font-extrabold text-navy-200">
+              {{ entry.title }}
+            </h3>
+            <p v-if="entry.meta" class="font-body text-[11px] tracking-[0.22em] uppercase text-academic-600 font-bold mt-2.5">
+              {{ entry.meta }}
+            </p>
+          </div>
         </div>
 
         <!-- chapter content -->
         <div class="relative pl-20 pr-4 md:pl-4 w-full">
-          <h3 class="md:hidden block font-heading text-2xl mb-4 text-left font-extrabold text-navy-300">
-            {{ entry.title }}
-          </h3>
+          <div class="md:hidden mb-4 text-left">
+            <h3 class="font-heading text-2xl font-extrabold text-navy-300">
+              {{ entry.title }}
+            </h3>
+            <p v-if="entry.meta" class="font-body text-[10px] tracking-[0.22em] uppercase text-academic-600 font-bold mt-1.5">
+              {{ entry.meta }}
+            </p>
+          </div>
           <slot :name="entry.id"></slot>
         </div>
       </div>
