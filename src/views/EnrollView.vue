@@ -105,6 +105,15 @@ onMounted(() => {
           <!-- The big CTA. Opens the form in an animated modal. -->
           <ShinyButton size="lg" :label="t('enroll.workshopsCta')" @click="(e) => { e.preventDefault(); openWorkshops() }" />
           <p class="mt-4 font-body text-xs text-navy-400">{{ t('enroll.workshopsCtaHint') }}</p>
+          <router-link
+            to="/workshops"
+            class="mt-3 inline-flex items-center gap-1.5 font-body text-sm font-semibold text-academic-700 hover:text-academic-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none rounded-md"
+          >
+            {{ t('enroll.workshopsLineupCta') }}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </router-link>
         </div>
       </div>
     </section>

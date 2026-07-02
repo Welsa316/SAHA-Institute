@@ -3,22 +3,40 @@
 // view (filter dropdown + colored pills). Stored as plain strings — the
 // same strings land in workshop_signups.workshops (Postgres text[]) verbatim.
 //
-// Order matches the list Mrs. Anila provided. We render in this order in
-// both the form grid and the admin filter dropdown so it stays scannable.
+// Order and lineup match the published July 2026 Summer Workshop Series
+// flyer (chronological). LEGO and Clay Molding were dropped from the final
+// lineup; Cybersecurity & AI and Shrinky Dinks were added. Their pill
+// classes stay below so any existing signup rows still render colored.
 
 export const WORKSHOPS = [
-  'Henna Design Workshop',
-  'Flower Bouquet and Arrangements',
-  'Jewellery, Tasbeeh and Bedazzling Workshop',
   'Baking Workshop',
+  'Cybersecurity & AI Workshop',
+  'Henna Design Workshop',
   'Arabic Calligraphy Workshop',
-  'Sewing Workshop',
+  'Jewellery, Tasbeeh and Bedazzling Workshop',
+  'Shrinky Dinks Workshop',
   'Basic Auto Workshop',
-  'LEGO Workshop',
-  'Ice cream, Mocktail, and Snowball Workshop',
-  'Clay Molding Workshop',
+  'Flower Bouquet and Arrangements',
   'Tie Dye Workshop',
+  'Sewing Workshop',
+  'Ice cream, Mocktail, and Snowball Workshop',
 ]
+
+// Dates from the July 2026 flyer, shown alongside each option in the signup
+// form and on the /workshops lineup. Keyed by the exact catalog strings.
+export const WORKSHOP_DATES = {
+  'Baking Workshop': 'July 6–7',
+  'Cybersecurity & AI Workshop': 'July 8–9',
+  'Henna Design Workshop': 'July 13',
+  'Arabic Calligraphy Workshop': 'July 14–15',
+  'Jewellery, Tasbeeh and Bedazzling Workshop': 'July 16 & 20',
+  'Shrinky Dinks Workshop': 'July 21',
+  'Basic Auto Workshop': 'July 22–23',
+  'Flower Bouquet and Arrangements': 'July 27',
+  'Tie Dye Workshop': 'July 28',
+  'Sewing Workshop': 'July 29',
+  'Ice cream, Mocktail, and Snowball Workshop': 'July 30',
+}
 
 // Per-workshop color tokens for the admin pills. Each workshop gets a hue
 // chosen to evoke the subject (henna = rose, calligraphy = emerald for the
@@ -52,6 +70,14 @@ export const WORKSHOP_PILL_CLASSES = {
   'Arabic Calligraphy Workshop': {
     unpaid: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
     paid: 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600',
+  },
+  'Cybersecurity & AI Workshop': {
+    unpaid: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
+    paid: 'bg-sky-500 text-white border-sky-600 hover:bg-sky-600',
+  },
+  'Shrinky Dinks Workshop': {
+    unpaid: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100',
+    paid: 'bg-teal-500 text-white border-teal-600 hover:bg-teal-600',
   },
   'Sewing Workshop': {
     unpaid: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',

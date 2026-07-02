@@ -39,6 +39,15 @@ export const routes = [
     },
   },
   {
+    path: '/workshops',
+    name: 'Workshops',
+    component: () => import('../views/WorkshopsView.vue'),
+    meta: {
+      title: `July 2026 Summer Workshop Series | ${BASE_TITLE}`,
+      description: 'Eleven hands-on workshops across July 2026 at SAHA Institute in Kenner, LA — baking, cybersecurity & AI, henna, Arabic calligraphy, auto skills, and more. Sign up online.',
+    },
+  },
+  {
     path: '/enroll',
     name: 'Enroll',
     component: () => import('../views/EnrollView.vue'),

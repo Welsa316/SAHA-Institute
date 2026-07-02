@@ -109,7 +109,7 @@ app.use(
 // Public routes vite-ssg prerendered to flat <route>.html files. Everything else
 // (auth/admin) gets the clean empty shell to hydrate client-side. ('/' is served
 // as the prerendered dist/index.html by express.static above.)
-const PRERENDERED_ROUTES = new Set(['/about', '/summer-camp', '/enroll', '/contact', '/register'])
+const PRERENDERED_ROUTES = new Set(['/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/register'])
 
 app.get(/^(?!\/api).*/, (req, res) => {
   if (req.path.startsWith('/assets/')) {

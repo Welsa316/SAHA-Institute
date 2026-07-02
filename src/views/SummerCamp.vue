@@ -16,25 +16,24 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 // PHOTOS: drop images into public/camp-gallery/ and list them here — e.g.
 //   mornings: [{ src: '/camp-gallery/mornings-1.webp', alt: 'Morning Quran circle' }],
 // Until a chapter has photos, it shows "photos coming soon" tiles.
-const galleries = {
-  week1: [],
-  week2: [],
-  week3: [],
-  week4: [],
-  week5: [],
-}
+// One gallery per camp day. Fill a day by listing its images, e.g.
+//   day3: [{ src: '/camp-gallery/day3-1.webp', alt: 'Slime lab' }],
+// Day count is provisional (15 for now) — trim or extend CAMP_DAYS once the
+// camera roll settles.
+const CAMP_DAYS = 15
+const galleries = Object.fromEntries(
+  Array.from({ length: CAMP_DAYS }, (_, i) => [`day${i + 1}`, []]),
+)
 
-// The timeline runs CHRONOLOGICALLY — the four Mon–Fri weeks of June plus the
-// final two days. Each entry is a photo grid for now; per-week write-ups get
-// added along with the photos once the camera roll is sorted. (computed so
+// The timeline runs day by day: Day 1 … Day 15. Each entry is a photo grid
+// for now; per-day captions get added along with the photos. (computed so
 // titles follow live locale switches.)
-const weeks = computed(() => [
-  { id: 'week1', title: t('summerCamp.wk1Title'), meta: t('summerCamp.wk1Range') },
-  { id: 'week2', title: t('summerCamp.wk2Title'), meta: t('summerCamp.wk2Range') },
-  { id: 'week3', title: t('summerCamp.wk3Title'), meta: t('summerCamp.wk3Range') },
-  { id: 'week4', title: t('summerCamp.wk4Title'), meta: t('summerCamp.wk4Range') },
-  { id: 'week5', title: t('summerCamp.wk5Title'), meta: t('summerCamp.wk5Range') },
-])
+const days = computed(() =>
+  Array.from({ length: CAMP_DAYS }, (_, i) => ({
+    id: `day${i + 1}`,
+    title: `${t('summerCamp.dayLabel')} ${i + 1}`,
+  })),
+)
 </script>
 
 <template>
@@ -145,10 +144,41 @@ const weeks = computed(() => [
     </div>
   </section>
 
-  <!-- The month, week by week -->
-  <CampTimeline :entries="weeks">
-    <template v-for="w in weeks" :key="w.id" #[w.id]>
-      <CampGalleryGrid :photos="galleries[w.id]" />
+  <!-- June highlights — transcribed from the "June: done!" flyer -->
+  <section class="relative pb-4 overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6 md:px-12">
+      <h2 class="font-heading text-2xl md:text-3xl font-extrabold text-[#001B3D] tracking-tight mb-8">
+        {{ t('summerCamp.juneHeading') }}
+      </h2>
+      <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
+        <div class="rounded-2xl border border-navy-100 bg-white shadow-sm p-6">
+          <p class="font-body text-[10px] tracking-[0.2em] uppercase text-navy-500 font-bold mb-4">{{ t('summerCamp.juneProgramLabel') }}</p>
+          <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+            <li v-for="item in t('summerCamp.juneProgramItems')" :key="item" class="flex items-start gap-2 font-body text-sm text-navy-700">
+              <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" aria-hidden="true"></span>
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+        <div class="rounded-2xl border border-navy-100 bg-white shadow-sm p-6">
+          <p class="font-body text-[10px] tracking-[0.2em] uppercase text-navy-500 font-bold mb-4">{{ t('summerCamp.juneStemLabel') }}</p>
+          <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+            <li v-for="item in t('summerCamp.juneStemItems')" :key="item" class="flex items-start gap-2 font-body text-sm text-navy-700">
+              <svg class="mt-0.5 w-4 h-4 text-academic-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The month, day by day -->
+  <CampTimeline :entries="days">
+    <template v-for="d in days" :key="d.id" #[d.id]>
+      <CampGalleryGrid :photos="galleries[d.id]" :placeholder-count="2" />
     </template>
   </CampTimeline>
 

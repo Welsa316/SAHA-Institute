@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../composables/useI18n'
-import { WORKSHOPS } from '../constants/workshops.js'
+import { WORKSHOPS, WORKSHOP_DATES } from '../constants/workshops.js'
 
 // The workshop signup form, decoupled from any page-level chrome. Currently
 // only WorkshopSignupModal renders it (the form lives in the modal on /enroll),
@@ -188,16 +188,19 @@ function resetForm() {
               ? 'bg-academic-50 border-academic-400 text-navy-900 font-semibold'
               : 'bg-slate-50 border-navy-100 text-navy-700 hover:bg-white hover:border-academic-200'"
           >
-            <span class="flex items-center gap-2">
+            <span class="flex items-start gap-2">
               <span
-                class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                class="w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center transition-colors"
                 :class="isSelected(workshop) ? 'bg-academic-500 border-academic-500' : 'bg-white border-navy-200'"
               >
                 <svg v-if="isSelected(workshop)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                 </svg>
               </span>
-              {{ workshop }}
+              <span>
+                {{ workshop }}
+                <span v-if="WORKSHOP_DATES[workshop]" class="block font-body text-[11px] font-semibold text-academic-700 tabular-nums mt-0.5">{{ WORKSHOP_DATES[workshop] }}</span>
+              </span>
             </span>
           </button>
         </div>

@@ -88,7 +88,7 @@ function closeMenu() {
           >
             {{ link.name }}
           </router-link>
-          <ShinyButton to="/enroll" :label="t('nav.enroll')" />
+          <ShinyButton to="/workshops" :label="t('nav.enroll')" />
           <button
             @click="toggleLocale"
             class="text-sm font-body font-medium px-3 py-1.5 rounded-full border transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
@@ -133,7 +133,7 @@ function closeMenu() {
           {{ link.name }}
         </router-link>
         <div class="pt-3 mt-1 border-t border-navy-100 flex justify-center">
-          <ShinyButton to="/enroll" :label="t('nav.enroll')" />
+          <ShinyButton to="/workshops" :label="t('nav.enroll')" />
         </div>
       </div>
     </div>
