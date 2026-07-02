@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { and, desc, eq, gte } from 'drizzle-orm'
+import { and, desc, eq, gte, ne } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import { db } from '../db/index.js'
 import { enrollments, classInstances, students, teachers } from '../db/schema.js'
@@ -36,6 +36,28 @@ enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
     }
     const [teacher] = await db.select({ id: teachers.id }).from(teachers).where(eq(teachers.id, input.teacherId)).limit(1)
     if (!teacher) throw new HttpError(404, 'Teacher not found.')
+
+    // One teacher per student: a student's active schedule belongs to a single
+    // teacher. More time slots with the SAME teacher are fine; a second teacher
+    // is not — cancel or reschedule the existing series first.
+    const [conflicting] = await db
+      .select({ teacherName: teachers.name })
+      .from(enrollments)
+      .innerJoin(teachers, eq(enrollments.teacherId, teachers.id))
+      .where(
+        and(
+          eq(enrollments.studentId, input.studentId),
+          eq(enrollments.status, 'active'),
+          ne(enrollments.teacherId, input.teacherId),
+        ),
+      )
+      .limit(1)
+    if (conflicting) {
+      throw new HttpError(
+        409,
+        `This student already has an active schedule with ${conflicting.teacherName}. One teacher per student — cancel that schedule first, or add this class under ${conflicting.teacherName}.`,
+      )
+    }
 
     const endDate = sixMonthsLater(input.startDate)
     const instants = generateOccurrenceInstants({

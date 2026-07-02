@@ -18,14 +18,14 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 // Until a chapter has photos, it shows "photos coming soon" tiles.
 // One gallery per camp day. Fill a day by listing its images, e.g.
 //   day3: [{ src: '/camp-gallery/day3-1.webp', alt: 'Slime lab' }],
-// Day count is provisional (15 for now) — trim or extend CAMP_DAYS once the
-// camera roll settles.
-const CAMP_DAYS = 15
+// Day count is provisional (20, pending the photo sort) — trim or extend
+// CAMP_DAYS once the camera roll settles.
+const CAMP_DAYS = 20
 const galleries = Object.fromEntries(
   Array.from({ length: CAMP_DAYS }, (_, i) => [`day${i + 1}`, []]),
 )
 
-// The timeline runs day by day: Day 1 … Day 15. Each entry is a photo grid
+// The timeline runs day by day: Day 1 … Day 20. Each entry is a photo grid
 // for now; per-day captions get added along with the photos. (computed so
 // titles follow live locale switches.)
 const days = computed(() =>

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { and, asc, eq, gte, lt, type SQL } from 'drizzle-orm'
+import { and, asc, eq, gte, isNull, lt, ne, or, type SQL } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { classInstances, students, teachers, enrollments } from '../db/schema.js'
 import { instancesQuerySchema, instanceRescheduleSchema, idParamSchema } from '../schemas/index.js'
@@ -27,6 +27,11 @@ instancesRouter.get('/', async (req, res, next) => {
     const conditions: SQL[] = [
       gte(classInstances.startsAtUtc, fromUtc),
       lt(classInstances.startsAtUtc, toExclusiveUtc),
+      // A cancelled SERIES disappears from the calendar — months of struck-out
+      // blocks are noise. Single-class cancels (student_off) and closures
+      // (day_closed) stay visible: they communicate "this session was called
+      // off". The rows themselves are all kept in the DB as history.
+      or(isNull(classInstances.cancelType), ne(classInstances.cancelType, 'series_cancelled'))!,
     ]
     if (user.role === 'teacher') {
       conditions.push(eq(classInstances.teacherId, user.teacherId ?? -1))

@@ -588,11 +588,11 @@ function canCancel(inst) {
       <div class="flex flex-wrap items-center gap-2.5">
         <!-- segmented week nav -->
         <div class="flex items-stretch rounded-xl border border-navy-200 bg-white shadow-sm overflow-hidden">
-          <button type="button" @click="prevWeek" aria-label="Previous week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">
+          <button type="button" @click="prevPeriod" :aria-label="view === 'week' ? 'Previous week' : 'Previous month'" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <button type="button" @click="thisWeek" class="px-3.5 h-9 border-x border-navy-100 font-body text-xs font-bold text-navy-700 hover:bg-navy-50 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">Today</button>
-          <button type="button" @click="nextWeek" aria-label="Next week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">
+          <button type="button" @click="goToday" class="px-3.5 h-9 border-x border-navy-100 font-body text-xs font-bold text-navy-700 hover:bg-navy-50 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">Today</button>
+          <button type="button" @click="nextPeriod" :aria-label="view === 'week' ? 'Next week' : 'Next month'" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
