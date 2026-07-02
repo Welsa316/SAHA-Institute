@@ -98,40 +98,61 @@ workshopSignupsRouter.post('/', publicLimiter, async (req, res, next) => {
   try {
     const input = workshopSignupCreateSchema.parse(req.body)
 
-    const [row] = await db
-      .insert(workshopSignups)
-      .values({
-        parentName: input.parentName,
-        studentName: input.studentName,
-        workshops: input.workshops,
-        additionalNotes: input.additionalNotes ?? null,
-      })
-      .returning()
+    // One row PER STUDENT — a family submission ("more than one student?") fans
+    // out into sibling rows under the same parent, so the admin can mark each
+    // student's workshops paid individually. All rows land in one transaction.
+    const studentNames: (string | null)[] = [
+      input.studentName ?? null,
+      ...(input.additionalStudents ?? []),
+    ]
+
+    const rows = await db.transaction(async (tx) => {
+      const created = []
+      for (const name of studentNames) {
+        const [row] = await tx
+          .insert(workshopSignups)
+          .values({
+            parentName: input.parentName,
+            studentName: name,
+            workshops: input.workshops,
+            additionalNotes: input.additionalNotes ?? null,
+          })
+          .returning()
+        created.push(row)
+      }
+      return created
+    })
 
     const adminToken = (req as { cookies?: Record<string, string> }).cookies?.[SESSION_COOKIE_NAME]
     const isAdmin = adminToken ? verifySession(adminToken) !== null : false
 
-    logger.info('signup', 'created', { id: row.id, workshops: input.workshops.length, source: isAdmin ? 'admin' : 'public' })
+    logger.info('signup', 'created', {
+      ids: rows.map((r) => r.id),
+      students: studentNames.length,
+      workshops: input.workshops.length,
+      source: isAdmin ? 'admin' : 'public',
+    })
 
     if (!isAdmin) {
+      const namedStudents = studentNames.filter((n): n is string => Boolean(n))
       // Fire-and-forget email — don't make the parent wait on Resend latency.
       void sendEmail({
         to: [adminContactEmail()],
-        // Subject falls back to the parent/registrant name when no separate
-        // student name was provided.
-        subject: `New Workshop Signup — ${input.studentName ?? input.parentName}`,
+        // Subject lists the students, falling back to the parent/registrant
+        // name when no separate student name was provided.
+        subject: `New Workshop Signup — ${namedStudents.length ? namedStudents.join(', ') : input.parentName}`,
         html: buildSignupEmail({
           parentName: input.parentName,
-          studentName: input.studentName,
+          studentName: namedStudents.length ? namedStudents.join(', ') : null,
           workshops: input.workshops,
           additionalNotes: input.additionalNotes,
-          submittedAt: row.createdAt,
+          submittedAt: rows[0].createdAt,
           adminUrl: `${siteOrigin()}${ADMIN_PATH}`,
         }),
       })
     }
 
-    res.status(201).json({ ok: true, id: row.id })
+    res.status(201).json({ ok: true, ids: rows.map((r) => r.id) })
   } catch (err) {
     next(err)
   }

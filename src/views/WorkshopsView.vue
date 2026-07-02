@@ -82,12 +82,16 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
             :key="w.name"
             class="flex items-start gap-4 rounded-xl border border-navy-100 bg-white px-4 py-3.5 shadow-[0_1px_6px_-3px_rgba(2,27,61,0.12)]"
           >
-            <span class="shrink-0 min-w-[92px] px-2.5 py-1.5 rounded-lg bg-academic-50 border border-academic-100 font-body text-[11px] font-bold text-academic-700 tabular-nums text-center">
-              {{ w.date }}
+            <span class="shrink-0 min-w-[92px] text-center">
+              <span class="block px-2.5 py-1.5 rounded-lg bg-academic-50 border border-academic-100 font-body text-[11px] font-bold text-academic-700 tabular-nums">
+                {{ w.date }}
+              </span>
+              <span v-if="w.price" class="block mt-1 font-body text-[11px] font-bold text-amber-700 tabular-nums">{{ w.price }}</span>
             </span>
             <span>
               <span class="block font-body text-sm font-bold text-navy-900">{{ w.name }}</span>
               <span class="block font-body text-[13px] text-navy-500 leading-snug mt-0.5">{{ w.desc }}</span>
+              <span v-if="w.note" class="block font-body text-[12px] font-semibold text-amber-700 leading-snug mt-1">{{ w.note }}</span>
             </span>
           </li>
         </ul>

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../composables/useI18n'
-import { WORKSHOPS, WORKSHOP_DATES } from '../constants/workshops.js'
+import { WORKSHOPS, WORKSHOP_DATES, WORKSHOP_PRICES, WORKSHOP_NOTES } from '../constants/workshops.js'
 
 // The workshop signup form, decoupled from any page-level chrome. Currently
 // only WorkshopSignupModal renders it (the form lives in the modal on /enroll),
@@ -33,9 +33,28 @@ const { t } = useI18n()
 const form = ref({
   parentName: '',
   studentName: '',
+  // "More than one student?" — siblings under the same parent. Each becomes
+  // its own signup row server-side so the admin can mark them paid separately.
+  multipleStudents: false,
+  studentName2: '',
+  showThird: false,
+  studentName3: '',
   workshops: [],
   additionalNotes: '',
 })
+
+function blankForm() {
+  return {
+    parentName: '',
+    studentName: '',
+    multipleStudents: false,
+    studentName2: '',
+    showThird: false,
+    studentName3: '',
+    workshops: [],
+    additionalNotes: '',
+  }
+}
 
 const sending = ref(false)
 const sent = ref(false)
@@ -67,6 +86,22 @@ async function submitForm() {
     error.value = t('signup.errors.workshopRequired')
     return
   }
+  // With multiple students, each named student needs a name: the first field
+  // becomes "student 1" (required), and student 2 must be filled.
+  if (form.value.multipleStudents) {
+    if (form.value.studentName.trim().length < 2) {
+      error.value = t('signup.errors.student1Required')
+      return
+    }
+    if (form.value.studentName2.trim().length < 2) {
+      error.value = t('signup.errors.student2Required')
+      return
+    }
+  }
+
+  const additionalStudents = form.value.multipleStudents
+    ? [form.value.studentName2.trim(), form.value.studentName3.trim()].filter((n) => n.length >= 2)
+    : []
 
   sending.value = true
   try {
@@ -78,6 +113,7 @@ async function submitForm() {
         // Send null when blank so the DB stores absence as NULL rather than
         // a literal empty string (cleaner queries downstream).
         studentName: form.value.studentName.trim() || null,
+        additionalStudents,
         workshops: form.value.workshops,
         additionalNotes: form.value.additionalNotes.trim() || null,
       }),
@@ -90,7 +126,7 @@ async function submitForm() {
 
     sent.value = true
     emit('submitted')
-    form.value = { parentName: '', studentName: '', workshops: [], additionalNotes: '' }
+    form.value = blankForm()
   } catch (err) {
     error.value = err?.message || t('signup.errors.generic')
     console.error(err)
@@ -158,16 +194,75 @@ function resetForm() {
         </div>
         <div>
           <label for="wsf-student" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
-            {{ t('signup.studentLabelOptional') }}
+            {{ form.multipleStudents ? t('signup.student1Label') : t('signup.studentLabelOptional') }}
           </label>
           <input
             id="wsf-student"
             v-model="form.studentName"
             type="text"
             :disabled="sending"
+            :required="form.multipleStudents"
             :placeholder="t('signup.studentPlaceholder')"
             class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
           />
+        </div>
+      </div>
+
+      <!-- Siblings: one submission, one signup row per student -->
+      <div>
+        <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+          <input
+            v-model="form.multipleStudents"
+            type="checkbox"
+            :disabled="sending"
+            class="w-4 h-4 rounded border-navy-300 text-academic-600 focus:ring-2 focus:ring-academic-400/40"
+          />
+          <span class="font-body text-sm font-semibold text-navy-700">{{ t('signup.multipleStudents') }}</span>
+        </label>
+
+        <div v-if="form.multipleStudents" class="mt-4 space-y-4">
+          <div>
+            <label for="wsf-student2" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-2">
+              {{ t('signup.student2Label') }}
+            </label>
+            <input
+              id="wsf-student2"
+              v-model="form.studentName2"
+              type="text"
+              :disabled="sending"
+              required
+              :placeholder="t('signup.studentPlaceholder')"
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+            />
+          </div>
+          <button
+            v-if="!form.showThird"
+            type="button"
+            :disabled="sending"
+            @click="form.showThird = true"
+            class="inline-flex items-center gap-1.5 font-body text-sm font-semibold text-academic-700 hover:text-academic-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none rounded-md"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            {{ t('signup.addThird') }}
+          </button>
+          <div v-else>
+            <div class="flex items-center justify-between mb-2">
+              <label for="wsf-student3" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider">
+                {{ t('signup.student3Label') }}
+              </label>
+              <button type="button" :disabled="sending" @click="form.showThird = false; form.studentName3 = ''" class="font-body text-xs text-navy-400 hover:text-navy-600" :aria-label="t('signup.removeThird')">
+                {{ t('signup.removeThird') }}
+              </button>
+            </div>
+            <input
+              id="wsf-student3"
+              v-model="form.studentName3"
+              type="text"
+              :disabled="sending"
+              :placeholder="t('signup.studentPlaceholder')"
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-navy-100 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 transition-all duration-300 disabled:opacity-50"
+            />
+          </div>
         </div>
       </div>
 
@@ -199,7 +294,10 @@ function resetForm() {
               </span>
               <span>
                 {{ workshop }}
-                <span v-if="WORKSHOP_DATES[workshop]" class="block font-body text-[11px] font-semibold text-academic-700 tabular-nums mt-0.5">{{ WORKSHOP_DATES[workshop] }}</span>
+                <span v-if="WORKSHOP_DATES[workshop]" class="block font-body text-[11px] font-semibold text-academic-700 tabular-nums mt-0.5">
+                  {{ WORKSHOP_DATES[workshop] }}<template v-if="WORKSHOP_PRICES[workshop]"> · {{ WORKSHOP_PRICES[workshop] }}</template>
+                </span>
+                <span v-if="WORKSHOP_NOTES[workshop]" class="block font-body text-[10.5px] text-amber-700 mt-0.5">{{ WORKSHOP_NOTES[workshop] }}</span>
               </span>
             </span>
           </button>

@@ -3,39 +3,60 @@
 // view (filter dropdown + colored pills). Stored as plain strings — the
 // same strings land in workshop_signups.workshops (Postgres text[]) verbatim.
 //
-// Order and lineup match the published July 2026 Summer Workshop Series
-// flyer (chronological). LEGO and Clay Molding were dropped from the final
-// lineup; Cybersecurity & AI and Shrinky Dinks were added. Their pill
-// classes stay below so any existing signup rows still render colored.
+// Order, names, dates and prices match Mrs. Anila's July 2026 WhatsApp polls
+// (the freshest source — they superseded the flyer wording in a few places).
+// Old signup rows were cleared before the rename, so these strings are safe
+// to store verbatim in workshop_signups.workshops.
 
 export const WORKSHOPS = [
   'Baking Workshop',
-  'Cybersecurity & AI Workshop',
+  'Intro to Cybersecurity & AI Utilization Workshop',
   'Henna Design Workshop',
   'Arabic Calligraphy Workshop',
-  'Jewellery, Tasbeeh and Bedazzling Workshop',
+  'Jewelry, Tasbeeh & Bedazzling Workshop',
   'Shrinky Dinks Workshop',
   'Basic Auto Workshop',
-  'Flower Bouquet and Arrangements',
+  'Fresh Flower Arrangement Workshop',
   'Tie Dye Workshop',
   'Sewing Workshop',
-  'Ice cream, Mocktail, and Snowball Workshop',
+  'Ice Cream, Mocktails & Snoballs',
 ]
 
-// Dates from the July 2026 flyer, shown alongside each option in the signup
+// Dates from the July 2026 series, shown alongside each option in the signup
 // form and on the /workshops lineup. Keyed by the exact catalog strings.
 export const WORKSHOP_DATES = {
   'Baking Workshop': 'July 6–7',
-  'Cybersecurity & AI Workshop': 'July 8–9',
+  'Intro to Cybersecurity & AI Utilization Workshop': 'July 8–9',
   'Henna Design Workshop': 'July 13',
   'Arabic Calligraphy Workshop': 'July 14–15',
-  'Jewellery, Tasbeeh and Bedazzling Workshop': 'July 16 & 20',
+  'Jewelry, Tasbeeh & Bedazzling Workshop': 'July 16 & 20',
   'Shrinky Dinks Workshop': 'July 21',
   'Basic Auto Workshop': 'July 22–23',
-  'Flower Bouquet and Arrangements': 'July 27',
+  'Fresh Flower Arrangement Workshop': 'July 27',
   'Tie Dye Workshop': 'July 28',
   'Sewing Workshop': 'July 29',
-  'Ice cream, Mocktail, and Snowball Workshop': 'July 30',
+  'Ice Cream, Mocktails & Snoballs': 'July 30',
+}
+
+// Entry fee per child, from the polls. Not uniform: the cybersecurity,
+// jewelry, and auto workshops run $10; everything else $20.
+export const WORKSHOP_PRICES = {
+  'Baking Workshop': '$20/child',
+  'Intro to Cybersecurity & AI Utilization Workshop': '$10/child',
+  'Henna Design Workshop': '$20/child',
+  'Arabic Calligraphy Workshop': '$20/child',
+  'Jewelry, Tasbeeh & Bedazzling Workshop': '$10/child',
+  'Shrinky Dinks Workshop': '$20/child',
+  'Basic Auto Workshop': '$10/child',
+  'Fresh Flower Arrangement Workshop': '$20/child',
+  'Tie Dye Workshop': '$20/child',
+  'Sewing Workshop': '$20/child',
+  'Ice Cream, Mocktails & Snoballs': '$20/child',
+}
+
+// Per-workshop caveats worth surfacing at signup time.
+export const WORKSHOP_NOTES = {
+  'Intro to Cybersecurity & AI Utilization Workshop': 'Must bring a laptop or iPad',
 }
 
 // Per-workshop color tokens for the admin pills. Each workshop gets a hue
@@ -75,9 +96,25 @@ export const WORKSHOP_PILL_CLASSES = {
     unpaid: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
     paid: 'bg-sky-500 text-white border-sky-600 hover:bg-sky-600',
   },
+  'Intro to Cybersecurity & AI Utilization Workshop': {
+    unpaid: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
+    paid: 'bg-sky-500 text-white border-sky-600 hover:bg-sky-600',
+  },
   'Shrinky Dinks Workshop': {
     unpaid: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100',
     paid: 'bg-teal-500 text-white border-teal-600 hover:bg-teal-600',
+  },
+  'Jewelry, Tasbeeh & Bedazzling Workshop': {
+    unpaid: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100',
+    paid: 'bg-fuchsia-500 text-white border-fuchsia-600 hover:bg-fuchsia-600',
+  },
+  'Fresh Flower Arrangement Workshop': {
+    unpaid: 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100',
+    paid: 'bg-pink-500 text-white border-pink-600 hover:bg-pink-600',
+  },
+  'Ice Cream, Mocktails & Snoballs': {
+    unpaid: 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100',
+    paid: 'bg-cyan-500 text-white border-cyan-600 hover:bg-cyan-600',
   },
   'Sewing Workshop': {
     unpaid: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',

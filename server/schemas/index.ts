@@ -18,6 +18,10 @@ export const loginSchema = z.object({
 export const workshopSignupCreateSchema = z.object({
   parentName: z.string().trim().min(2).max(100),
   studentName: z.string().trim().min(2).max(100).nullable().optional(),
+  // Siblings signed up in the same submission ("more than one student?" on the
+  // form). Each becomes its OWN signup row under the same parent, so the admin
+  // can mark every student's workshops paid individually.
+  additionalStudents: z.array(z.string().trim().min(2).max(100)).max(2).optional(),
   workshops: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
   additionalNotes: z.string().trim().max(2000).optional().nullable(),
 })
