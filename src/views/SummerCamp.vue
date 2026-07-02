@@ -18,15 +18,17 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 // Until a chapter has photos, it shows "photos coming soon" tiles.
 const galleries = {
   mornings: [],
-  workshops: [],
+  arts: [],
   stem: [],
   lunch: [],
 }
 
-// computed so chapter titles follow live locale switches
+// computed so chapter titles follow live locale switches. NOTE: no Workshops
+// chapter — workshops belong to the STEM program (still running through July,
+// workshops not started yet), not to the June camp this page recaps.
 const chapters = computed(() => [
   { id: 'mornings', title: t('summerCamp.chMorningsTitle') },
-  { id: 'workshops', title: t('summerCamp.chWorkshopsTitle') },
+  { id: 'arts', title: t('summerCamp.chArtsTitle') },
   { id: 'stem', title: t('summerCamp.chStemTitle') },
   { id: 'lunch', title: t('summerCamp.chLunchTitle') },
 ])
@@ -108,17 +110,18 @@ const chapters = computed(() => [
       </div>
     </template>
 
-    <template #workshops>
+    <template #arts>
       <div class="space-y-4 font-body text-navy-500 text-sm md:text-base leading-relaxed mb-8">
-        <p>{{ t('summerCamp.workshopsP1') }}</p>
-        <p>{{ t('summerCamp.workshopsP2') }}</p>
+        <p>{{ t('summerCamp.artsP1') }}</p>
+        <p>{{ t('summerCamp.artsP2') }}</p>
       </div>
-      <CampGalleryGrid :photos="galleries.workshops" />
+      <CampGalleryGrid :photos="galleries.arts" />
     </template>
 
     <template #stem>
       <div class="space-y-4 font-body text-navy-500 text-sm md:text-base leading-relaxed mb-8">
         <p>{{ t('summerCamp.stemP1') }}</p>
+        <p class="font-semibold text-academic-700">{{ t('summerCamp.stemContinues') }}</p>
         <p class="font-semibold text-academic-700">{{ t('summerCamp.stemCoordinator') }}</p>
       </div>
       <CampGalleryGrid :photos="galleries.stem" />
