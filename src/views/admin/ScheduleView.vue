@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DateTime } from 'luxon'
 import { useAdminAuth } from '../../composables/useAdminAuth.js'
 import { useSchedule } from '../../composables/useSchedule.js'
@@ -11,9 +11,46 @@ const {
   fetchStudents,
   createEnrollment,
   cancelInstance,
+  rescheduleInstance,
+  rescheduleEnrollment,
   cancelStudentSchedule,
   cancelDay,
 } = useSchedule()
+
+// ---------- Modal accessibility ----------
+// Only one dialog is open at a time, so a single panel ref serves all of them.
+// On open: remember the trigger and move focus INTO the panel (which also makes
+// the panel's Esc handler reachable). While open: Tab is trapped inside. On
+// close: focus returns to the trigger.
+const modalPanel = ref(null)
+let lastFocused = null
+function focusModal() {
+  lastFocused = document.activeElement
+  nextTick(() => modalPanel.value?.focus())
+}
+function restoreFocus() {
+  const el = lastFocused
+  lastFocused = null
+  if (el && typeof el.focus === 'function') nextTick(() => el.focus())
+}
+function trapTab(e) {
+  if (e.key !== 'Tab') return
+  const panel = modalPanel.value
+  if (!panel) return
+  const focusables = [...panel.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )].filter((el) => el.offsetParent !== null)
+  if (!focusables.length) return
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 
 // Grid runs 15:00–21:00 — it's an after-school institute, so classes start at
 // 3pm. One absolutely-positioned block per class so any start time / duration
@@ -138,13 +175,21 @@ const instancesByDay = computed(() => {
     const wd = local.weekday
     if (wd < 1 || wd > 5) continue
     const startMin = local.hour * 60 + local.minute
-    const top = (startMin / 60 - START_HOUR) * pxPerHour.value
-    const height = Math.max((inst.durationMinutes / 60) * pxPerHour.value, 26)
+    const gh = HOURS * pxPerHour.value
+    const rawTop = (startMin / 60 - START_HOUR) * pxPerHour.value
+    const height = Math.min(Math.max((inst.durationMinutes / 60) * pxPerHour.value, 26), gh)
+    // Clamp into the 3 PM–9 PM canvas so an out-of-window class (legacy data or
+    // a non-Central display timezone) pins to the edge instead of painting over
+    // the card header or vanishing while still being counted.
+    const top = Math.min(Math.max(rawTop, 0), gh - height)
     const ends = local.plus({ minutes: inst.durationMinutes })
     byDay[wd].push({
       ...inst,
-      _start: startMin,
-      _end: startMin + inst.durationMinutes,
+      // Lane assignment works in PIXEL space so the 26px minimum height also
+      // pushes clamped/short back-to-back blocks into side-by-side lanes
+      // instead of letting them paint over each other.
+      _start: top,
+      _end: top + height,
       _top: top,
       _height: height,
       _timeLabel: local.toFormat('h:mm a'),
@@ -155,6 +200,10 @@ const instancesByDay = computed(() => {
   return byDay
 })
 
+// True only after at least one successful fetch — the "every slot is open"
+// note must never show during the initial load or alongside a fetch error.
+const hasLoaded = ref(false)
+
 async function loadWeek() {
   loading.value = true
   error.value = ''
@@ -162,6 +211,7 @@ async function loadWeek() {
     const from = weekDays.value[0].toFormat('yyyy-MM-dd')
     const to = weekDays.value[4].toFormat('yyyy-MM-dd')
     instances.value = await fetchInstances(from, to, isAdmin.value ? teacherFilter.value || undefined : undefined)
+    hasLoaded.value = true
   } catch (err) {
     error.value = err?.message || 'Could not load the calendar.'
   } finally {
@@ -223,9 +273,14 @@ function openForm() {
   form.value = { studentId: '', teacherId: '', days: [], startTime: '16:00', durationChoice: '60', customDuration: 45 }
   formError.value = ''
   showForm.value = true
+  focusModal()
   // Belt-and-suspenders: if the initial load missed (race/transient failure),
   // fetch the pickers now so the form is never stuck with empty dropdowns.
   if (!teachers.value.length || !students.value.length) loadLookups()
+}
+function closeForm() {
+  showForm.value = false
+  restoreFocus()
 }
 function toggleDay(d) {
   const i = form.value.days.indexOf(d)
@@ -253,7 +308,7 @@ async function submitForm() {
       durationMinutes: formDuration.value,
       startDate: DateTime.now().setZone(tz.value).toFormat('yyyy-MM-dd'),
     })
-    showForm.value = false
+    closeForm()
     await loadWeek()
   } catch (err) {
     formError.value = err?.message || 'Could not create the class.'
@@ -262,22 +317,97 @@ async function submitForm() {
   }
 }
 
-// ---------- Cancel actions ----------
+// ---------- Manage a class (reschedule / cancel) ----------
+// Clicking a scheduled block opens a manage modal: a menu of actions, plus two
+// inline forms — move ONE occurrence, or (admin) re-pattern the whole series.
 const cancelTarget = ref(null) // the clicked instance
 const cancelBusy = ref(false)
+const manageMode = ref('menu') // 'menu' | 'move-one' | 'move-series'
+const manageError = ref('')
+const moveOne = ref({ date: '', time: '' })
+const moveSeries = ref({ days: [], time: '16:00', durationChoice: '60', customDuration: 45 })
 
 function openCancel(inst) {
   if (inst.status === 'cancelled') return
   cancelTarget.value = inst
+  manageMode.value = 'menu'
+  manageError.value = ''
+  focusModal()
+}
+function closeManage() {
+  cancelTarget.value = null
+  restoreFocus()
+}
+function startMoveOne() {
+  const local = localOf(cancelTarget.value)
+  moveOne.value = { date: local.toISODate(), time: local.toFormat('HH:mm') }
+  manageError.value = ''
+  manageMode.value = 'move-one'
+}
+function startMoveSeries() {
+  const inst = cancelTarget.value
+  const dur = String(inst.enrollmentDuration ?? inst.durationMinutes)
+  moveSeries.value = {
+    days: [...(inst.enrollmentDays || [])],
+    time: inst.enrollmentTime || localOf(inst).toFormat('HH:mm'),
+    durationChoice: ['30', '60', '120'].includes(dur) ? dur : 'custom',
+    customDuration: Number(dur),
+  }
+  manageError.value = ''
+  manageMode.value = 'move-series'
+}
+function toggleSeriesDay(d) {
+  const i = moveSeries.value.days.indexOf(d)
+  if (i === -1) moveSeries.value.days.push(d)
+  else moveSeries.value.days.splice(i, 1)
+}
+const seriesDuration = computed(() =>
+  moveSeries.value.durationChoice === 'custom' ? Number(moveSeries.value.customDuration) : Number(moveSeries.value.durationChoice),
+)
+
+async function doMoveOne() {
+  manageError.value = ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(moveOne.value.date)) return (manageError.value = 'Pick a date.')
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(moveOne.value.time)) return (manageError.value = 'Enter a valid start time.')
+  cancelBusy.value = true
+  try {
+    await rescheduleInstance(cancelTarget.value.id, { date: moveOne.value.date, startTimeLocal: moveOne.value.time })
+    closeManage()
+    await loadWeek()
+  } catch (err) {
+    manageError.value = err?.message || 'Could not reschedule.'
+  } finally {
+    cancelBusy.value = false
+  }
+}
+async function doMoveSeries() {
+  manageError.value = ''
+  if (moveSeries.value.days.length === 0) return (manageError.value = 'Pick at least one weekday.')
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(moveSeries.value.time)) return (manageError.value = 'Enter a valid start time.')
+  if (!seriesDuration.value || seriesDuration.value < 5) return (manageError.value = 'Enter a valid duration.')
+  cancelBusy.value = true
+  try {
+    await rescheduleEnrollment(cancelTarget.value.enrollmentId, {
+      daysOfWeek: [...moveSeries.value.days].sort((a, b) => a - b),
+      startTimeLocal: moveSeries.value.time,
+      durationMinutes: seriesDuration.value,
+    })
+    closeManage()
+    await loadWeek()
+  } catch (err) {
+    manageError.value = err?.message || 'Could not reschedule the series.'
+  } finally {
+    cancelBusy.value = false
+  }
 }
 async function doCancelInstance() {
   cancelBusy.value = true
   try {
     await cancelInstance(cancelTarget.value.id)
-    cancelTarget.value = null
+    closeManage()
     await loadWeek()
   } catch (err) {
-    error.value = err?.message || 'Could not cancel.'
+    manageError.value = err?.message || 'Could not cancel.'
   } finally {
     cancelBusy.value = false
   }
@@ -286,10 +416,10 @@ async function doCancelStudentSchedule() {
   cancelBusy.value = true
   try {
     await cancelStudentSchedule(cancelTarget.value.studentId)
-    cancelTarget.value = null
+    closeManage()
     await loadWeek()
   } catch (err) {
-    error.value = err?.message || 'Could not cancel the schedule.'
+    manageError.value = err?.message || 'Could not cancel the schedule.'
   } finally {
     cancelBusy.value = false
   }
@@ -303,6 +433,11 @@ function openCloseDay() {
   closeDayDate.value = weekDays.value[0].toFormat('yyyy-MM-dd')
   closeDayError.value = ''
   showCloseDay.value = true
+  focusModal()
+}
+function closeCloseDay() {
+  showCloseDay.value = false
+  restoreFocus()
 }
 async function doCloseDay() {
   closeDayError.value = ''
@@ -310,7 +445,7 @@ async function doCloseDay() {
   closeDayBusy.value = true
   try {
     await cancelDay(closeDayDate.value)
-    showCloseDay.value = false
+    closeCloseDay()
     await loadWeek()
   } catch (err) {
     closeDayError.value = err?.message || 'Could not close the day.'
@@ -341,11 +476,11 @@ function canCancel(inst) {
       <div class="flex flex-wrap items-center gap-2.5">
         <!-- segmented week nav -->
         <div class="flex items-stretch rounded-xl border border-navy-200 bg-white shadow-sm overflow-hidden">
-          <button type="button" @click="prevWeek" aria-label="Previous week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">
+          <button type="button" @click="prevWeek" aria-label="Previous week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <button type="button" @click="thisWeek" class="px-3.5 h-9 border-x border-navy-100 font-body text-xs font-bold text-navy-700 hover:bg-navy-50 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">Today</button>
-          <button type="button" @click="nextWeek" aria-label="Next week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-400 focus:outline-none">
+          <button type="button" @click="thisWeek" class="px-3.5 h-9 border-x border-navy-100 font-body text-xs font-bold text-navy-700 hover:bg-navy-50 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">Today</button>
+          <button type="button" @click="nextWeek" aria-label="Next week" class="w-9 h-9 flex items-center justify-center text-navy-500 hover:bg-navy-50 hover:text-navy-800 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
@@ -358,7 +493,7 @@ function canCancel(inst) {
             v-model="teacherFilter"
             @change="loadWeek"
             aria-label="Filter by teacher"
-            class="h-9 px-3 rounded-xl border border-navy-200 bg-white font-body text-sm text-navy-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-academic-400/40"
+            class="h-9 px-3 rounded-xl border border-navy-200 bg-white font-body text-sm text-navy-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-academic-600"
           >
             <option value="">All teachers</option>
             <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -366,14 +501,14 @@ function canCancel(inst) {
           <button
             type="button"
             @click="openCloseDay"
-            class="h-9 px-3.5 rounded-xl border border-navy-200 bg-white text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+            class="h-9 px-3.5 rounded-xl border border-navy-200 bg-white text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
           >
             Close a day
           </button>
           <button
             type="button"
             @click="openForm"
-            class="h-9 px-4 rounded-xl bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+            class="h-9 px-4 rounded-xl bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
           >
             + New class
           </button>
@@ -383,8 +518,18 @@ function canCancel(inst) {
 
     <div v-if="error" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ error }}</div>
 
-    <!-- Week board: time gutter + five floating day cards -->
-    <div ref="gridShellRef" class="relative overflow-x-auto pb-1">
+    <!-- Week board: time gutter + five floating day cards. `isolate` contains
+         the gutter/now-line z-indexes so they never paint over the app chrome
+         (mobile top bar); tabindex makes the horizontal scroller keyboard-
+         reachable so clipped days can be scrolled into view without a mouse. -->
+    <div class="relative">
+      <div
+        ref="gridShellRef"
+        tabindex="0"
+        role="region"
+        aria-label="Weekly schedule board (scrolls sideways)"
+        class="relative isolate z-0 overflow-x-auto pb-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+      >
       <div class="flex gap-2 md:gap-2.5 min-w-[900px]">
         <!-- time gutter — sticky so the hour scale stays put while the board
              scrolls horizontally on narrow screens -->
@@ -392,7 +537,7 @@ function canCancel(inst) {
           <div
             v-for="h in hourRowsInclusive"
             :key="h"
-            class="absolute right-1 font-body text-[11px] font-semibold leading-none text-navy-400 tabular-nums whitespace-nowrap"
+            class="absolute right-1 font-body text-[11px] font-semibold leading-none text-navy-500 tabular-nums whitespace-nowrap"
             :style="hourLabelStyle(h)"
           >
             {{ fmtHour(h) }}
@@ -415,7 +560,7 @@ function canCancel(inst) {
             :class="isToday(day) ? 'bg-academic-50/80 border-academic-100' : 'bg-navy-50/40 border-navy-100'"
           >
             <div>
-              <p class="font-body text-[10px] tracking-[0.22em] uppercase font-bold" :class="isToday(day) ? 'text-academic-600' : 'text-navy-400'">
+              <p class="font-body text-[10px] tracking-[0.22em] uppercase font-bold" :class="isToday(day) ? 'text-academic-600' : 'text-navy-500'">
                 {{ WEEKDAY_LABELS[i] }}
               </p>
               <p class="font-heading text-[22px] font-extrabold leading-none mt-0.5 text-navy-900 tabular-nums">
@@ -423,13 +568,14 @@ function canCancel(inst) {
               </p>
             </div>
             <span v-if="isToday(day)" class="px-2 py-1 rounded-full bg-academic-500 text-white font-body text-[9px] font-bold uppercase tracking-[0.14em]">Today</span>
-            <span v-else-if="instancesByDay[i + 1].length" class="min-w-[22px] h-[22px] px-1.5 rounded-full bg-navy-100/80 text-navy-500 font-body text-[10px] font-bold flex items-center justify-center tabular-nums" :title="`${instancesByDay[i + 1].length} classes`">
+            <span v-else-if="instancesByDay[i + 1].length" class="min-w-[22px] h-[22px] px-1.5 rounded-full bg-navy-100/80 text-navy-600 font-body text-[10px] font-bold flex items-center justify-center tabular-nums" :title="`${instancesByDay[i + 1].length} class${instancesByDay[i + 1].length === 1 ? '' : 'es'}`">
               {{ instancesByDay[i + 1].length }}
             </span>
           </header>
 
-          <!-- card body: hour bands, lines, now-line, class blocks -->
-          <div class="relative" :style="{ height: gridHeight + 'px' }">
+          <!-- card body: hour bands, lines, now-line, class blocks. overflow-
+               hidden so no block can ever paint over the card header. -->
+          <div class="relative overflow-hidden" :style="{ height: gridHeight + 'px' }">
             <!-- alternate-hour zebra bands -->
             <div
               v-for="h in zebraHours"
@@ -468,8 +614,8 @@ function canCancel(inst) {
               type="button"
               @click="openCancel(inst)"
               :disabled="!canCancel(inst)"
-              class="absolute z-10 rounded-[10px] px-2 py-1.5 text-left overflow-hidden transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-academic-500 focus:outline-none"
-              :class="inst.status === 'cancelled' ? 'opacity-55 cursor-default' : 'shadow-sm hover:shadow-lg hover:-translate-y-px cursor-pointer'"
+              class="absolute z-10 rounded-[10px] px-2 py-1.5 text-left overflow-hidden transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-academic-600 focus:outline-none"
+              :class="inst.status === 'cancelled' ? 'cursor-default' : 'shadow-sm hover:shadow-lg hover:-translate-y-px cursor-pointer'"
               :style="{
                 top: inst._top + 'px',
                 height: inst._height + 'px',
@@ -478,29 +624,32 @@ function canCancel(inst) {
                 backgroundColor: inst.status === 'cancelled' ? '#EDEFF3' : inst.teacherColor + '22',
                 borderLeft: `3px solid ${inst.status === 'cancelled' ? '#9CA3AF' : inst.teacherColor}`,
               }"
-              :title="`${inst.studentName} · ${inst.teacherName} · ${inst._timeRange}`"
+              :title="`${inst.studentName} · ${inst.teacherName} · ${inst._timeRange}${inst.status === 'cancelled' ? ' · cancelled' : ''}`"
             >
               <p
                 class="font-body text-[12.5px] font-bold leading-tight truncate"
-                :class="inst.status === 'cancelled' ? 'text-navy-400 line-through' : 'text-navy-900'"
+                :class="inst.status === 'cancelled' ? 'text-navy-600 line-through' : 'text-navy-900'"
               >
                 {{ inst.studentName }}
               </p>
-              <p class="font-body text-[10.5px] leading-tight tabular-nums truncate" :class="inst.status === 'cancelled' ? 'text-navy-400' : 'text-navy-600'">
+              <p class="font-body text-[10.5px] leading-tight tabular-nums truncate" :class="inst.status === 'cancelled' ? 'text-navy-500' : 'text-navy-600'">
                 {{ inst._timeRange }}
               </p>
-              <p v-if="isAdmin && inst.status !== 'cancelled'" class="font-body text-[10px] leading-tight truncate text-navy-500">
+              <p v-if="isAdmin" class="font-body text-[10px] leading-tight truncate text-navy-500">
                 {{ inst.teacherName }}
               </p>
-              <p v-if="inst.status === 'cancelled'" class="font-body text-[9px] uppercase tracking-wide text-red-500 font-bold">Cancelled</p>
+              <p v-if="inst.status === 'cancelled'" class="font-body text-[9px] uppercase tracking-wide text-red-600 font-bold">Cancelled</p>
             </button>
           </div>
         </section>
       </div>
+      </div>
 
-      <!-- empty-week note -->
-      <div v-if="!loading && instances.length === 0" class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none">
-        <p class="px-4 py-2 rounded-full bg-white/95 border border-navy-100 shadow-sm font-body text-sm text-navy-400">
+      <!-- empty-week note — a sibling of the scroller (not a child), so it stays
+           centred in the visible viewport instead of scrolling away with the
+           board, and never shows during loading or after a fetch error -->
+      <div v-if="hasLoaded && !loading && !error && instances.length === 0" class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none">
+        <p class="px-4 py-2 rounded-full bg-white/95 border border-navy-100 shadow-sm font-body text-sm text-navy-600">
           No classes this week — every slot is open.
         </p>
       </div>
@@ -514,13 +663,13 @@ function canCancel(inst) {
           <span class="font-body text-xs text-navy-500">{{ t.name }}</span>
         </div>
       </template>
-      <p class="ml-auto font-body text-[11px] text-navy-300">Click a class to manage it.</p>
+      <p class="ml-auto font-body text-[11px] text-navy-500">Click a class to reschedule or cancel it.</p>
     </div>
 
     <!-- New class modal (admin) -->
-    <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="New recurring class" @keydown.esc="showForm = false">
-      <div class="absolute inset-0 bg-black/40" @click="showForm = false"></div>
-      <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 md:p-7 max-h-[90vh] overflow-y-auto">
+    <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="New recurring class" @keydown.esc="closeForm">
+      <div class="absolute inset-0 bg-black/40" @click="closeForm"></div>
+      <div ref="modalPanel" tabindex="-1" @keydown="trapTab" class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 md:p-7 max-h-[90vh] overflow-y-auto focus:outline-none">
         <h2 class="font-heading text-xl font-bold text-navy-900 mb-1">New recurring class</h2>
         <p class="font-body text-xs text-navy-500 mb-5">Generates classes for 6 months. Same start time on every selected weekday.</p>
         <div v-if="formError" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ formError }}</div>
@@ -531,8 +680,8 @@ function canCancel(inst) {
         </div>
         <form @submit.prevent="submitForm" class="space-y-4">
           <div>
-            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Student</label>
-            <select v-model="form.studentId" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-400/40">
+            <label for="sf-student" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Student</label>
+            <select id="sf-student" v-model="form.studentId" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600">
               <option value="" disabled>Select a student…</option>
               <option v-for="s in approvedStudents" :key="s.id" :value="s.id">{{ s.studentName }}</option>
             </select>
@@ -541,22 +690,23 @@ function canCancel(inst) {
             </p>
           </div>
           <div>
-            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Teacher</label>
-            <select v-model="form.teacherId" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-400/40">
+            <label for="sf-teacher" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Teacher</label>
+            <select id="sf-teacher" v-model="form.teacherId" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600">
               <option value="" disabled>Select a teacher…</option>
               <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
             </select>
           </div>
           <div>
-            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Weekdays</label>
-            <div class="flex flex-wrap gap-2">
+            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5" id="sf-days-label">Weekdays</label>
+            <div class="flex flex-wrap gap-2" role="group" aria-labelledby="sf-days-label">
               <button
                 v-for="(label, i) in WEEKDAY_LABELS"
                 :key="i"
                 type="button"
                 @click="toggleDay(i + 1)"
-                class="px-3.5 py-2 rounded-lg border font-body text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
-                :class="form.days.includes(i + 1) ? 'bg-academic-500 border-academic-500 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'"
+                :aria-pressed="form.days.includes(i + 1)"
+                class="px-3.5 py-2 rounded-lg border font-body text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+                :class="form.days.includes(i + 1) ? 'bg-academic-600 border-academic-600 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'"
               >
                 {{ label }}
               </button>
@@ -565,55 +715,137 @@ function canCancel(inst) {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label for="sf-time" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Start (Central)</label>
-              <input id="sf-time" v-model="form.startTime" type="time" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-400/40" />
+              <input id="sf-time" v-model="form.startTime" type="time" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" />
             </div>
             <div>
-              <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Duration</label>
-              <div class="flex gap-1.5">
+              <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5" id="sf-duration-label">Duration</label>
+              <div class="flex gap-1.5" role="radiogroup" aria-labelledby="sf-duration-label">
                 <button v-for="d in ['30', '60', '120']" :key="d" type="button" @click="form.durationChoice = d"
-                  class="flex-1 px-2 py-2.5 rounded-lg border font-body text-xs font-semibold transition-colors"
-                  :class="form.durationChoice === d ? 'bg-academic-500 border-academic-500 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'">{{ d }}m</button>
+                  role="radio" :aria-checked="form.durationChoice === d"
+                  class="flex-1 px-2 py-2.5 rounded-lg border font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+                  :class="form.durationChoice === d ? 'bg-academic-600 border-academic-600 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'">{{ d }}m</button>
                 <button type="button" @click="form.durationChoice = 'custom'"
-                  class="flex-1 px-2 py-2.5 rounded-lg border font-body text-xs font-semibold transition-colors"
-                  :class="form.durationChoice === 'custom' ? 'bg-academic-500 border-academic-500 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'">Custom</button>
+                  role="radio" :aria-checked="form.durationChoice === 'custom'"
+                  class="flex-1 px-2 py-2.5 rounded-lg border font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+                  :class="form.durationChoice === 'custom' ? 'bg-academic-600 border-academic-600 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'">Custom</button>
               </div>
-              <input v-if="form.durationChoice === 'custom'" v-model.number="form.customDuration" type="number" min="5" max="600" class="mt-2 w-full px-3 py-2 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-400/40" placeholder="minutes" />
+              <input v-if="form.durationChoice === 'custom'" v-model.number="form.customDuration" type="number" min="5" max="600" aria-label="Custom duration in minutes" class="mt-2 w-full px-3 py-2 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" placeholder="minutes" />
             </div>
           </div>
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="showForm = false" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Cancel</button>
+            <button type="button" @click="closeForm" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Cancel</button>
             <button type="submit" :disabled="formSubmitting" class="flex-1 px-4 py-2.5 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold disabled:opacity-60">{{ formSubmitting ? 'Creating…' : 'Create class' }}</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Cancel instance modal -->
-    <div v-if="cancelTarget" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Cancel class" @keydown.esc="cancelTarget = null">
-      <div class="absolute inset-0 bg-black/40" @click="cancelTarget = null"></div>
-      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
-        <h2 class="font-heading text-lg font-bold text-navy-900 mb-1">Cancel class</h2>
-        <p class="font-body text-sm text-navy-600 mb-5">
-          <span class="font-semibold">{{ cancelTarget.studentName }}</span> · {{ cancelTarget._timeLabel }}<span v-if="isAdmin"> · {{ cancelTarget.teacherName }}</span>
+    <!-- Manage class modal: reschedule one / reschedule series / cancel -->
+    <div v-if="cancelTarget" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Manage class" @keydown.esc="closeManage">
+      <div class="absolute inset-0 bg-black/40" @click="closeManage"></div>
+      <div ref="modalPanel" tabindex="-1" @keydown="trapTab" class="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 focus:outline-none">
+        <h2 class="font-heading text-lg font-bold text-navy-900 mb-1">
+          {{ manageMode === 'move-one' ? 'Reschedule this class' : manageMode === 'move-series' ? 'Reschedule whole series' : 'Manage class' }}
+        </h2>
+        <p class="font-body text-sm text-navy-600 mb-4">
+          <span class="font-semibold">{{ cancelTarget.studentName }}</span> · {{ localOf(cancelTarget).toFormat('EEE, MMM d') }} · {{ cancelTarget._timeRange }}<span v-if="isAdmin"> · {{ cancelTarget.teacherName }}</span>
         </p>
-        <div class="space-y-2">
+
+        <div v-if="manageError" role="alert" class="mb-4 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-body">{{ manageError }}</div>
+
+        <!-- Menu -->
+        <div v-if="manageMode === 'menu'" class="space-y-2">
+          <button type="button" @click="startMoveOne" class="w-full px-4 py-2.5 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold">Reschedule this class</button>
+          <button
+            v-if="isAdmin && cancelTarget.enrollmentStatus === 'active'"
+            type="button"
+            @click="startMoveSeries"
+            class="w-full px-4 py-2.5 rounded-lg border border-navy-200 text-navy-800 hover:bg-navy-50 font-body text-sm font-bold"
+          >
+            Reschedule the whole series
+          </button>
           <button type="button" @click="doCancelInstance" :disabled="cancelBusy" class="w-full px-4 py-2.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 font-body text-sm font-bold disabled:opacity-60">Cancel just this class</button>
           <button v-if="isAdmin" type="button" @click="doCancelStudentSchedule" :disabled="cancelBusy" class="w-full px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 font-body text-sm font-bold disabled:opacity-60">Cancel {{ cancelTarget.studentName }}'s entire schedule</button>
-          <button type="button" @click="cancelTarget = null" class="w-full px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Keep it</button>
+          <button type="button" @click="closeManage" class="w-full px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Keep it</button>
         </div>
+
+        <!-- Move ONE occurrence -->
+        <form v-else-if="manageMode === 'move-one'" @submit.prevent="doMoveOne" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="mv-date" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">New date</label>
+              <input id="mv-date" v-model="moveOne.date" type="date" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" />
+            </div>
+            <div>
+              <label for="mv-time" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Start (Central)</label>
+              <input id="mv-time" v-model="moveOne.time" type="time" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" />
+            </div>
+          </div>
+          <p class="font-body text-[11px] text-navy-500">Monday–Friday only. Length stays {{ cancelTarget.durationMinutes }} minutes; the family is emailed the change.</p>
+          <div class="flex gap-3">
+            <button type="button" @click="manageMode = 'menu'; manageError = ''" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Back</button>
+            <button type="submit" :disabled="cancelBusy" class="flex-1 px-4 py-2.5 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold disabled:opacity-60">{{ cancelBusy ? 'Moving…' : 'Move class' }}</button>
+          </div>
+        </form>
+
+        <!-- Move the WHOLE series (admin) -->
+        <form v-else @submit.prevent="doMoveSeries" class="space-y-4">
+          <div>
+            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5" id="mv-days-label">New weekdays</label>
+            <div class="flex flex-wrap gap-2" role="group" aria-labelledby="mv-days-label">
+              <button
+                v-for="(label, i) in WEEKDAY_LABELS"
+                :key="i"
+                type="button"
+                @click="toggleSeriesDay(i + 1)"
+                :aria-pressed="moveSeries.days.includes(i + 1)"
+                class="px-3 py-2 rounded-lg border font-body text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+                :class="moveSeries.days.includes(i + 1) ? 'bg-academic-600 border-academic-600 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'"
+              >
+                {{ label }}
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="mv-series-time" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Start (Central)</label>
+              <input id="mv-series-time" v-model="moveSeries.time" type="time" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" />
+            </div>
+            <div>
+              <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5" id="mv-duration-label">Duration</label>
+              <div class="flex gap-1" role="radiogroup" aria-labelledby="mv-duration-label">
+                <button v-for="d in ['30', '60', '120']" :key="d" type="button" @click="moveSeries.durationChoice = d"
+                  role="radio" :aria-checked="moveSeries.durationChoice === d"
+                  class="flex-1 px-1.5 py-2.5 rounded-lg border font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+                  :class="moveSeries.durationChoice === d ? 'bg-academic-600 border-academic-600 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'">{{ d }}m</button>
+                <button type="button" @click="moveSeries.durationChoice = 'custom'"
+                  role="radio" :aria-checked="moveSeries.durationChoice === 'custom'"
+                  class="flex-1 px-1.5 py-2.5 rounded-lg border font-body text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+                  :class="moveSeries.durationChoice === 'custom' ? 'bg-academic-600 border-academic-600 text-white' : 'bg-white border-navy-200 text-navy-600 hover:bg-navy-50'">…</button>
+              </div>
+              <input v-if="moveSeries.durationChoice === 'custom'" v-model.number="moveSeries.customDuration" type="number" min="5" max="600" aria-label="Custom duration in minutes" class="mt-2 w-full px-3 py-2 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" placeholder="minutes" />
+            </div>
+          </div>
+          <p class="font-body text-[11px] text-navy-500">Applies from today onward through the series' end date. Past classes stay as they were; the family is emailed the new schedule.</p>
+          <div class="flex gap-3">
+            <button type="button" @click="manageMode = 'menu'; manageError = ''" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Back</button>
+            <button type="submit" :disabled="cancelBusy" class="flex-1 px-4 py-2.5 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold disabled:opacity-60">{{ cancelBusy ? 'Rescheduling…' : 'Reschedule series' }}</button>
+          </div>
+        </form>
       </div>
     </div>
 
     <!-- Close-a-day modal (admin) -->
-    <div v-if="showCloseDay" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Close a day" @keydown.esc="showCloseDay = false">
-      <div class="absolute inset-0 bg-black/40" @click="showCloseDay = false"></div>
-      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+    <div v-if="showCloseDay" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Close a day" @keydown.esc="closeCloseDay">
+      <div class="absolute inset-0 bg-black/40" @click="closeCloseDay"></div>
+      <div ref="modalPanel" tabindex="-1" @keydown="trapTab" class="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 focus:outline-none">
         <h2 class="font-heading text-lg font-bold text-navy-900 mb-1">Close a day</h2>
         <p class="font-body text-xs text-navy-500 mb-4">Cancels every class on this date, across all teachers (emergency closure).</p>
         <div v-if="closeDayError" role="alert" class="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-body">{{ closeDayError }}</div>
-        <input v-model="closeDayDate" type="date" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 mb-4 focus:outline-none focus:ring-2 focus:ring-academic-400/40" />
+        <label for="cd-date" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Date to close</label>
+        <input id="cd-date" v-model="closeDayDate" type="date" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 mb-4 focus:outline-none focus:ring-2 focus:ring-academic-600" />
         <div class="flex gap-3">
-          <button type="button" @click="showCloseDay = false" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Cancel</button>
+          <button type="button" @click="closeCloseDay" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Cancel</button>
           <button type="button" @click="doCloseDay" :disabled="closeDayBusy" class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 font-body text-sm font-bold disabled:opacity-60">{{ closeDayBusy ? 'Closing…' : 'Close day' }}</button>
         </div>
       </div>
