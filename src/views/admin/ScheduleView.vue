@@ -82,6 +82,19 @@ const tz = computed(() => displayTimezone.value || 'America/Chicago')
 const weekStart = ref(DateTime.now().setZone('America/Chicago').startOf('week'))
 watch(tz, (z) => { weekStart.value = weekStart.value.setZone(z, { keepLocalTime: true }).startOf('week') })
 
+// ---------- Week / Month view ----------
+const view = ref('week') // 'week' | 'month'
+const monthStart = ref(DateTime.now().setZone('America/Chicago').startOf('month'))
+
+function setView(v) {
+  if (view.value === v) return
+  view.value = v
+  try { localStorage.setItem('saha-schedule-view', v) } catch { /* private mode */ }
+  instances.value = []
+  if (v === 'week') loadWeek()
+  else loadMonth()
+}
+
 const instances = ref([])
 const teachers = ref([])
 const students = ref([])
@@ -219,9 +232,95 @@ async function loadWeek() {
   }
 }
 
-function prevWeek() { weekStart.value = weekStart.value.minus({ weeks: 1 }); loadWeek() }
-function nextWeek() { weekStart.value = weekStart.value.plus({ weeks: 1 }); loadWeek() }
-function thisWeek() { weekStart.value = DateTime.now().setZone(tz.value).startOf('week'); loadWeek() }
+// The month grid spans whole Mon–Fri weeks: from the Monday of the week
+// containing the 1st through the Friday of the week containing the last day.
+const monthWeeks = computed(() => {
+  const weeks = []
+  let d = monthStart.value.startOf('week')
+  const last = monthStart.value.endOf('month')
+  while (d <= last) {
+    weeks.push(Array.from({ length: 5 }, (_, i) => d.plus({ days: i })))
+    d = d.plus({ weeks: 1 })
+  }
+  return weeks
+})
+
+// Month cells show at most this many class chips before "+N more".
+const MONTH_MAX_CHIPS = 3
+
+// Instances keyed by local calendar date, sorted by start time — the month
+// grid's data shape. Carries the same _timeLabel/_timeRange the manage modal
+// reads, so a chip click opens the exact same flow as a week block.
+const instancesByDate = computed(() => {
+  const map = {}
+  for (const inst of instances.value) {
+    const local = localOf(inst)
+    const ends = local.plus({ minutes: inst.durationMinutes })
+    const key = local.toISODate()
+    if (!map[key]) map[key] = []
+    map[key].push({
+      ...inst,
+      _sort: local.toMillis(),
+      _timeLabel: local.toFormat('h:mm a'),
+      _timeRange: `${local.toFormat('h:mm')} – ${ends.toFormat('h:mm a')}`,
+      _chipTime: local.toFormat('h:mm'),
+    })
+  }
+  for (const k in map) map[k].sort((a, b) => a._sort - b._sort)
+  return map
+})
+
+async function loadMonth() {
+  loading.value = true
+  error.value = ''
+  try {
+    const from = monthStart.value.startOf('week').toISODate()
+    const to = monthStart.value.endOf('month').startOf('week').plus({ days: 4 }).toISODate()
+    instances.value = await fetchInstances(from, to, isAdmin.value ? teacherFilter.value || undefined : undefined)
+    hasLoaded.value = true
+  } catch (err) {
+    error.value = err?.message || 'Could not load the calendar.'
+  } finally {
+    loading.value = false
+  }
+}
+
+function reload() {
+  if (view.value === 'week') loadWeek()
+  else loadMonth()
+}
+
+// Period nav clears the board first so the old period's blocks don't repaint
+// under the new headers and then jump again when the fetch lands.
+function prevPeriod() {
+  instances.value = []
+  if (view.value === 'week') { weekStart.value = weekStart.value.minus({ weeks: 1 }); loadWeek() }
+  else { monthStart.value = monthStart.value.minus({ months: 1 }); loadMonth() }
+}
+function nextPeriod() {
+  instances.value = []
+  if (view.value === 'week') { weekStart.value = weekStart.value.plus({ weeks: 1 }); loadWeek() }
+  else { monthStart.value = monthStart.value.plus({ months: 1 }); loadMonth() }
+}
+function goToday() {
+  instances.value = []
+  weekStart.value = DateTime.now().setZone(tz.value).startOf('week')
+  monthStart.value = DateTime.now().setZone(tz.value).startOf('month')
+  reload()
+}
+
+// "+N more" in a month cell drills into that day's week.
+function gotoWeekOf(day) {
+  weekStart.value = day.startOf('week')
+  view.value = 'week'
+  try { localStorage.setItem('saha-schedule-view', 'week') } catch { /* private mode */ }
+  instances.value = []
+  loadWeek()
+}
+
+const rangeLabel = computed(() =>
+  view.value === 'week' ? weekRangeLabel.value : monthStart.value.toFormat('LLLL yyyy'),
+)
 
 // The class form's student + teacher pickers. Loaded independently (one failing
 // must not blank the other) and re-loadable, so a transient hiccup or a session
@@ -240,11 +339,24 @@ async function loadLookups() {
 }
 
 onMounted(async () => {
+  try {
+    const saved = localStorage.getItem('saha-schedule-view')
+    if (saved === 'month' || saved === 'week') view.value = saved
+  } catch { /* private mode */ }
   sizeGrid()
   window.addEventListener('resize', sizeGrid)
   nowTimer = setInterval(() => { nowTick.value = DateTime.now().setZone('America/Chicago') }, 60_000)
   await loadLookups()
-  await loadWeek()
+  await (view.value === 'week' ? loadWeek() : loadMonth())
+})
+
+// The week board's px-per-hour is measured from the DOM, which doesn't exist
+// while the month grid is shown — re-measure when switching back.
+watch(view, async (v) => {
+  if (v === 'week') {
+    await nextTick()
+    sizeGrid()
+  }
 })
 
 onUnmounted(() => {
@@ -309,7 +421,7 @@ async function submitForm() {
       startDate: DateTime.now().setZone(tz.value).toFormat('yyyy-MM-dd'),
     })
     closeForm()
-    await loadWeek()
+    await reload()
   } catch (err) {
     formError.value = err?.message || 'Could not create the class.'
   } finally {
@@ -373,7 +485,7 @@ async function doMoveOne() {
   try {
     await rescheduleInstance(cancelTarget.value.id, { date: moveOne.value.date, startTimeLocal: moveOne.value.time })
     closeManage()
-    await loadWeek()
+    await reload()
   } catch (err) {
     manageError.value = err?.message || 'Could not reschedule.'
   } finally {
@@ -393,7 +505,7 @@ async function doMoveSeries() {
       durationMinutes: seriesDuration.value,
     })
     closeManage()
-    await loadWeek()
+    await reload()
   } catch (err) {
     manageError.value = err?.message || 'Could not reschedule the series.'
   } finally {
@@ -405,7 +517,7 @@ async function doCancelInstance() {
   try {
     await cancelInstance(cancelTarget.value.id)
     closeManage()
-    await loadWeek()
+    await reload()
   } catch (err) {
     manageError.value = err?.message || 'Could not cancel.'
   } finally {
@@ -417,7 +529,7 @@ async function doCancelStudentSchedule() {
   try {
     await cancelStudentSchedule(cancelTarget.value.studentId)
     closeManage()
-    await loadWeek()
+    await reload()
   } catch (err) {
     manageError.value = err?.message || 'Could not cancel the schedule.'
   } finally {
@@ -446,7 +558,7 @@ async function doCloseDay() {
   try {
     await cancelDay(closeDayDate.value)
     closeCloseDay()
-    await loadWeek()
+    await reload()
   } catch (err) {
     closeDayError.value = err?.message || 'Could not close the day.'
   } finally {
@@ -484,14 +596,35 @@ function canCancel(inst) {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
-        <p class="font-heading text-base md:text-lg font-bold text-navy-800 tabular-nums whitespace-nowrap px-0.5">{{ weekRangeLabel }}</p>
+        <p class="font-heading text-base md:text-lg font-bold text-navy-800 tabular-nums whitespace-nowrap px-0.5">{{ rangeLabel }}</p>
+        <!-- Week / Month toggle -->
+        <div class="flex items-stretch rounded-xl border border-navy-200 bg-white shadow-sm overflow-hidden" role="group" aria-label="Calendar view">
+          <button
+            type="button"
+            @click="setView('week')"
+            :aria-pressed="view === 'week'"
+            class="px-3.5 h-9 font-body text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+            :class="view === 'week' ? 'bg-[#001B3D] text-white' : 'text-navy-600 hover:bg-navy-50'"
+          >
+            Week
+          </button>
+          <button
+            type="button"
+            @click="setView('month')"
+            :aria-pressed="view === 'month'"
+            class="px-3.5 h-9 border-l border-navy-100 font-body text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+            :class="view === 'month' ? 'bg-[#001B3D] text-white' : 'text-navy-600 hover:bg-navy-50'"
+          >
+            Month
+          </button>
+        </div>
         <span v-if="loading" class="font-body text-xs text-navy-400">Loading…</span>
 
         <template v-if="isAdmin">
           <span class="hidden md:block w-px h-6 bg-navy-100 mx-0.5" aria-hidden="true"></span>
           <select
             v-model="teacherFilter"
-            @change="loadWeek"
+            @change="reload"
             aria-label="Filter by teacher"
             class="h-9 px-3 rounded-xl border border-navy-200 bg-white font-body text-sm text-navy-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-academic-600"
           >
@@ -524,6 +657,7 @@ function canCancel(inst) {
          reachable so clipped days can be scrolled into view without a mouse. -->
     <div class="relative">
       <div
+        v-if="view === 'week'"
         ref="gridShellRef"
         tabindex="0"
         role="region"
@@ -545,9 +679,12 @@ function canCancel(inst) {
         </div>
 
         <!-- day cards -->
+        <!-- keyed by weekday SLOT (not date) so switching weeks updates the five
+             existing cards in place instead of tearing them down and rebuilding —
+             that rebuild was a visible stutter on week navigation -->
         <section
           v-for="(day, i) in weekDays"
-          :key="day.toISODate()"
+          :key="i"
           class="flex-1 min-w-[158px] rounded-2xl bg-white flex flex-col overflow-hidden"
           :class="isToday(day)
             ? 'border-2 border-academic-400/60 shadow-[0_12px_32px_-12px_rgba(2,27,61,0.35)]'
@@ -645,12 +782,84 @@ function canCancel(inst) {
       </div>
       </div>
 
-      <!-- empty-week note — a sibling of the scroller (not a child), so it stays
+      <!-- Month grid: Mon–Fri weeks of the month, classes as compact chips -->
+      <div
+        v-else
+        tabindex="0"
+        role="region"
+        aria-label="Monthly schedule grid (scrolls sideways)"
+        class="relative isolate z-0 overflow-x-auto pb-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+      >
+        <div class="min-w-[720px]">
+          <div class="grid grid-cols-5 gap-2 md:gap-2.5 mb-2">
+            <p
+              v-for="lbl in WEEKDAY_LABELS"
+              :key="lbl"
+              class="text-center font-body text-[10px] tracking-[0.22em] uppercase font-bold text-navy-500"
+            >
+              {{ lbl }}
+            </p>
+          </div>
+          <div v-for="(week, wi) in monthWeeks" :key="wi" class="grid grid-cols-5 gap-2 md:gap-2.5 mb-2 md:mb-2.5">
+            <section
+              v-for="day in week"
+              :key="day.toISODate()"
+              class="rounded-xl bg-white min-h-[104px] md:min-h-[120px] p-2 flex flex-col gap-1.5"
+              :class="[
+                isToday(day)
+                  ? 'border-2 border-academic-400/60 shadow-[0_8px_20px_-10px_rgba(2,27,61,0.3)]'
+                  : 'border border-navy-100 shadow-[0_1px_6px_-3px_rgba(2,27,61,0.15)]',
+                day.month !== monthStart.month ? 'bg-navy-50/40' : '',
+              ]"
+            >
+              <div class="flex items-center justify-between">
+                <p
+                  class="font-heading text-sm font-extrabold tabular-nums leading-none"
+                  :class="isToday(day) ? 'text-academic-600' : day.month === monthStart.month ? 'text-navy-800' : 'text-navy-300'"
+                >
+                  {{ day.toFormat('d') }}
+                </p>
+                <span v-if="isToday(day)" class="px-1.5 py-0.5 rounded-full bg-academic-500 text-white font-body text-[8px] font-bold uppercase tracking-[0.12em]">Today</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <button
+                  v-for="inst in (instancesByDate[day.toISODate()] || []).slice(0, MONTH_MAX_CHIPS)"
+                  :key="inst.id"
+                  type="button"
+                  @click="openCancel(inst)"
+                  :disabled="!canCancel(inst)"
+                  class="w-full text-left rounded-md px-1.5 py-1 overflow-hidden transition-shadow focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-academic-600 focus:outline-none"
+                  :class="inst.status === 'cancelled' ? 'cursor-default' : 'hover:shadow-md cursor-pointer'"
+                  :style="{
+                    backgroundColor: inst.status === 'cancelled' ? '#EDEFF3' : inst.teacherColor + '22',
+                    borderLeft: `3px solid ${inst.status === 'cancelled' ? '#9CA3AF' : inst.teacherColor}`,
+                  }"
+                  :title="`${inst.studentName} · ${inst.teacherName} · ${inst._timeRange}${inst.status === 'cancelled' ? ' · cancelled' : ''}`"
+                >
+                  <p class="font-body text-[10.5px] leading-tight truncate" :class="inst.status === 'cancelled' ? 'text-navy-500 line-through' : 'text-navy-800'">
+                    <span class="font-bold tabular-nums">{{ inst._chipTime }}</span> {{ inst.studentName }}
+                  </p>
+                </button>
+                <button
+                  v-if="(instancesByDate[day.toISODate()] || []).length > MONTH_MAX_CHIPS"
+                  type="button"
+                  @click="gotoWeekOf(day)"
+                  class="w-full text-left rounded-md px-1.5 py-0.5 font-body text-[10px] font-bold text-academic-700 hover:bg-academic-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-academic-600 focus:outline-none"
+                >
+                  +{{ (instancesByDate[day.toISODate()] || []).length - MONTH_MAX_CHIPS }} more
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- empty note — a sibling of the scrollers (not a child), so it stays
            centred in the visible viewport instead of scrolling away with the
            board, and never shows during loading or after a fetch error -->
       <div v-if="hasLoaded && !loading && !error && instances.length === 0" class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none">
         <p class="px-4 py-2 rounded-full bg-white/95 border border-navy-100 shadow-sm font-body text-sm text-navy-600">
-          No classes this week — every slot is open.
+          {{ view === 'week' ? 'No classes this week — every slot is open.' : 'No classes this month.' }}
         </p>
       </div>
     </div>
