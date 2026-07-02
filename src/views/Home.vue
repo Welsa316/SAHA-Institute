@@ -2,20 +2,21 @@
 import Hero from '../components/Hero.vue'
 import Intro from '../components/Intro.vue'
 import Programs from '../components/Programs.vue'
+import CampRecapTeaser from '../components/CampRecapTeaser.vue'
 import WhySaha from '../components/WhySaha.vue'
 import CallToAction from '../components/CallToAction.vue'
 
-// Events.vue (the Summer Camp teaser block) used to live here. It moved to the
-// /enroll page so the homepage stays focused on year-round programs and the
-// Enroll CTA in the nav is the one path that surfaces summer + workshops.
-// The component file is intentionally left in src/components/ in case we want
-// to revive it later.
+// CampRecapTeaser replaced the old Events promo block: camp 2026 is over, so
+// instead of a signup pitch the homepage shows a photo-strip teaser linking to
+// the /summer-camp recap — visibility for the camp without burying the
+// year-round tutoring content it sits between.
 </script>
 
 <template>
   <Hero />
   <Intro />
   <Programs />
+  <CampRecapTeaser />
   <WhySaha />
   <CallToAction />
 </template>

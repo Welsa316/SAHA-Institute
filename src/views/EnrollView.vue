@@ -5,13 +5,14 @@ import { useI18n } from '../composables/useI18n'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 import ShinyButton from '../components/ShinyButton.vue'
 import WorkshopSignupModal from '../components/WorkshopSignupModal.vue'
+import CampGalleryGrid from '../components/CampGalleryGrid.vue'
 
 // The "Summer Signups" hub. Two paths a parent might take:
 //   1. Workshops — actual online form. Big amber CTA opens the form in an
 //      animated modal so the parent never leaves the context of "what am I
 //      signing up for." Surfaced first because it's the only online path.
-//   2. Summer Camp & STEM — manual signup over the phone. Tel: CTA + a
-//      "See full details" link to the long-form /summer-camp page.
+//   2. Summer Camp & STEM — 2026 enrollment is CLOSED; the panel now points to
+//      the /summer-camp recap and a phone CTA for next summer's list.
 //
 // Sections alternate dark / light / dark for visual rhythm:
 //   Hero (navy) -> Workshops (slate->white) -> Summer Camp (navy)
@@ -108,7 +109,7 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- Summer Camp & STEM — dark panel with the flyer image. Phone-only signup. -->
+    <!-- Summer Camp & STEM — 2026 wrapped; dark recap panel, no flyer. -->
     <section
       ref="summerRef"
       class="relative py-20 md:py-28 overflow-hidden bg-[#001B3D]"
@@ -117,24 +118,12 @@ onMounted(() => {
 
       <div class="relative max-w-6xl mx-auto px-6 md:px-12">
         <div class="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-          <!-- Flyer -->
+          <!-- Recap photo strip (placeholder tiles until camp photos land) -->
           <div
             class="transition-all duration-1000 ease-out"
             :class="summerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
           >
-            <div class="rounded-2xl overflow-hidden shadow-2xl shadow-black/30 border border-white/10">
-              <picture>
-                <source srcset="/summer-camp-2026.webp" type="image/webp" />
-                <img
-                  src="/summer-camp-2026.jpg"
-                  :alt="t('enroll.summerImageAlt')"
-                  width="532"
-                  height="751"
-                  class="w-full h-auto"
-                  loading="lazy"
-                />
-              </picture>
-            </div>
+            <CampGalleryGrid :photos="[]" :placeholder-count="4" compact />
           </div>
 
           <!-- Copy + CTAs -->
@@ -144,7 +133,7 @@ onMounted(() => {
           >
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-400/30 mb-5">
               <div class="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
-              <span class="font-body text-[10px] tracking-[0.3em] uppercase text-amber-300 font-bold">{{ t('enroll.summerBadge') }}</span>
+              <span class="font-body text-[10px] tracking-[0.3em] uppercase text-amber-300 font-bold">{{ t('enroll.summerClosedBadge') }}</span>
             </div>
 
             <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-4 leading-tight">
@@ -152,7 +141,7 @@ onMounted(() => {
             </h2>
 
             <p class="font-body text-white/70 mb-7 leading-relaxed">
-              {{ t('enroll.summerDescription') }}
+              {{ t('enroll.summerClosedDescription') }}
             </p>
 
             <!-- Key details -->
@@ -180,24 +169,24 @@ onMounted(() => {
             <!-- White pill against navy — high contrast, matches the dark-section
                  CTA pattern from the old homepage Events block. -->
             <div class="flex flex-wrap items-center gap-4">
-              <a
-                href="tel:+15043739778"
-                class="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors duration-300 shadow-xl shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-                {{ t('enroll.summerCallCta') }}
-              </a>
               <router-link
                 to="/summer-camp"
-                class="inline-flex items-center gap-2 font-body text-sm font-semibold text-white/80 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none rounded-md"
+                class="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors duration-300 shadow-xl shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
               >
-                {{ t('enroll.summerDetailsCta') }}
+                {{ t('enroll.summerRecapCta') }}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </router-link>
+              <a
+                href="tel:+15043739778"
+                class="inline-flex items-center gap-2 font-body text-sm font-semibold text-white/80 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none rounded-md"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                {{ t('enroll.summerAskCta') }}
+              </a>
             </div>
           </div>
         </div>
