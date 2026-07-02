@@ -19,7 +19,12 @@ const props = defineProps({
   endpoint: { type: String, required: true }, // /api/summer-camp | /api/stem-program
   title: { type: String, required: true },
   eyebrow: { type: String, required: true },
+  subtitle: { type: String, default: '' },
   emptyMessage: { type: String, default: 'No students on this roster yet.' },
+  // Archived rosters (a program that has ended) become a historical record:
+  // no Add student, no paid tracking — just the names. Notes and delete stay
+  // so a mistaken row can still be corrected.
+  archived: { type: Boolean, default: false },
 })
 
 const api = useAdminApi()
@@ -148,9 +153,10 @@ useModalA11y(() => addOpen.value, addPanel, () => { addOpen.value = false })
 
 <template>
   <main>
-    <PageHeader :eyebrow="eyebrow" :title="title" :count="students.length">
+    <PageHeader :eyebrow="eyebrow" :title="title" :subtitle="subtitle" :count="students.length">
       <template #actions>
         <button
+          v-if="!archived"
           type="button"
           @click="openAdd"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#001B3D] text-white font-body text-sm font-bold tracking-wider uppercase hover:bg-navy-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
@@ -174,7 +180,7 @@ useModalA11y(() => addOpen.value, addPanel, () => { addOpen.value = false })
       </div>
 
       <template v-else>
-        <p class="mb-5 font-body text-xs text-navy-400">{{ paidCount }} of {{ students.length }} paid</p>
+        <p v-if="!archived" class="mb-5 font-body text-xs text-navy-400">{{ paidCount }} of {{ students.length }} paid</p>
 
         <!-- One card per family; each child has its own paid toggle. -->
         <ul class="space-y-4">
@@ -195,18 +201,20 @@ useModalA11y(() => addOpen.value, addPanel, () => { addOpen.value = false })
             <ul class="divide-y divide-navy-100">
               <li v-for="kid in fam.kids" :key="kid.id" class="px-5 py-3.5 flex flex-wrap items-center gap-3">
                 <p class="font-body text-sm font-semibold text-navy-800 break-words min-w-0 flex-1 basis-40">{{ kid.studentName }}</p>
-                <span
-                  class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border whitespace-nowrap"
-                  :class="kid.paid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-navy-50 text-navy-500 border-navy-200'"
-                >
-                  {{ kid.paid ? 'Paid' : 'Not paid' }}
-                </span>
-                <ToggleSwitch
-                  :model-value="kid.paid"
-                  :disabled="isSaving(kid.id)"
-                  :label="`Mark ${kid.studentName} paid`"
-                  @update:model-value="(v) => patch(kid, { paid: v })"
-                />
+                <template v-if="!archived">
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-body font-bold border whitespace-nowrap"
+                    :class="kid.paid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-navy-50 text-navy-500 border-navy-200'"
+                  >
+                    {{ kid.paid ? 'Paid' : 'Not paid' }}
+                  </span>
+                  <ToggleSwitch
+                    :model-value="kid.paid"
+                    :disabled="isSaving(kid.id)"
+                    :label="`Mark ${kid.studentName} paid`"
+                    @update:model-value="(v) => patch(kid, { paid: v })"
+                  />
+                </template>
                 <div class="basis-full sm:basis-auto sm:flex-1 min-w-0">
                   <InlineNotes
                     :model-value="kid.notes"

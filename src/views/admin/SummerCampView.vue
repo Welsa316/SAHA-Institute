@@ -5,8 +5,10 @@ import CampRoster from '../../components/admin/CampRoster.vue'
 <template>
   <CampRoster
     endpoint="/api/summer-camp"
-    eyebrow="Roster"
-    title="Summer Camp"
-    empty-message="No campers on the roster yet. Use Add student to get started."
+    eyebrow="Archive"
+    title="Summer Camp 2026"
+    subtitle="Enrollment is closed — this roster is kept as the record of everyone who attended the June 2026 camp."
+    empty-message="No campers on this roster."
+    archived
   />
 </template>

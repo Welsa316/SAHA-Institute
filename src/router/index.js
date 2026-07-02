@@ -168,7 +168,7 @@ export const routes = [
         path: 'summer-camp',
         name: 'AdminSummerCamp',
         component: () => import('../views/admin/SummerCampView.vue'),
-        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Summer Camp | ${BASE_TITLE}` },
+        meta: { admin: true, requiresAuth: true, adminOnly: true, title: `Summer Camp 2026 | ${BASE_TITLE}` },
       },
       {
         path: 'stem-program',

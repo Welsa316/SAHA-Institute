@@ -14,7 +14,7 @@ const navItems = [
   { to: '/admin/schedule', label: 'Schedule', icon: 'calendar', adminOnly: false },
   { to: '/admin/teachers', label: 'Teachers', icon: 'cap', adminOnly: true },
   { to: '/admin/workshop-signups', label: 'Workshop Signups', icon: 'clipboard', adminOnly: true },
-  { to: '/admin/summer-camp', label: 'Summer Camp', icon: 'sun', adminOnly: true },
+  { to: '/admin/summer-camp', label: 'Camp 2026', icon: 'sun', adminOnly: true },
   { to: '/admin/stem-program', label: 'STEM Program', icon: 'beaker', adminOnly: true },
   { to: '/admin/students', label: 'Students', icon: 'users', adminOnly: true },
   { to: '/admin/payments', label: 'Payments', icon: 'card', adminOnly: true },
