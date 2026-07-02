@@ -1,12 +1,13 @@
 import { Router } from 'express'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, gte } from 'drizzle-orm'
+import { DateTime } from 'luxon'
 import { db } from '../db/index.js'
 import { enrollments, classInstances, students, teachers } from '../db/schema.js'
-import { enrollmentCreateSchema } from '../schemas/index.js'
+import { enrollmentCreateSchema, enrollmentRescheduleSchema, idParamSchema } from '../schemas/index.js'
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
-import { generateOccurrenceInstants, sixMonthsLater } from '../lib/schedule.js'
-import { notifyStudentScheduled } from '../lib/notifications.js'
+import { generateOccurrenceInstants, sixMonthsLater, CENTRAL_ZONE } from '../lib/schedule.js'
+import { notifyStudentScheduled, notifySeriesRescheduled } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 export const enrollmentsRouter: Router = Router()
@@ -86,6 +87,85 @@ enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
       user: res.locals.user?.username,
     })
     res.status(201).json({ enrollment, instancesGenerated: instants.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/enrollments/:id/reschedule (admin) — re-pattern a series from today
+// onward: new weekdays / start time / duration. Classes already held (or already
+// cancelled) stay as history at their old slots; FUTURE scheduled occurrences are
+// replaced with the new pattern through the series' original end date (the
+// 6-month horizon does not extend).
+enrollmentsRouter.post('/:id/reschedule', requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params)
+    const input = enrollmentRescheduleSchema.parse(req.body)
+
+    const [enrollment] = await db.select().from(enrollments).where(eq(enrollments.id, id)).limit(1)
+    if (!enrollment) throw new HttpError(404, 'Series not found.')
+    if (enrollment.status !== 'active') {
+      throw new HttpError(409, 'This series is cancelled — schedule a new class instead.')
+    }
+
+    const now = new Date()
+    const todayCentral = DateTime.now().setZone(CENTRAL_ZONE).toISODate() as string
+    // Regenerate from today through the ORIGINAL end date; drop any instant that
+    // is already in the past (e.g. earlier today).
+    const instants = generateOccurrenceInstants({
+      startDate: todayCentral,
+      endDate: enrollment.endDate,
+      daysOfWeek: input.daysOfWeek,
+      startTimeLocal: input.startTimeLocal,
+    }).filter((d) => d.getTime() >= now.getTime())
+
+    const result = await db.transaction(async (tx) => {
+      await tx
+        .update(enrollments)
+        .set({
+          daysOfWeek: input.daysOfWeek,
+          startTimeLocal: input.startTimeLocal,
+          durationMinutes: input.durationMinutes,
+          updatedAt: now,
+        })
+        .where(eq(enrollments.id, id))
+
+      // The future scheduled occurrences are being MOVED, so the old rows go
+      // away (they're not history — they never happened). Past rows and
+      // cancelled rows are untouched.
+      const removed = await tx
+        .delete(classInstances)
+        .where(
+          and(
+            eq(classInstances.enrollmentId, id),
+            eq(classInstances.status, 'scheduled'),
+            gte(classInstances.startsAtUtc, now),
+          ),
+        )
+        .returning({ id: classInstances.id })
+
+      if (instants.length > 0) {
+        await tx.insert(classInstances).values(
+          instants.map((startsAt) => ({
+            enrollmentId: id,
+            studentId: enrollment.studentId,
+            teacherId: enrollment.teacherId,
+            startsAtUtc: startsAt,
+            durationMinutes: input.durationMinutes,
+          })),
+        )
+      }
+      return { removed: removed.length, generated: instants.length }
+    })
+
+    notifySeriesRescheduled({
+      studentId: enrollment.studentId,
+      daysOfWeek: input.daysOfWeek,
+      startTimeLocal: input.startTimeLocal,
+      durationMinutes: input.durationMinutes,
+    })
+    logger.info('enrollment', 'rescheduled', { id, ...result, by: res.locals.user?.username })
+    res.json({ ok: true, instancesRemoved: result.removed, instancesGenerated: result.generated })
   } catch (err) {
     next(err)
   }

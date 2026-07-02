@@ -140,6 +140,61 @@ export function notifyAdminOfTeacherCancellation(args: { teacherId: number; inst
   })
 }
 
+// ---------- Class rescheduled (→ parent) ----------
+export function notifyClassRescheduled(args: { studentId: number; oldStartsAtUtc: Date; newStartsAtUtc: Date }): void {
+  fire('rescheduled', async () => {
+    const [s] = await db
+      .select({ name: students.studentName, email: students.parentEmail })
+      .from(students)
+      .where(eq(students.id, args.studentId))
+      .limit(1)
+    if (!s?.email) {
+      logger.info('notify', 'rescheduled: no parent email, skipped', { studentId: args.studentId })
+      return
+    }
+    const html = layout('Class rescheduled', `
+      <p><strong>${escapeHtml(s.name)}</strong>'s class has been moved:</p>
+      <table style="border-collapse: collapse; margin: 8px 0;">
+        <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Was</td><td style="padding: 4px 0; text-decoration: line-through; color: #94a3b8;">${escapeHtml(fmtDateTime(args.oldStartsAtUtc))}</td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Now</td><td style="padding: 4px 0;">${escapeHtml(fmtDateTime(args.newStartsAtUtc))}</td></tr>
+      </table>
+      <p>The rest of the schedule is unchanged.</p>`)
+    logger.info('notify', 'class rescheduled', { to: s.email })
+    await sendEmail({ to: [s.email], subject: `${s.name}'s class has moved`, html })
+  })
+}
+
+// ---------- Series rescheduled (→ parent) ----------
+export function notifySeriesRescheduled(args: {
+  studentId: number
+  daysOfWeek: number[]
+  startTimeLocal: string
+  durationMinutes: number
+}): void {
+  fire('series-rescheduled', async () => {
+    const [s] = await db
+      .select({ name: students.studentName, email: students.parentEmail })
+      .from(students)
+      .where(eq(students.id, args.studentId))
+      .limit(1)
+    if (!s?.email) {
+      logger.info('notify', 'series-rescheduled: no parent email, skipped', { studentId: args.studentId })
+      return
+    }
+    const days = [...args.daysOfWeek].sort((a, b) => a - b).map((d) => DAY_NAMES[d]).filter(Boolean).join(', ')
+    const html = layout('Schedule changed', `
+      <p><strong>${escapeHtml(s.name)}</strong>'s weekly schedule has changed. From today onward:</p>
+      <table style="border-collapse: collapse; margin: 8px 0;">
+        <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Days</td><td style="padding: 4px 0;">${escapeHtml(days)}</td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Time</td><td style="padding: 4px 0;">${escapeHtml(fmtTime(args.startTimeLocal))} Central</td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Length</td><td style="padding: 4px 0;">${args.durationMinutes} minutes</td></tr>
+      </table>
+      <p>Classes already held are unaffected.</p>`)
+    logger.info('notify', 'series rescheduled', { to: s.email })
+    await sendEmail({ to: [s.email], subject: `${s.name}'s weekly schedule has changed`, html })
+  })
+}
+
 // ---------- Teacher's classes cancelled, e.g. on teacher removal (→ parents) ----------
 export function notifyTeacherClassesCancelled(studentIds: number[], teacherName: string): void {
   fire('teacher-classes-cancelled', async () => {

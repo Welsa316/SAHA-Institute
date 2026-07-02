@@ -22,6 +22,14 @@ export function centralDateRangeToUtc(from: string, to: string): { fromUtc: Date
   return { fromUtc, toExclusiveUtc }
 }
 
+// Combine one Central date + wall-clock time into its UTC instant, and report
+// the Central weekday (1=Mon … 7=Sun) so callers can enforce Mon–Fri.
+export function centralDateTimeToUtc(date: string, timeLocal: string): { instant: Date; weekday: number } {
+  const [hour, minute] = timeLocal.split(':').map(Number)
+  const local = DateTime.fromISO(date, { zone: CENTRAL_ZONE }).set({ hour, minute, second: 0, millisecond: 0 })
+  return { instant: local.toJSDate(), weekday: local.weekday }
+}
+
 // Generate the UTC start instants for a recurring class: for every date from
 // startDate through endDate (inclusive) whose weekday is in daysOfWeek
 // (1=Mon … 5=Fri, matching Luxon's weekday numbering), combine the date with the

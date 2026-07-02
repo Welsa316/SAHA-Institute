@@ -51,6 +51,12 @@ export function useSchedule() {
     cancelInstance(id) {
       return api(`/api/instances/${id}/cancel`, { method: 'POST' })
     },
+    rescheduleInstance(id, body) {
+      return api(`/api/instances/${id}/reschedule`, { method: 'POST', body: JSON.stringify(body) })
+    },
+    rescheduleEnrollment(id, body) {
+      return api(`/api/enrollments/${id}/reschedule`, { method: 'POST', body: JSON.stringify(body) })
+    },
     cancelStudentSchedule(studentId) {
       return api(`/api/students/${studentId}/cancel-schedule`, { method: 'POST' })
     },

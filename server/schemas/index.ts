@@ -139,6 +139,25 @@ export const enrollmentCreateSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be YYYY-MM-DD.'),
 })
 
+// Move ONE occurrence to a new Central date + start time. Duration and teacher
+// stay as they are; the series is untouched.
+export const instanceRescheduleSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD.'),
+  startTimeLocal: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be HH:mm (24-hour).'),
+})
+
+// Re-pattern a whole series from today onward: new weekdays / start time /
+// duration. Past classes are left as history; the 6-month end date is unchanged.
+export const enrollmentRescheduleSchema = z.object({
+  daysOfWeek: z
+    .array(z.number().int().min(1).max(5))
+    .min(1, 'Pick at least one weekday.')
+    .max(5)
+    .refine((a) => new Set(a).size === a.length, 'Weekdays must be unique.'),
+  startTimeLocal: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be HH:mm (24-hour).'),
+  durationMinutes: z.number().int().min(5).max(600),
+})
+
 // Calendar range query. from/to are 'YYYY-MM-DD' (inclusive). teacher_id filters
 // (admin only; ignored/forced for teacher accounts server-side).
 export const instancesQuerySchema = z.object({
