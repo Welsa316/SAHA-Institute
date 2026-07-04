@@ -1,0 +1,13 @@
+{
+  "name": "SAHA Institute For Learning",
+  "short_name": "SAHA",
+  "description": "One-on-one tutoring in academics, Islamic studies, and standardized test prep in Kenner, LA.",
+  "icons": [
+    { "src": "/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/web-app-manifest-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "theme_color": "#001B3D",
+  "background_color": "#001B3D",
+  "display": "standalone",
+  "start_url": "/"
+}
