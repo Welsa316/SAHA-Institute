@@ -4,6 +4,7 @@ import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 import { useI18n } from '../composables/useI18n'
 import CampTimeline from '../components/CampTimeline.vue'
 import CampGalleryGrid from '../components/CampGalleryGrid.vue'
+import { CAMP_GALLERIES, CAMP_GALLERY_DAYS } from '../constants/campGallery.js'
 
 const { t } = useI18n()
 
@@ -13,21 +14,15 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 // Camp 2026 is over: this page is the recap. Enrollment CTAs are gone; the
 // flyers are gone; the story is told as a scroll timeline with photo grids.
 //
-// PHOTOS: drop images into public/camp-gallery/ and list them here — e.g.
-//   mornings: [{ src: '/camp-gallery/mornings-1.webp', alt: 'Morning Quran circle' }],
-// Until a chapter has photos, it shows "photos coming soon" tiles.
-// One gallery per camp day. Fill a day by listing its images, e.g.
-//   day3: [{ src: '/camp-gallery/day3-1.webp', alt: 'Slime lab' }],
-// Day count is provisional (20, pending the photo sort) — trim or extend
-// CAMP_DAYS once the camera roll settles.
-const CAMP_DAYS = 20
-const galleries = Object.fromEntries(
-  Array.from({ length: CAMP_DAYS }, (_, i) => [`day${i + 1}`, []]),
-)
+// PHOTOS: the real STEM Club camera roll, one folder per day under
+// public/camp-gallery/day1..day15 (no STEM on Fridays, so the month is 15
+// days; day 15 is the final day). The per-day arrays live in
+// src/constants/campGallery.js — regenerate that file when photos change.
+const CAMP_DAYS = CAMP_GALLERY_DAYS
+const galleries = CAMP_GALLERIES
 
-// The timeline runs day by day: Day 1 … Day 20. Each entry is a photo grid
-// for now; per-day captions get added along with the photos. (computed so
-// titles follow live locale switches.)
+// The timeline runs day by day: Day 1 … Day 15. (computed so titles follow
+// live locale switches.)
 const days = computed(() =>
   Array.from({ length: CAMP_DAYS }, (_, i) => ({
     id: `day${i + 1}`,

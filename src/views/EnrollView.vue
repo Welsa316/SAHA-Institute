@@ -6,6 +6,7 @@ import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 import ShinyButton from '../components/ShinyButton.vue'
 import WorkshopSignupModal from '../components/WorkshopSignupModal.vue'
 import CampGalleryGrid from '../components/CampGalleryGrid.vue'
+import { CAMP_GALLERIES } from '../constants/campGallery.js'
 
 // The "Summer Signups" hub. Two paths a parent might take:
 //   1. Workshops — actual online form. Big amber CTA opens the form in an
@@ -132,7 +133,11 @@ onMounted(() => {
             class="transition-all duration-1000 ease-out"
             :class="summerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
           >
-            <CampGalleryGrid :photos="[]" :placeholder-count="4" compact />
+            <CampGalleryGrid
+              :photos="[CAMP_GALLERIES.day2[0], CAMP_GALLERIES.day8[0], CAMP_GALLERIES.day12[0], CAMP_GALLERIES.day14[0]]"
+              :placeholder-count="4"
+              compact
+            />
           </div>
 
           <!-- Copy + CTAs -->

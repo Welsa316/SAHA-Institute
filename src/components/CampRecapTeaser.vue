@@ -2,16 +2,21 @@
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 import { useI18n } from '../composables/useI18n'
 import CampGalleryGrid from './CampGalleryGrid.vue'
+import { CAMP_GALLERIES } from '../constants/campGallery.js'
 
 // Home-page teaser for the Summer Camp 2026 recap: a compact photo strip that
 // gives every visitor the visual hook and one click through to the full
-// timeline on /summer-camp. Photos land here the same way as on the recap page
-// (public/camp-gallery/) — until then the grid shows its coming-soon tiles.
+// timeline on /summer-camp. Four highlights spread across the month.
 
 const { t } = useI18n()
 const { sectionRef, isVisible } = useIntersectionReveal(0.15)
 
-const photos = [] // e.g. [{ src: '/camp-gallery/highlight-1.webp', alt: '…' }]
+const photos = [
+  CAMP_GALLERIES.day1[0],
+  CAMP_GALLERIES.day6[0],
+  CAMP_GALLERIES.day11[0],
+  CAMP_GALLERIES.day15[0],
+]
 </script>
 
 <template>
