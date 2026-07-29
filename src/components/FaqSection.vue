@@ -100,13 +100,20 @@ const activeItem = computed(() => (active.value === null ? null : items.value[ac
                   </span>
                 </button>
                 <!-- Inline answer: visible expansion on mobile, sr-only on md+
-                     (the visual answer lives in the right panel there). -->
+                     (the visual answer lives in the right panel there).
+                     grid-rows 0fr→1fr animates the height to its natural size —
+                     the CSS trick that lets "auto height" transition smoothly. -->
                 <div
-                  v-show="active === i"
                   :id="`faq-answer-${i}`"
-                  class="px-5 pb-5 -mt-1 md:sr-only"
+                  class="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none md:sr-only"
+                  :class="active === i ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
                 >
-                  <p class="font-body text-sm text-navy-500 leading-relaxed">{{ item.a }}</p>
+                  <div class="overflow-hidden">
+                    <p
+                      class="px-5 pb-5 font-body text-sm text-navy-500 leading-relaxed transition-opacity duration-300 ease-out motion-reduce:transition-none"
+                      :class="active === i ? 'opacity-100 delay-100' : 'opacity-0'"
+                    >{{ item.a }}</p>
+                  </div>
                 </div>
               </div>
             </li>
@@ -116,21 +123,32 @@ const activeItem = computed(() => (active.value === null ? null : items.value[ac
         <!-- Right: active answer panel (desktop only; duplicate of the inline
              answer, so hidden from assistive tech). -->
         <div class="hidden md:block md:sticky md:top-28" aria-hidden="true">
-          <div class="rounded-3xl bg-[#001B3D] text-white p-8 lg:p-10 min-h-[340px] flex flex-col">
-            <template v-if="activeItem">
-              <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
-                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-                </svg>
+          <div class="rounded-3xl bg-[#001B3D] text-white p-8 lg:p-10 min-h-[340px] flex flex-col overflow-hidden">
+            <!-- out-in swap: the old answer slips up and fades, the new one
+                 rises in — content moves over a stable navy card, never the
+                 card itself. -->
+            <Transition
+              mode="out-in"
+              enter-active-class="transition-all duration-300 ease-out motion-reduce:transition-none"
+              enter-from-class="opacity-0 translate-y-4"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition-all duration-150 ease-in motion-reduce:transition-none"
+              leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-2"
+            >
+              <div v-if="activeItem" :key="active" class="flex flex-col flex-1">
+                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                  <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                  </svg>
+                </div>
+                <h3 class="font-heading text-2xl font-bold tracking-tight mb-4">{{ activeItem.q }}</h3>
+                <p class="font-body text-[15px] leading-relaxed text-white/80">{{ activeItem.a }}</p>
               </div>
-              <h3 class="font-heading text-2xl font-bold tracking-tight mb-4">{{ activeItem.q }}</h3>
-              <p class="font-body text-[15px] leading-relaxed text-white/80">{{ activeItem.a }}</p>
-            </template>
-            <template v-else>
-              <div class="m-auto text-center">
+              <div v-else key="hint" class="m-auto text-center">
                 <p class="font-body text-sm text-white/60">{{ t('faq.panelHint') }}</p>
               </div>
-            </template>
+            </Transition>
           </div>
         </div>
       </div>
