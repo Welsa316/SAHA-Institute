@@ -31,6 +31,7 @@ const { t } = useI18n()
             <router-link to="/#programs" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none">{{ t('nav.programs') }}</router-link>
             <router-link to="/about" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none">{{ t('nav.about') }}</router-link>
             <router-link to="/contact" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none">{{ t('nav.contact') }}</router-link>
+            <router-link to="/careers" class="font-body text-sm text-navy-400 hover:text-white transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none">{{ t('careers.badge') }}</router-link>
           </div>
         </div>
 

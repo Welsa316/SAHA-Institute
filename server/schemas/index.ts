@@ -196,6 +196,30 @@ export const teacherSetupSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters.').max(200),
 })
 
+// Public tutor job application. No DB row — the submission is forwarded to the
+// admin inbox via Resend (resume attached when provided). Phone is free-form
+// because applicants may be international (the form asks for country).
+// Resume: base64 without the data-URL prefix; ~5MB binary ≈ 6.9M base64 chars.
+export const tutorApplicationSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().toLowerCase().email().max(200),
+  phone: z.string().trim().min(5).max(30),
+  country: z.string().trim().min(2).max(60),
+  age: z.number().int().min(18, 'Applicants must be 18 or older.').max(90),
+  gender: z.enum(['female', 'male', 'prefer_not']),
+  education: z.string().trim().min(10, 'Tell us a bit more about your background.').max(5000),
+  resume: z
+    .object({
+      fileName: z
+        .string()
+        .trim()
+        .max(200)
+        .regex(/\.(pdf|docx?)$/i, 'Resume must be a PDF or Word document.'),
+      base64: z.string().min(1).max(7_100_000, 'Resume must be 5 MB or smaller.'),
+    })
+    .optional(),
+})
+
 export type LoginInput = z.infer<typeof loginSchema>
 export type WorkshopSignupCreate = z.infer<typeof workshopSignupCreateSchema>
 export type WorkshopSignupUpdate = z.infer<typeof workshopSignupUpdateSchema>

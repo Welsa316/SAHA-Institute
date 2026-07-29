@@ -15,7 +15,7 @@ export default defineConfig({
     dirStyle: 'flat',
     crittersOptions: false, // skip critical-CSS inlining (avoids the optional beasties/critters dep)
     includedRoutes(paths) {
-      const prerender = new Set(['/', '/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/register'])
+      const prerender = new Set(['/', '/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/register', '/careers'])
       return paths.filter((p) => prerender.has(p))
     },
   },

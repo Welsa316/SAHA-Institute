@@ -10,6 +10,10 @@ interface SendArgs {
   subject: string
   html: string
   from?: string
+  // Resend attachment shape: base64 content + filename. Used by the tutor
+  // application form to forward resumes; total email size cap is Resend's
+  // 40MB, our route caps uploads well below that.
+  attachments?: { filename: string; content: string }[]
 }
 
 const DEFAULT_FROM = 'SAHA Institute <contact@sahainstituteforlearning.com>'
@@ -26,10 +30,10 @@ export function siteOrigin(): string {
   return process.env.SITE_ORIGIN?.trim() || 'https://sahainstituteforlearning.com'
 }
 
-export async function sendEmail({ to, subject, html, from = DEFAULT_FROM }: SendArgs): Promise<boolean> {
+export async function sendEmail({ to, subject, html, from = DEFAULT_FROM, attachments }: SendArgs): Promise<boolean> {
   const key = process.env.RESEND_API_KEY
   if (!key) {
-    logger.warn('email', 'RESEND_API_KEY missing — skipping send', { subject })
+    logger.warn('email', 'RESEND_API_KEY missing — skipping send', { subject, attachments: attachments?.length ?? 0 })
     return false
   }
 
@@ -40,7 +44,7 @@ export async function sendEmail({ to, subject, html, from = DEFAULT_FROM }: Send
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({ from, to, subject, html, ...(attachments?.length ? { attachments } : {}) }),
     })
 
     if (!res.ok) {

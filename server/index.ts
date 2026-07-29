@@ -22,6 +22,7 @@ import { teachersRouter } from './routes/teachers.js'
 import { instancesRouter } from './routes/instances.js'
 import { scheduleRouter, studentScheduleRouter } from './routes/schedule.js'
 import { teacherSetupRouter } from './routes/teacherSetup.js'
+import { tutorApplicationsRouter } from './routes/tutorApplications.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -46,6 +47,10 @@ app.use(
 // Railway terminates TLS at its proxy. Tell Express so req.ip and rate-limit work right.
 app.set('trust proxy', 1)
 
+// Tutor applications carry a base64 resume (≤5MB file ≈ 7MB JSON), so that one
+// path gets its own parser BEFORE the tight global limit — body-parser marks
+// the body consumed, so the global 10kb parser skips these requests.
+app.use('/api/tutor-applications', express.json({ limit: '8mb' }))
 app.use(express.json({ limit: '10kb' }))
 app.use(cookieParser())
 
@@ -71,6 +76,7 @@ app.use('/api/teachers', teachersRouter)
 app.use('/api/instances', instancesRouter)
 app.use('/api/schedule', scheduleRouter)
 app.use('/api/teacher-setup', teacherSetupRouter) // public, token-gated
+app.use('/api/tutor-applications', tutorApplicationsRouter) // public, email-only
 
 // ---------- Static frontend ----------
 // In production the Vite build lands in /dist. In dev (`npm run dev`) Vite serves the
@@ -109,7 +115,7 @@ app.use(
 // Public routes vite-ssg prerendered to flat <route>.html files. Everything else
 // (auth/admin) gets the clean empty shell to hydrate client-side. ('/' is served
 // as the prerendered dist/index.html by express.static above.)
-const PRERENDERED_ROUTES = new Set(['/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/register'])
+const PRERENDERED_ROUTES = new Set(['/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/register', '/careers'])
 
 app.get(/^(?!\/api).*/, (req, res) => {
   if (req.path.startsWith('/assets/')) {

@@ -56,6 +56,15 @@ export const routes = [
       description: 'Enroll your student in SAHA Institute summer camp, STEM, or workshops. Online workshop signup, phone enrollment for summer programs.',
     },
   },
+  {
+    path: '/careers',
+    name: 'Careers',
+    component: () => import('../views/CareersView.vue'),
+    meta: {
+      title: `Join Our Team | ${BASE_TITLE}`,
+      description: 'Apply to teach at SAHA Institute in Kenner, LA. We\'re looking for tutors who love one-on-one teaching — submit your application and resume online.',
+    },
+  },
   // /signup is the old standalone workshop-signup URL. The form moved into a
   // modal on /enroll so we redirect there with ?signup=1, which EnrollView reads
   // on mount to auto-open the modal — keeps any old bookmarks landing in the form.
