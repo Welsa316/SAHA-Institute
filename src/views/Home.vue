@@ -4,6 +4,7 @@ import Intro from '../components/Intro.vue'
 import Programs from '../components/Programs.vue'
 import CampRecapTeaser from '../components/CampRecapTeaser.vue'
 import WhySaha from '../components/WhySaha.vue'
+import FaqSection from '../components/FaqSection.vue'
 import CallToAction from '../components/CallToAction.vue'
 
 // CampRecapTeaser replaced the old Events promo block: camp 2026 is over, so
@@ -18,5 +19,6 @@ import CallToAction from '../components/CallToAction.vue'
   <Programs />
   <CampRecapTeaser />
   <WhySaha />
+  <FaqSection />
   <CallToAction />
 </template>

@@ -423,6 +423,33 @@ export default {
       },
     ],
   },
+  faq: {
+    badge: 'FAQ',
+    heading1: 'Frequently Asked',
+    heading2: 'Questions',
+    emailLabel: 'Email',
+    email: 'sahaforlearning@gmail.com',
+    cta: 'Get in touch',
+    panelHint: 'Pick a question to see the answer.',
+    items: [
+      {
+        q: 'What does enrollment look like?',
+        a: 'Create a student account on our Register page — it takes about a minute. Our team reviews every registration, and once it\'s approved we set up a short meeting with the parents to talk through goals, subjects, and the right teacher. Classes are only scheduled after that conversation, so every schedule starts with a plan.',
+      },
+      {
+        q: 'How do we pick a time slot?',
+        a: 'After the parent meeting, we build the schedule together around your availability. Classes run Monday through Friday, 3:15–9:00 PM, and every student gets their own weekly time slot with their teacher. Enrolling siblings? Each child gets a separate slot of their own.',
+      },
+      {
+        q: 'What if we\'re in a different time zone?',
+        a: 'All classes run on Central Time — we\'re in Kenner, Louisiana. If your family is somewhere else, we confirm the equivalent time where you live when we schedule, so there\'s never confusion about when class starts.',
+      },
+      {
+        q: 'What if we need to cancel a class?',
+        a: 'Life happens — just call or WhatsApp us. We can cancel a single class or pause the whole schedule, and if we ever close for a day, that day\'s classes are cancelled for everyone. Parents automatically receive an email whenever their student\'s class is cancelled, moved, or rescheduled.',
+      },
+    ],
+  },
   cta: {
     badge: 'Get Started',
     heading: 'Ready to help your child',
