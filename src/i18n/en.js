@@ -8,6 +8,8 @@ export default {
     signup: 'Sign Up',
     about: 'About',
     contact: 'Contact',
+    workshops: 'Workshops',
+    enrollPage: 'Enroll',
     // Button is the entry point to summer events — workshops + camp. The label
     // names the time-bounded context explicitly so a parent doesn't read it as
     // "make an account" or "enroll in tutoring." Both ambiguities were flagged

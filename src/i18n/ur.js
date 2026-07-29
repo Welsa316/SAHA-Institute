@@ -5,6 +5,8 @@ export default {
     signup: 'سائن اپ',
     about: 'ہمارے بارے میں',
     contact: 'رابطہ',
+    workshops: 'ورکشاپس',
+    enrollPage: 'داخلہ',
     enroll: 'گرمیوں کا سائن اپ',
     register: 'رجسٹر',
     saha: 'ساہا',

@@ -1,5 +1,4 @@
 <script setup>
-import { useRouter } from 'vue-router'
 
 // SAHA's primary CTA button. Solid amber fill with deep-navy text so it reads
 // against both surfaces it has to live on: the dark hero (where the navbar is
@@ -31,17 +30,11 @@ const props = defineProps({
 
 const emit = defineEmits(['click'])
 
-const router = useRouter()
-
+// Emits only. When `to` is set the template's <a> handles navigation via the
+// router-link custom slot's navigate() — a caller that calls preventDefault in
+// its @click listener suppresses it (used when the CTA opens a modal instead).
 function handleClick(event) {
   emit('click', event)
-  // Caller can preventDefault to suppress navigation — used when the button
-  // opens a modal instead of routing.
-  if (event.defaultPrevented) return
-  if (props.to) {
-    event.preventDefault()
-    router.push(props.to)
-  }
 }
 
 const sizeClasses = {
@@ -52,25 +45,36 @@ const sizeClasses = {
 </script>
 
 <template>
+  <!-- With `to`, the CTA renders as a REAL <a href> — search engines can't
+       follow a JS-only button, which orphaned /workshops from the nav.
+       Navigation stays client-side via navigate(); a listener that calls
+       preventDefault still suppresses it, same contract as before. Without
+       `to` it stays a true <button> (keyboard + AT semantics intact). -->
+  <router-link v-if="to" :to="to" custom v-slot="{ href, navigate }">
+    <a
+      :href="href"
+      @click="(e) => { handleClick(e); if (!e.defaultPrevented) navigate(e) }"
+      :class="['shiny-button group', sizeClasses[size]]"
+      class="relative inline-block overflow-hidden rounded-full font-body font-bold tracking-[0.18em] uppercase text-navy-950 bg-amber-400 transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:bg-amber-300 active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 focus:outline-none"
+    >
+      <span class="relative z-10 inline-flex items-center gap-2 whitespace-nowrap">
+        <slot>{{ label }}</slot>
+      </span>
+      <span class="shiny-sweep absolute inset-0 z-[5] pointer-events-none" aria-hidden="true"></span>
+      <span class="shiny-border absolute inset-0 z-[6] pointer-events-none rounded-[inherit] p-px" aria-hidden="true"></span>
+    </a>
+  </router-link>
   <button
+    v-else
     type="button"
     @click="handleClick"
     :class="['shiny-button group', sizeClasses[size]]"
     class="relative overflow-hidden rounded-full font-body font-bold tracking-[0.18em] uppercase text-navy-950 bg-amber-400 transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:bg-amber-300 active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 focus:outline-none"
   >
-    <!-- Static label baseline — readable even before the shimmer animation runs
-         on first paint. Anchored above the moving overlay via z-10. -->
     <span class="relative z-10 inline-flex items-center gap-2 whitespace-nowrap">
       <slot>{{ label }}</slot>
     </span>
-
-    <!-- The shimmer overlay. A bright white slice sweeps diagonally across the
-         pill. Resting state is amber (not transparent like the earlier draft),
-         so the sweep needs to be bright enough to actually read. -->
     <span class="shiny-sweep absolute inset-0 z-[5] pointer-events-none" aria-hidden="true"></span>
-
-    <!-- Tracer ring: a thin border-only gradient pulses along the rim. Reads as
-         the "shine" of polished metal/coin alongside the surface sweep. -->
     <span class="shiny-border absolute inset-0 z-[6] pointer-events-none rounded-[inherit] p-px" aria-hidden="true"></span>
   </button>
 </template>
