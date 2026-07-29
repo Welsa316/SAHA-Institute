@@ -32,6 +32,7 @@ const tileClass = (i) =>
         loading="lazy"
         class="rounded-xl object-cover w-full shadow-[0_0_24px_rgba(2,27,61,0.06),0_1px_1px_rgba(0,0,0,0.05),0_0_0_1px_rgba(2,27,61,0.04),0_16px_68px_rgba(2,27,61,0.05)]"
         :class="tileClass(i)"
+        :style="p.pos ? { objectPosition: p.pos } : undefined"
       />
     </template>
     <template v-else>
