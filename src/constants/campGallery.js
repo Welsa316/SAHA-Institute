@@ -21,7 +21,7 @@ export const CAMP_GALLERIES = {
   ],
   day4: [
     { src: '/camp-gallery/day4/1.webp', alt: 'SAHA STEM Club — Day 4, photo 1' },
-    { src: '/camp-gallery/day4/2.webp', alt: 'SAHA STEM Club — Day 4, photo 2', pos: '50% 20%' },
+    { src: '/camp-gallery/day4/2.webp', alt: 'SAHA STEM Club — Day 4, photo 2', pos: '50% 0%' },
     { src: '/camp-gallery/day4/3.webp', alt: 'SAHA STEM Club — Day 4, photo 3', pos: '50% 12%' },
     { src: '/camp-gallery/day4/4.webp', alt: 'SAHA STEM Club — Day 4, photo 4' },
   ],
@@ -84,7 +84,7 @@ export const CAMP_GALLERIES = {
   ],
   day14: [
     { src: '/camp-gallery/day14/1.webp', alt: 'SAHA STEM Club — Day 14, photo 1' },
-    { src: '/camp-gallery/day14/2.webp', alt: 'SAHA STEM Club — Day 14, photo 2', pos: '50% 30%' },
+    { src: '/camp-gallery/day14/2.webp', alt: 'SAHA STEM Club — Day 14, photo 2', pos: '50% 5%' },
   ],
   day15: [
     { src: '/camp-gallery/day15/1.webp', alt: 'SAHA STEM Club — Day 15, photo 1' },
