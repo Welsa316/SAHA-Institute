@@ -90,11 +90,14 @@ const stemChip =
 
 <template>
   <div ref="containerRef" class="w-full">
-    <!-- Column headers (md+): one label over each branch of the trunk -->
-    <div class="hidden md:grid max-w-6xl mx-auto px-6 md:px-12 md:grid-cols-[1fr_88px_1fr] items-center mb-2">
-      <div class="flex justify-center"><span :class="summerChip">☀ {{ t('summerCamp.branchSummer') }}</span></div>
-      <div></div>
-      <div class="flex justify-center"><span :class="stemChip">⚙ {{ t('summerCamp.branchStem') }}</span></div>
+    <!-- Column headers (md+): pinned for the whole scroll so it's never
+         ambiguous which branch is which — they ride above the photos. -->
+    <div class="hidden md:block sticky top-24 z-30 pointer-events-none">
+      <div class="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-[1fr_88px_1fr] items-center py-2">
+        <div class="flex justify-center"><span :class="summerChip" class="shadow-md ring-1 ring-white">☀ {{ t('summerCamp.branchSummer') }}</span></div>
+        <div></div>
+        <div class="flex justify-center"><span :class="stemChip" class="shadow-md ring-1 ring-white">⚙ {{ t('summerCamp.branchStem') }}</span></div>
+      </div>
     </div>
 
     <div ref="entriesRef" class="relative max-w-6xl mx-auto px-6 md:px-12 pb-16 md:pb-24">
@@ -105,48 +108,59 @@ const stemChip =
       >
         <h3 class="sr-only">{{ t('summerCamp.dayLabel') }} {{ e.day }}</h3>
 
-        <!-- Mobile day marker: node sits on the left rail -->
-        <div class="md:hidden relative pl-12 mb-4">
-          <div
-            data-day-node
-            class="absolute left-0 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white border shadow-sm flex items-center justify-center font-heading text-sm font-extrabold transition-colors duration-500 motion-reduce:transition-none"
-            :class="i < litCount ? 'border-academic-300 text-academic-700' : 'border-navy-100 text-navy-300'"
+        <!-- Mobile day marker: sticky, so the current day rides along as its
+             photos scroll past, then hands off to the next day's marker. -->
+        <div class="md:hidden sticky top-24 z-20 mb-4">
+          <div class="inline-flex items-center gap-2.5 rounded-full bg-white/95 border shadow-md ps-1.5 pe-4 py-1.5 transition-colors duration-500 motion-reduce:transition-none"
+            :class="i < litCount ? 'border-academic-200' : 'border-navy-100'"
           >
-            {{ e.day }}
+            <span
+              data-day-node
+              class="h-8 w-8 rounded-full flex items-center justify-center font-heading text-sm font-extrabold transition-colors duration-500 motion-reduce:transition-none"
+              :class="i < litCount ? 'bg-academic-50 text-academic-700' : 'bg-navy-50 text-navy-300'"
+            >{{ e.day }}</span>
+            <span class="font-heading text-lg font-extrabold" :class="i < litCount ? 'text-navy-800' : 'text-navy-300'">
+              {{ t('summerCamp.dayLabel') }} {{ e.day }}
+            </span>
           </div>
-          <p class="font-heading text-2xl font-extrabold text-navy-300">{{ t('summerCamp.dayLabel') }} {{ e.day }}</p>
         </div>
 
         <!-- Summer branch -->
         <div class="mb-6 md:mb-0 pl-12 md:pl-0">
-          <div class="md:hidden mb-3"><span :class="summerChip">☀ {{ t('summerCamp.branchSummer') }}</span></div>
+          <div class="mb-3"><span :class="summerChip">☀ {{ t('summerCamp.branchSummer') }}</span></div>
           <CampGalleryGrid :photos="e.summer" :placeholder-count="2" />
         </div>
 
-        <!-- Trunk node (md+) -->
-        <div class="hidden md:block relative">
-          <div class="absolute top-[30px] left-0 right-0 h-px bg-navy-100" aria-hidden="true"></div>
-          <div class="relative flex flex-col items-center">
-            <div
-              data-day-node
-              class="h-[60px] w-[60px] rounded-full bg-white border shadow-sm flex flex-col items-center justify-center transition-colors duration-500 motion-reduce:transition-none"
-              :class="i < litCount ? 'border-academic-300' : 'border-navy-100'"
-            >
-              <span
-                class="font-body text-[8px] font-bold uppercase tracking-[0.2em] transition-colors duration-500 motion-reduce:transition-none"
-                :class="i < litCount ? 'text-academic-500' : 'text-navy-300'"
-              >{{ t('summerCamp.dayLabel') }}</span>
-              <span
-                class="font-heading text-xl font-extrabold leading-none transition-colors duration-500 motion-reduce:transition-none"
-                :class="i < litCount ? 'text-academic-700' : 'text-navy-300'"
-              >{{ e.day }}</span>
+        <!-- Trunk node (md+): sticky within its day, so the number travels down
+             the trunk with the reader and is pushed off by the next day. -->
+        <div class="hidden md:block relative z-10">
+          <div class="md:sticky md:top-40">
+            <!-- branch arms: amber toward Summer Camp, blue toward STEM (logical
+                 sides, so the colors follow the columns in RTL too) -->
+            <div class="absolute top-[34px] start-0 w-1/2 h-[3px] rounded-full bg-gradient-to-l from-amber-200 to-transparent rtl:bg-gradient-to-r" aria-hidden="true"></div>
+            <div class="absolute top-[34px] end-0 w-1/2 h-[3px] rounded-full bg-gradient-to-r from-academic-200 to-transparent rtl:bg-gradient-to-l" aria-hidden="true"></div>
+            <div class="relative flex flex-col items-center">
+              <div
+                data-day-node
+                class="h-[72px] w-[72px] rounded-full bg-white border-2 ring-4 ring-white shadow-md flex flex-col items-center justify-center transition-all duration-500 motion-reduce:transition-none"
+                :class="i < litCount ? 'border-academic-400 scale-105' : 'border-navy-100'"
+              >
+                <span
+                  class="font-body text-[9px] font-bold uppercase tracking-[0.2em] transition-colors duration-500 motion-reduce:transition-none"
+                  :class="i < litCount ? 'text-academic-500' : 'text-navy-300'"
+                >{{ t('summerCamp.dayLabel') }}</span>
+                <span
+                  class="font-heading text-2xl font-extrabold leading-none transition-colors duration-500 motion-reduce:transition-none"
+                  :class="i < litCount ? 'text-academic-700' : 'text-navy-300'"
+                >{{ e.day }}</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- STEM branch: photos through stemDays, a wrapped cap right after, then air -->
         <div v-if="e.stem" class="pl-12 md:pl-0">
-          <div class="md:hidden mb-3"><span :class="stemChip">⚙ {{ t('summerCamp.branchStem') }}</span></div>
+          <div class="mb-3"><span :class="stemChip">⚙ {{ t('summerCamp.branchStem') }}</span></div>
           <CampGalleryGrid :photos="e.stem" :placeholder-count="2" />
         </div>
         <div v-else-if="e.day === stemDays + 1" class="pl-12 md:pl-0 md:flex md:items-start md:justify-center md:pt-3">
@@ -159,10 +173,11 @@ const stemChip =
         </div>
       </section>
 
-      <!-- Trunk: left rail on mobile, centered on md+ -->
+      <!-- Trunk: left rail on mobile, centered on md+. z-0 keeps it BEHIND the
+           day nodes (z-10) — it must never draw across the numbers. -->
       <div
         :style="{ height: railHeight + 'px' }"
-        class="absolute top-0 overflow-hidden w-[2px] left-[41px] md:left-1/2 md:-translate-x-1/2 bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-navy-100 to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_6%,black_94%,transparent_100%)]"
+        class="absolute z-0 top-0 overflow-hidden w-[2px] left-[41px] md:left-1/2 md:-translate-x-1/2 bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-navy-100 to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_6%,black_94%,transparent_100%)]"
         aria-hidden="true"
       >
         <div
