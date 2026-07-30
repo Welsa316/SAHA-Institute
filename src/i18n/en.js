@@ -314,6 +314,9 @@ export default {
     // Timeline entries: the month, day by day. Photo grids fill in as the
     // camera roll gets sorted; per-day captions come with the photos.
     dayLabel: 'Day',
+    branchSummer: 'Summer Camp',
+    branchStem: 'STEM Club',
+    stemWrapped: 'STEM Club wrapped — 15 days',
     dailyHeading: 'How every day ran',
     // June highlights — transcribed from the "June: done!" flyer.
     juneHeading: 'What June held',

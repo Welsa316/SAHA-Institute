@@ -2,9 +2,8 @@
 import { computed } from 'vue'
 import { useIntersectionReveal } from '../composables/useIntersectionReveal'
 import { useI18n } from '../composables/useI18n'
-import CampTimeline from '../components/CampTimeline.vue'
-import CampGalleryGrid from '../components/CampGalleryGrid.vue'
-import { CAMP_GALLERIES, CAMP_GALLERY_DAYS } from '../constants/campGallery.js'
+import CampBranchTimeline from '../components/CampBranchTimeline.vue'
+import { SUMMER_GALLERIES, SUMMER_DAYS, STEM_GALLERIES, STEM_DAYS } from '../constants/campGallery.js'
 
 const { t } = useI18n()
 
@@ -14,19 +13,18 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 // Camp 2026 is over: this page is the recap. Enrollment CTAs are gone; the
 // flyers are gone; the story is told as a scroll timeline with photo grids.
 //
-// PHOTOS: the real STEM Club camera roll, one folder per day under
-// public/camp-gallery/day1..day15 (no STEM on Fridays, so the month is 15
-// days; day 15 is the final day). The per-day arrays live in
-// src/constants/campGallery.js — regenerate that file when photos change.
-const CAMP_DAYS = CAMP_GALLERY_DAYS
-const galleries = CAMP_GALLERIES
-
-// The timeline runs day by day: Day 1 … Day 15. (computed so titles follow
-// live locale switches.)
-const days = computed(() =>
-  Array.from({ length: CAMP_DAYS }, (_, i) => ({
-    id: `day${i + 1}`,
-    title: `${t('summerCamp.dayLabel')} ${i + 1}`,
+// PHOTOS: both June camera rolls live under public/camp-gallery/ — summer/
+// (Summer Camp, 20 days; 16–20 pending photos) and stem/ (STEM Club, 15 days,
+// no STEM on Fridays). Arrays live in src/constants/campGallery.js.
+//
+// The timeline is the "tree": one trunk, Summer Camp branching one way and
+// STEM Club the other, day by day. STEM's branch ends after day 15 while
+// Summer Camp continues to day 20.
+const timelineEntries = computed(() =>
+  Array.from({ length: SUMMER_DAYS }, (_, i) => ({
+    day: i + 1,
+    summer: SUMMER_GALLERIES[`day${i + 1}`] ?? [],
+    stem: i < STEM_DAYS ? STEM_GALLERIES[`day${i + 1}`] : null,
   })),
 )
 </script>
@@ -170,12 +168,8 @@ const days = computed(() =>
     </div>
   </section>
 
-  <!-- The month, day by day -->
-  <CampTimeline :entries="days">
-    <template v-for="d in days" :key="d.id" #[d.id]>
-      <CampGalleryGrid :photos="galleries[d.id]" :placeholder-count="2" />
-    </template>
-  </CampTimeline>
+  <!-- The month, day by day — Summer Camp and STEM Club branching off one trunk -->
+  <CampBranchTimeline :entries="timelineEntries" :stem-days="STEM_DAYS" />
 
   <!-- Final CTA — next summer + year-round tutoring -->
   <section ref="finalRef" class="relative py-20 md:py-28 overflow-hidden bg-navy-950">
