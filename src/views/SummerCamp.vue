@@ -14,12 +14,10 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
 // flyers are gone; the story is told as a scroll timeline with photo grids.
 //
 // PHOTOS: both June camera rolls live under public/camp-gallery/ — summer/
-// (Summer Camp, 20 days; 16–20 pending photos) and stem/ (STEM Club, 15 days,
-// no STEM on Fridays). Arrays live in src/constants/campGallery.js.
-//
-// The timeline is the "tree": one trunk, Summer Camp branching one way and
-// STEM Club the other, day by day. STEM's branch ends after day 15 while
-// Summer Camp continues to day 20.
+// (Summer Camp) and stem/ (STEM Club, no STEM on Fridays). Both programs
+// ended at day 15 — the camp's last five planned days were cancelled — so the
+// tree runs Day 1–15 with the two branches side by side the whole way.
+// Arrays live in src/constants/campGallery.js.
 const timelineEntries = computed(() =>
   Array.from({ length: SUMMER_DAYS }, (_, i) => ({
     day: i + 1,

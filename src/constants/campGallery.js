@@ -1,10 +1,10 @@
-// SAHA June 2026 recap galleries — two programs ran side by side:
-//   summer/  Summer Camp, days 1–20 (16–20 pending photos — empty arrays
-//            render as coming-soon tiles)
-//   stem/    STEM Club, days 1–15 (no STEM on Fridays; day 15 = final day)
+// SAHA June 2026 recap galleries — two programs ran side by side, both
+// ending at day 15 (the camp's last five planned days were cancelled):
+//   summer/  Summer Camp, days 1–15
+//   stem/    STEM Club, days 1–15 (no STEM on Fridays)
 // pos = CSS object-position focal point so faces survive the tile crop.
 // Regenerate/extend this file when new photos land.
-export const SUMMER_DAYS = 20
+export const SUMMER_DAYS = 15
 export const STEM_DAYS = 15
 
 export const SUMMER_GALLERIES = {
@@ -122,7 +122,7 @@ export const SUMMER_GALLERIES = {
     { src: '/camp-gallery/summer/day14/12.webp', alt: 'SAHA Summer Camp — Day 14, photo 12' },
   ],
   day15: [
-    { src: '/camp-gallery/summer/day15/1.webp', alt: 'SAHA Summer Camp — Day 15, photo 1' },
+    { src: '/camp-gallery/summer/day15/1.webp', alt: 'SAHA Summer Camp — Day 15, photo 1', pos: '50% 0%' },
     { src: '/camp-gallery/summer/day15/2.webp', alt: 'SAHA Summer Camp — Day 15, photo 2' },
     { src: '/camp-gallery/summer/day15/3.webp', alt: 'SAHA Summer Camp — Day 15, photo 3' },
     { src: '/camp-gallery/summer/day15/4.webp', alt: 'SAHA Summer Camp — Day 15, photo 4' },
@@ -133,11 +133,6 @@ export const SUMMER_GALLERIES = {
     { src: '/camp-gallery/summer/day15/9.webp', alt: 'SAHA Summer Camp — Day 15, photo 9' },
     { src: '/camp-gallery/summer/day15/10.webp', alt: 'SAHA Summer Camp — Day 15, photo 10' },
   ],
-  day16: [],
-  day17: [],
-  day18: [],
-  day19: [],
-  day20: [],
 }
 
 export const STEM_GALLERIES = {
@@ -225,7 +220,7 @@ export const STEM_GALLERIES = {
     { src: '/camp-gallery/stem/day14/2.webp', alt: 'SAHA STEM Club — Day 14, photo 2', pos: '50% 5%' },
   ],
   day15: [
-    { src: '/camp-gallery/stem/day15/1.webp', alt: 'SAHA STEM Club — Day 15, photo 1' },
+    { src: '/camp-gallery/stem/day15/1.webp', alt: 'SAHA STEM Club — Day 15, photo 1', pos: '50% 0%' },
     { src: '/camp-gallery/stem/day15/2.webp', alt: 'SAHA STEM Club — Day 15, photo 2', pos: '50% 20%' },
     { src: '/camp-gallery/stem/day15/3.webp', alt: 'SAHA STEM Club — Day 15, photo 3' },
   ],

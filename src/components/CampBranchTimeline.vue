@@ -125,9 +125,11 @@ const stemChip =
           </div>
         </div>
 
-        <!-- Summer branch -->
+        <!-- Summer branch. The per-day chip is mobile-only: on md+ the pinned
+             header above already labels both columns for the whole scroll, so
+             repeating it here just doubled the label on every day. -->
         <div class="mb-6 md:mb-0 pl-12 md:pl-0">
-          <div class="mb-3"><span :class="summerChip">☀ {{ t('summerCamp.branchSummer') }}</span></div>
+          <div class="md:hidden mb-3"><span :class="summerChip">☀ {{ t('summerCamp.branchSummer') }}</span></div>
           <CampGalleryGrid :photos="e.summer" :placeholder-count="2" />
         </div>
 
@@ -160,7 +162,7 @@ const stemChip =
 
         <!-- STEM branch: photos through stemDays, a wrapped cap right after, then air -->
         <div v-if="e.stem" class="pl-12 md:pl-0">
-          <div class="mb-3"><span :class="stemChip">⚙ {{ t('summerCamp.branchStem') }}</span></div>
+          <div class="md:hidden mb-3"><span :class="stemChip">⚙ {{ t('summerCamp.branchStem') }}</span></div>
           <CampGalleryGrid :photos="e.stem" :placeholder-count="2" />
         </div>
         <div v-else-if="e.day === stemDays + 1" class="pl-12 md:pl-0 md:flex md:items-start md:justify-center md:pt-3">
