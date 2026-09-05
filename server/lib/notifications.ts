@@ -12,7 +12,7 @@ import { logger } from './log.js'
 // is inert in local/preview and only delivers in production.
 
 const CENTRAL = 'America/Chicago'
-const DAY_NAMES: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday' }
+const DAY_NAMES: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' }
 
 function fmtDate(isoDate: string): string {
   return DateTime.fromISO(isoDate, { zone: CENTRAL }).toFormat('EEEE, LLLL d, yyyy')
@@ -289,4 +289,63 @@ export function notifyCancellation(event: CancellationEvent): void {
     }
     logger.info('notify', 'cancel day_closed', { affected: rows.length, sent })
   })
+}
+
+
+// ---------- Teacher account links (→ teacher, AWAITED) ----------
+// These are the exception to the fire-and-forget rule above. The admin needs to
+// know whether the teacher actually received their link — if the send fails,
+// the Teachers tab falls back to showing the URL to pass along by hand — so
+// these return the delivery result instead of swallowing it.
+
+function ctaButton(url: string, label: string): string {
+  return `
+    <p style="margin: 24px 0;">
+      <a href="${escapeHtml(url)}" style="display: inline-block; background: #001B3D; color: #ffffff; padding: 14px 28px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 15px;">
+        ${escapeHtml(label)}
+      </a>
+    </p>
+    <p style="color: #64748b; font-size: 12px;">
+      If the button doesn't work, copy this link into your browser:<br />
+      <span style="color: #475569; word-break: break-all;">${escapeHtml(url)}</span>
+    </p>`
+}
+
+// New teacher: choose a password and the account is live. Nothing for the admin
+// to forward — the teacher drives their own setup from this email.
+export async function sendTeacherInvite(args: {
+  name: string
+  email: string
+  token: string
+}): Promise<boolean> {
+  const url = `${siteOrigin()}/teacher-setup/${args.token}`
+  const hi = firstName(args.name)
+  const html = layout(
+    'Set up your SAHA account',
+    `<p>${hi ? `Hi ${escapeHtml(hi)},` : 'Hello,'}</p>
+     <p>A teacher account has been created for you at SAHA Institute For Learning. Choose a password below and your account is ready — that's the whole setup.</p>
+     ${ctaButton(url, 'Create your password')}
+     <p>You'll sign in afterwards with this email address (<strong>${escapeHtml(args.email)}</strong>) and the password you pick.</p>
+     <p style="color: #64748b; font-size: 13px;">This link is good for 14 days. If it expires, ask the office to send a new one.</p>`,
+  )
+  return sendEmail({ to: [args.email], subject: 'Set up your SAHA teacher account', html })
+}
+
+// Existing teacher who needs a new password. The reset link is spent as soon as
+// the password changes (fingerprint-bound), so a stale email is harmless.
+export async function sendTeacherReset(args: {
+  name: string
+  email: string
+  token: string
+}): Promise<boolean> {
+  const url = `${siteOrigin()}/teacher-setup/${args.token}`
+  const hi = firstName(args.name)
+  const html = layout(
+    'Reset your SAHA password',
+    `<p>${hi ? `Hi ${escapeHtml(hi)},` : 'Hello,'}</p>
+     <p>A password reset was requested for your SAHA teacher account. Pick a new password below.</p>
+     ${ctaButton(url, 'Set a new password')}
+     <p style="color: #64748b; font-size: 13px;">This link expires in 24 hours and stops working the moment your password changes. Didn't expect this? You can ignore this email — your current password still works.</p>`,
+  )
+  return sendEmail({ to: [args.email], subject: 'Reset your SAHA password', html })
 }

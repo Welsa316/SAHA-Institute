@@ -12,9 +12,10 @@ const teachers = ref([])
 const loading = ref(false)
 const error = ref('')
 
-// Most recently generated link, shown in a copyable panel. kind drives the copy:
-// 'invite' (set first password) vs 'reset' (set a new password).
-const linkPanel = ref(null) // { name, url, kind: 'invite' | 'reset' }
+// Outcome of the most recent invite/reset. The link is emailed straight to the
+// teacher, so this panel normally just confirms delivery; the copyable URL is
+// the fallback for when the send fails (e.g. Resend down, or no key locally).
+const linkPanel = ref(null) // { name, email, url, kind: 'invite' | 'reset', emailed }
 const copied = ref(false)
 
 const form = ref({ name: '', email: '', color: PALETTE[0] })
@@ -63,14 +64,16 @@ async function submit() {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())) return (formError.value = 'Enter a valid email.')
   submitting.value = true
   try {
-    const { teacher, inviteToken } = await createTeacher({
+    const { teacher, inviteToken, invited } = await createTeacher({
       name: form.value.name.trim(),
       email: form.value.email.trim().toLowerCase(),
       color: form.value.color,
     })
     const url = inviteUrl(inviteToken)
-    linkPanel.value = { name: teacher.name, url, kind: 'invite' }
-    await copyLink(url)
+    linkPanel.value = { name: teacher.name, email: teacher.email, url, kind: 'invite', emailed: !!invited }
+    // Only pre-copy when the teacher didn't get the email — otherwise there's
+    // nothing for the admin to pass along.
+    if (!invited) await copyLink(url)
     form.value = { name: '', email: '', color: PALETTE[0] }
     await load()
   } catch (err) {
@@ -81,30 +84,30 @@ async function submit() {
 }
 
 const regenBusyId = ref(null)
-async function copyExistingInvite(teacher) {
+async function resendInvite(teacher) {
   regenBusyId.value = teacher.id
   try {
-    const token = await regenerateInvite(teacher.id)
-    const url = inviteUrl(token)
-    linkPanel.value = { name: teacher.name, url, kind: 'invite' }
-    await copyLink(url)
+    const { inviteToken, invited } = await regenerateInvite(teacher.id)
+    const url = inviteUrl(inviteToken)
+    linkPanel.value = { name: teacher.name, email: teacher.email, url, kind: 'invite', emailed: !!invited }
+    if (!invited) await copyLink(url)
   } catch (err) {
-    error.value = err?.message || 'Could not generate an invite link.'
+    error.value = err?.message || 'Could not send the invite.'
   } finally {
     regenBusyId.value = null
   }
 }
 
 const resetBusyId = ref(null)
-async function copyResetLink(teacher) {
+async function sendResetLink(teacher) {
   resetBusyId.value = teacher.id
   try {
-    const token = await resetTeacherPassword(teacher.id)
-    const url = inviteUrl(token)
-    linkPanel.value = { name: teacher.name, url, kind: 'reset' }
-    await copyLink(url)
+    const { resetToken, sent } = await resetTeacherPassword(teacher.id)
+    const url = inviteUrl(resetToken)
+    linkPanel.value = { name: teacher.name, email: teacher.email, url, kind: 'reset', emailed: !!sent }
+    if (!sent) await copyLink(url)
   } catch (err) {
-    error.value = err?.message || 'Could not generate a reset link.'
+    error.value = err?.message || 'Could not send the reset email.'
   } finally {
     resetBusyId.value = null
   }
@@ -165,25 +168,39 @@ async function doCancelClasses() {
     <div class="mb-6">
       <h1 class="font-heading text-2xl md:text-3xl font-extrabold text-navy-900 tracking-tight">Teachers</h1>
       <p class="font-body text-sm text-navy-500 mt-1">
-        Add a teacher, then share their one-time invite link so they set their own password.
+        Add a teacher and we email them a link to set their own password — nothing for you to forward.
       </p>
     </div>
 
     <div v-if="error" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ error }}</div>
 
-    <!-- Link panel (after create / re-copy invite, or reset) -->
-    <div v-if="linkPanel" class="mb-6 p-4 rounded-2xl border border-academic-300 bg-academic-50">
+    <!-- Outcome panel. Normal path: the teacher got the email and there is
+         nothing for the admin to do. Fallback path: send failed, so the link
+         is offered to pass along by hand. -->
+    <div
+      v-if="linkPanel"
+      class="mb-6 p-4 rounded-2xl border"
+      :class="linkPanel.emailed ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'"
+    >
       <div class="flex items-start justify-between gap-3">
-        <p class="font-body text-sm text-navy-700">
-          {{ linkPanel.kind === 'reset' ? 'Password reset link' : 'Invite link' }} for
-          <span class="font-bold">{{ linkPanel.name }}</span> — share it with them.
+        <p v-if="linkPanel.emailed" class="font-body text-sm text-navy-700">
+          <span class="font-bold">{{ linkPanel.kind === 'reset' ? 'Reset email sent' : 'Invite email sent' }}</span>
+          to <span class="font-bold">{{ linkPanel.email }}</span> —
+          {{ linkPanel.name }} can
+          {{ linkPanel.kind === 'reset' ? 'set a new password' : 'create their password' }}
+          straight from that email. Nothing to send yourself.
+          <span class="text-navy-500">The link expires in {{ linkPanel.kind === 'reset' ? '24 hours' : '14 days' }}.</span>
+        </p>
+        <p v-else class="font-body text-sm text-navy-700">
+          <span class="font-bold">Couldn’t email {{ linkPanel.name }}</span> — send them this
+          {{ linkPanel.kind === 'reset' ? 'password reset' : 'invite' }} link instead.
           <span class="text-navy-500">Works once, expires in {{ linkPanel.kind === 'reset' ? '24 hours' : '14 days' }}.</span>
         </p>
         <button type="button" @click="linkPanel = null" aria-label="Dismiss" class="text-navy-400 hover:text-navy-700 shrink-0">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
-      <div class="flex gap-2 mt-3">
+      <div class="flex gap-2 mt-3" :class="linkPanel.emailed ? 'hidden' : ''">
         <input
           :value="linkPanel.url"
           readonly
@@ -229,7 +246,7 @@ async function doCancelClasses() {
       </div>
       <div class="mt-5">
         <button type="submit" :disabled="submitting" class="px-5 py-2.5 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold transition-colors disabled:opacity-60">
-          {{ submitting ? 'Adding…' : 'Add teacher & generate link' }}
+          {{ submitting ? 'Adding…' : 'Add teacher & send invite' }}
         </button>
       </div>
     </form>
@@ -245,7 +262,9 @@ async function doCancelClasses() {
             <p class="font-body text-sm font-bold text-navy-900 truncate">{{ t.name }}</p>
             <p class="font-body text-xs text-navy-500 truncate">{{ t.email || 'No email on file' }}</p>
           </div>
-          <div class="flex items-center gap-2 shrink-0 ml-auto">
+          <!-- Actions wrap onto their own line on narrow screens: three
+               nowrap controls are wider than a phone viewport. -->
+          <div class="flex flex-wrap items-center gap-2 ml-auto">
             <span
               class="px-2.5 py-1 rounded-full font-body text-[11px] font-bold uppercase tracking-wide whitespace-nowrap"
               :class="t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
@@ -255,20 +274,20 @@ async function doCancelClasses() {
             <button
               v-if="t.status === 'pending' && t.email"
               type="button"
-              @click="copyExistingInvite(t)"
+              @click="resendInvite(t)"
               :disabled="regenBusyId === t.id"
               class="px-3 py-1.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-xs font-semibold whitespace-nowrap transition-colors disabled:opacity-60"
             >
-              {{ regenBusyId === t.id ? '…' : 'Copy invite link' }}
+              {{ regenBusyId === t.id ? 'Sending…' : 'Resend invite email' }}
             </button>
             <button
               v-if="t.status === 'active' && t.email"
               type="button"
-              @click="copyResetLink(t)"
+              @click="sendResetLink(t)"
               :disabled="resetBusyId === t.id"
               class="px-3 py-1.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-xs font-semibold whitespace-nowrap transition-colors disabled:opacity-60"
             >
-              {{ resetBusyId === t.id ? '…' : 'Reset password' }}
+              {{ resetBusyId === t.id ? 'Sending…' : 'Email password reset' }}
             </button>
             <button
               type="button"

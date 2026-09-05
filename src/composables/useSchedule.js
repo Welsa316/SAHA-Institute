@@ -36,11 +36,13 @@ export function useSchedule() {
     createTeacher(body) {
       return api('/api/teachers', { method: 'POST', body: JSON.stringify(body) })
     },
+    // Both return the whole payload: the token AND whether the email actually
+    // reached the teacher, so the UI can fall back to a copyable link.
     regenerateInvite(id) {
-      return api(`/api/teachers/${id}/invite`, { method: 'POST' }).then((d) => d.inviteToken)
+      return api(`/api/teachers/${id}/invite`, { method: 'POST' })
     },
     resetTeacherPassword(id) {
-      return api(`/api/teachers/${id}/reset`, { method: 'POST' }).then((d) => d.resetToken)
+      return api(`/api/teachers/${id}/reset`, { method: 'POST' })
     },
     fetchStudents() {
       return api('/api/students').then((d) => d.students)

@@ -7,6 +7,7 @@ import { signInviteToken, signResetToken, passwordFingerprint } from '../lib/aut
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { notifyTeacherClassesCancelled } from '../lib/notifications.js'
+import { sendTeacherInvite, sendTeacherReset } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
 export const teachersRouter: Router = Router()
@@ -60,10 +61,16 @@ teachersRouter.post('/', async (req, res, next) => {
 
     const [teacher] = await db.insert(teachers).values({ name, email, color }).returning()
     const inviteToken = signInviteToken(teacher.id)
-    logger.info('teachers', 'created', { teacherId: teacher.id })
+    // Email the setup link to the TEACHER so onboarding is self-serve — the
+    // admin never has to forward anything. Awaited (not fire-and-forget)
+    // because the response tells the UI whether to fall back to a copyable
+    // link; a send failure must not undo the teacher that was just created.
+    const invited = await sendTeacherInvite({ name: teacher.name, email, token: inviteToken })
+    logger.info('teachers', 'created', { teacherId: teacher.id, invited })
     res.status(201).json({
       teacher: { id: teacher.id, name: teacher.name, color: teacher.color, email: teacher.email, status: 'pending' },
       inviteToken,
+      invited,
     })
   } catch (err) {
     next(err)
@@ -84,7 +91,9 @@ teachersRouter.post('/:id/invite', async (req, res, next) => {
     if (existing) throw new HttpError(409, 'This teacher already has an account.')
 
     const inviteToken = signInviteToken(teacher.id)
-    res.json({ inviteToken })
+    const invited = await sendTeacherInvite({ name: teacher.name, email: teacher.email, token: inviteToken })
+    logger.info('teachers', 'invite resent', { teacherId: teacher.id, invited })
+    res.json({ inviteToken, invited })
   } catch (err) {
     next(err)
   }
@@ -104,8 +113,11 @@ teachersRouter.post('/:id/reset', async (req, res, next) => {
     if (!account) throw new HttpError(409, "This teacher hasn't set up their account yet — send the invite link instead.")
 
     const resetToken = signResetToken(teacher.id, passwordFingerprint(account.passwordHash))
-    logger.info('teachers', 'reset link issued', { teacherId: teacher.id })
-    res.json({ resetToken })
+    const sent = teacher.email
+      ? await sendTeacherReset({ name: teacher.name, email: teacher.email, token: resetToken })
+      : false
+    logger.info('teachers', 'reset link issued', { teacherId: teacher.id, sent })
+    res.json({ resetToken, sent })
   } catch (err) {
     next(err)
   }
