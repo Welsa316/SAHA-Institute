@@ -443,7 +443,7 @@ export default {
       },
       {
         q: 'How do we pick a time slot?',
-        a: 'After the parent meeting, we build the schedule together around your availability. Classes run Monday through Friday, 3:15–9:00 PM, and every student gets their own weekly time slot with their teacher. Enrolling siblings? Each child gets a separate slot of their own.',
+        a: 'After the parent meeting, we build the schedule together around your availability. Classes run Monday through Friday, 3:15–9:00 PM, and weekends 2:00–6:00 PM, and every student gets their own weekly time slot with their teacher. Enrolling siblings? Each child gets a separate slot of their own.',
       },
       {
         q: 'What if we\'re in a different time zone?',
@@ -506,7 +506,7 @@ export default {
     address: '1201 Vintage Drive, Kenner, LA 70065',
     phoneCall: 'Call',
     phoneText: 'Text / WhatsApp',
-    hours: 'Mon–Fri, 3:15 – 9:00 PM',
+    hours: 'Mon–Fri 3:15 – 9:00 PM · Sat–Sun 2:00 – 6:00 PM',
     copyright: '© 2026 SAHA Institute For Learning. All rights reserved.',
   },
   about: {

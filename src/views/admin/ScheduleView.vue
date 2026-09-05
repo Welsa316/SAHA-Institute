@@ -55,13 +55,25 @@ function trapTab(e) {
 // Grid runs 15:00–21:00 — it's an after-school institute, so classes start at
 // 3pm. One absolutely-positioned block per class so any start time / duration
 // renders correctly.
-const START_HOUR = 15
+// The board canvas spans BOTH opening windows: weekdays run 3-9 PM and
+// weekends 2-6 PM, so the grid covers 2 PM-9 PM and shades the hours each
+// day is closed. Keep in lockstep with server/lib/hours.ts.
+const START_HOUR = 14
 const END_HOUR = 21
 const HOURS = END_HOUR - START_HOUR
 // Each day is its own card; this is the card header (weekday + date) height,
 // which the time gutter mirrors as a top spacer so hour labels line up.
 const HEADER_PX = 64
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+// Opening hours per weekday (1=Mon … 7=Sun), mirroring server/lib/hours.ts.
+const WEEKEND_DAYS = new Set([6, 7])
+const openWindowFor = (wd) => (WEEKEND_DAYS.has(wd) ? { open: 14, close: 18 } : { open: 15, close: 21 })
+const fmtWindow = (wd) => {
+  const { open, close } = openWindowFor(wd)
+  const h = (x) => (x % 12 === 0 ? 12 : x % 12)
+  return `${h(open)}-${h(close)} ${close > 12 ? 'PM' : 'AM'}`
+}
 
 // The board fills the viewport: px-per-hour is derived from the space left
 // below the toolbar, clamped so short laptops stay usable and huge monitors
@@ -102,8 +114,36 @@ const loading = ref(false)
 const error = ref('')
 const teacherFilter = ref('') // '' = all (admin only)
 
-const weekDays = computed(() => Array.from({ length: 5 }, (_, i) => weekStart.value.plus({ days: i })))
+const weekDays = computed(() => Array.from({ length: 7 }, (_, i) => weekStart.value.plus({ days: i })))
 // Each hour 15..20 owns a slot; used for zebra bands + half-hour lines.
+// The shaded parts of the canvas where a given weekday is closed.
+// Mirrors checkWithinHours on the server: does a class of `mins` starting at
+// 'HH:mm' fit inside that weekday's window? Returns a message or ''.
+function hoursProblem(days, startTime, mins) {
+  const [h, m] = startTime.split(':').map(Number)
+  const start = h * 60 + m
+  for (const wd of [...days].sort((a, b) => a - b)) {
+    const { open, close } = openWindowFor(wd)
+    if (start < open * 60 || start + mins > close * 60) {
+      return `${WEEKDAY_LABELS[wd - 1]} runs ${fmtWindow(wd)} — a ${mins}-minute class at ${startTime} doesn't fit.`
+    }
+  }
+  return ''
+}
+
+function closedBands(wd) {
+  const { open, close } = openWindowFor(wd)
+  const bands = []
+  if (open > START_HOUR) bands.push({ top: 0, height: (open - START_HOUR) * pxPerHour.value })
+  if (close < END_HOUR) {
+    bands.push({
+      top: (close - START_HOUR) * pxPerHour.value,
+      height: (END_HOUR - close) * pxPerHour.value,
+    })
+  }
+  return bands
+}
+
 const hourRows = computed(() => Array.from({ length: HOURS }, (_, i) => START_HOUR + i))
 // Every labelled hour line, 3 PM through 9 PM inclusive, so the grid is bounded
 // top and bottom by a labelled hour rather than a dangling unlabelled slot.
@@ -127,7 +167,7 @@ function hourLabelStyle(h) {
   return { top, transform: 'translateY(-50%)' }
 }
 const weekRangeLabel = computed(
-  () => `${weekDays.value[0].toFormat('LLL d')} – ${weekDays.value[4].toFormat('LLL d, yyyy')}`,
+  () => `${weekDays.value[0].toFormat('LLL d')} – ${weekDays.value[6].toFormat('LLL d, yyyy')}`,
 )
 
 // ---------- "Now" line ----------
@@ -180,18 +220,18 @@ function layoutOverlaps(events) {
   return sorted
 }
 
-// Instances grouped by weekday (1=Mon … 5=Fri) with grid geometry attached.
+// Instances grouped by weekday (1=Mon … 7=Sun) with grid geometry attached.
 const instancesByDay = computed(() => {
-  const byDay = { 1: [], 2: [], 3: [], 4: [], 5: [] }
+  const byDay = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }
   for (const inst of instances.value) {
     const local = localOf(inst)
     const wd = local.weekday
-    if (wd < 1 || wd > 5) continue
+    if (wd < 1 || wd > 7) continue
     const startMin = local.hour * 60 + local.minute
     const gh = HOURS * pxPerHour.value
     const rawTop = (startMin / 60 - START_HOUR) * pxPerHour.value
     const height = Math.min(Math.max((inst.durationMinutes / 60) * pxPerHour.value, 26), gh)
-    // Clamp into the 3 PM–9 PM canvas so an out-of-window class (legacy data or
+    // Clamp into the 2 PM–9 PM canvas so an out-of-window class (legacy data or
     // a non-Central display timezone) pins to the edge instead of painting over
     // the card header or vanishing while still being counted.
     const top = Math.min(Math.max(rawTop, 0), gh - height)
@@ -222,7 +262,7 @@ async function loadWeek() {
   error.value = ''
   try {
     const from = weekDays.value[0].toFormat('yyyy-MM-dd')
-    const to = weekDays.value[4].toFormat('yyyy-MM-dd')
+    const to = weekDays.value[6].toFormat('yyyy-MM-dd')
     instances.value = await fetchInstances(from, to, isAdmin.value ? teacherFilter.value || undefined : undefined)
     hasLoaded.value = true
   } catch (err) {
@@ -232,14 +272,14 @@ async function loadWeek() {
   }
 }
 
-// The month grid spans whole Mon–Fri weeks: from the Monday of the week
+// The month grid spans whole Mon–Sun weeks: from the Monday of the week
 // containing the 1st through the Friday of the week containing the last day.
 const monthWeeks = computed(() => {
   const weeks = []
   let d = monthStart.value.startOf('week')
   const last = monthStart.value.endOf('month')
   while (d <= last) {
-    weeks.push(Array.from({ length: 5 }, (_, i) => d.plus({ days: i })))
+    weeks.push(Array.from({ length: 7 }, (_, i) => d.plus({ days: i })))
     d = d.plus({ weeks: 1 })
   }
   return weeks
@@ -407,9 +447,11 @@ async function submitForm() {
   formError.value = ''
   if (!form.value.studentId) return (formError.value = 'Pick a student.')
   if (!form.value.teacherId) return (formError.value = 'Pick a teacher.')
-  if (form.value.days.length === 0) return (formError.value = 'Pick at least one weekday.')
+  if (form.value.days.length === 0) return (formError.value = 'Pick at least one day.')
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(form.value.startTime)) return (formError.value = 'Enter a valid start time.')
   if (!formDuration.value || formDuration.value < 5) return (formError.value = 'Enter a valid duration.')
+  const fitsProblem = hoursProblem(form.value.days, form.value.startTime, formDuration.value)
+  if (fitsProblem) return (formError.value = fitsProblem)
   formSubmitting.value = true
   try {
     await createEnrollment({
@@ -481,6 +523,9 @@ async function doMoveOne() {
   manageError.value = ''
   if (!/^\d{4}-\d{2}-\d{2}$/.test(moveOne.value.date)) return (manageError.value = 'Pick a date.')
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(moveOne.value.time)) return (manageError.value = 'Enter a valid start time.')
+  const movedWeekday = DateTime.fromISO(moveOne.value.date, { zone: tz.value }).weekday
+  const oneProblem = hoursProblem([movedWeekday], moveOne.value.time, cancelTarget.value?.durationMinutes ?? 60)
+  if (oneProblem) return (manageError.value = oneProblem)
   cancelBusy.value = true
   try {
     await rescheduleInstance(cancelTarget.value.id, { date: moveOne.value.date, startTimeLocal: moveOne.value.time })
@@ -494,8 +539,10 @@ async function doMoveOne() {
 }
 async function doMoveSeries() {
   manageError.value = ''
-  if (moveSeries.value.days.length === 0) return (manageError.value = 'Pick at least one weekday.')
+  if (moveSeries.value.days.length === 0) return (manageError.value = 'Pick at least one day.')
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(moveSeries.value.time)) return (manageError.value = 'Enter a valid start time.')
+  const seriesProblem = hoursProblem(moveSeries.value.days, moveSeries.value.time, seriesDuration.value)
+  if (seriesProblem) return (manageError.value = seriesProblem)
   if (!seriesDuration.value || seriesDuration.value < 5) return (manageError.value = 'Enter a valid duration.')
   cancelBusy.value = true
   try {
@@ -664,7 +711,7 @@ function canCancel(inst) {
         aria-label="Weekly schedule board (scrolls sideways)"
         class="relative isolate z-0 overflow-x-auto pb-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
       >
-      <div class="flex gap-2 md:gap-2.5 min-w-[900px]">
+      <div class="flex gap-2 md:gap-2.5 min-w-[1180px]">
         <!-- time gutter — sticky so the hour scale stays put while the board
              scrolls horizontally on narrow screens -->
         <div class="w-11 md:w-12 shrink-0 relative sticky left-0 z-30 bg-slate-50" :style="{ height: HEADER_PX + gridHeight + 'px' }">
@@ -685,7 +732,7 @@ function canCancel(inst) {
         <section
           v-for="(day, i) in weekDays"
           :key="i"
-          class="flex-1 min-w-[158px] rounded-2xl bg-white flex flex-col overflow-hidden"
+          class="flex-1 min-w-[150px] rounded-2xl bg-white flex flex-col overflow-hidden"
           :class="isToday(day)
             ? 'border-2 border-academic-400/60 shadow-[0_12px_32px_-12px_rgba(2,27,61,0.35)]'
             : 'border border-navy-100 shadow-[0_2px_12px_-6px_rgba(2,27,61,0.18)]'"
@@ -703,6 +750,7 @@ function canCancel(inst) {
               <p class="font-heading text-[22px] font-extrabold leading-none mt-0.5 text-navy-900 tabular-nums">
                 {{ day.toFormat('d') }}<span class="font-body text-[11px] font-semibold text-navy-400 ml-1">{{ day.toFormat('MMM') }}</span>
               </p>
+              <p class="font-body text-[9px] font-semibold text-navy-400 mt-0.5 tabular-nums">{{ fmtWindow(i + 1) }}</p>
             </div>
             <span v-if="isToday(day)" class="px-2 py-1 rounded-full bg-academic-500 text-white font-body text-[9px] font-bold uppercase tracking-[0.14em]">Today</span>
             <span v-else-if="instancesByDay[i + 1].length" class="min-w-[22px] h-[22px] px-1.5 rounded-full bg-navy-100/80 text-navy-600 font-body text-[10px] font-bold flex items-center justify-center tabular-nums" :title="`${instancesByDay[i + 1].length} class${instancesByDay[i + 1].length === 1 ? '' : 'es'}`">
@@ -713,6 +761,16 @@ function canCancel(inst) {
           <!-- card body: hour bands, lines, now-line, class blocks. overflow-
                hidden so no block can ever paint over the card header. -->
           <div class="relative overflow-hidden" :style="{ height: gridHeight + 'px' }">
+            <!-- hours this day is closed (weekends shut at 6 PM, weekdays
+                 open at 3 PM) — shaded so the open window reads at a glance -->
+            <div
+              v-for="band in closedBands(i + 1)"
+              :key="'closed-' + band.top"
+              class="absolute left-0 right-0 bg-navy-100/50 pointer-events-none flex items-center justify-center"
+              :style="{ top: band.top + 'px', height: band.height + 'px' }"
+            >
+              <span v-if="band.height >= 30" class="font-body text-[9px] font-bold uppercase tracking-[0.16em] text-navy-400">Closed</span>
+            </div>
             <!-- alternate-hour zebra bands -->
             <div
               v-for="h in zebraHours"
@@ -790,8 +848,8 @@ function canCancel(inst) {
         aria-label="Monthly schedule grid (scrolls sideways)"
         class="relative isolate z-0 overflow-x-auto pb-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
       >
-        <div class="min-w-[720px]">
-          <div class="grid grid-cols-5 gap-2 md:gap-2.5 mb-2">
+        <div class="min-w-[980px]">
+          <div class="grid grid-cols-7 gap-2 md:gap-2.5 mb-2">
             <p
               v-for="lbl in WEEKDAY_LABELS"
               :key="lbl"
@@ -800,7 +858,7 @@ function canCancel(inst) {
               {{ lbl }}
             </p>
           </div>
-          <div v-for="(week, wi) in monthWeeks" :key="wi" class="grid grid-cols-5 gap-2 md:gap-2.5 mb-2 md:mb-2.5">
+          <div v-for="(week, wi) in monthWeeks" :key="wi" class="grid grid-cols-7 gap-2 md:gap-2.5 mb-2 md:mb-2.5">
             <section
               v-for="day in week"
               :key="day.toISODate()"
@@ -906,7 +964,7 @@ function canCancel(inst) {
             </select>
           </div>
           <div>
-            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5" id="sf-days-label">Weekdays</label>
+            <label class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5" id="sf-days-label">Days</label>
             <div class="flex flex-wrap gap-2" role="group" aria-labelledby="sf-days-label">
               <button
                 v-for="(label, i) in WEEKDAY_LABELS"

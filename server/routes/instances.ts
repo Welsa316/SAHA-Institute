@@ -6,6 +6,7 @@ import { instancesQuerySchema, instanceRescheduleSchema, idParamSchema } from '.
 import { requireAuth } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { centralDateRangeToUtc, centralDateTimeToUtc } from '../lib/schedule.js'
+import { checkWithinHours } from '../lib/hours.js'
 import { notifyCancellation, notifyAdminOfTeacherCancellation, notifyClassRescheduled } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
@@ -133,7 +134,10 @@ instancesRouter.post('/:id/reschedule', async (req, res, next) => {
     }
 
     const { instant, weekday } = centralDateTimeToUtc(date, startTimeLocal)
-    if (weekday > 5) throw new HttpError(400, 'Classes run Monday–Friday.')
+    // The new slot must sit inside that day's opening hours (weekdays 3-9 PM,
+    // weekends 2-6 PM). Duration is unchanged by a single-class move.
+    const hoursProblem = checkWithinHours(weekday, startTimeLocal, inst.durationMinutes)
+    if (hoursProblem) throw new HttpError(400, hoursProblem)
     if (instant.getTime() < Date.now()) throw new HttpError(400, 'Pick a time in the future.')
 
     const oldStartsAtUtc = inst.startsAtUtc

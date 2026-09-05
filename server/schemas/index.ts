@@ -128,16 +128,18 @@ export const idParamSchema = z.object({
 
 // ---------- Scheduling ----------
 
-// Create a recurring class. days_of_week are Mon-Fri only (1=Mon … 5=Fri),
-// one or more, unique. start_time_local is a Central wall-clock 'HH:mm' (24h).
+// Create a recurring class. days_of_week are 1=Mon … 7=Sun, one or more,
+// unique. start_time_local is a Central wall-clock 'HH:mm' (24h). The class
+// must also fit inside that day's opening hours — enforced in the route via
+// lib/hours (weekdays 3–9 PM, weekends 2–6 PM).
 export const enrollmentCreateSchema = z.object({
   studentId: z.number().int().positive(),
   teacherId: z.number().int().positive(),
   daysOfWeek: z
-    .array(z.number().int().min(1).max(5))
-    .min(1, 'Pick at least one weekday.')
-    .max(5)
-    .refine((a) => new Set(a).size === a.length, 'Weekdays must be unique.'),
+    .array(z.number().int().min(1).max(7))
+    .min(1, 'Pick at least one day.')
+    .max(7)
+    .refine((a) => new Set(a).size === a.length, 'Days must be unique.'),
   startTimeLocal: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be HH:mm (24-hour).'),
   durationMinutes: z.number().int().min(5).max(600).default(60),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be YYYY-MM-DD.'),
@@ -154,10 +156,10 @@ export const instanceRescheduleSchema = z.object({
 // duration. Past classes are left as history; the 6-month end date is unchanged.
 export const enrollmentRescheduleSchema = z.object({
   daysOfWeek: z
-    .array(z.number().int().min(1).max(5))
-    .min(1, 'Pick at least one weekday.')
-    .max(5)
-    .refine((a) => new Set(a).size === a.length, 'Weekdays must be unique.'),
+    .array(z.number().int().min(1).max(7))
+    .min(1, 'Pick at least one day.')
+    .max(7)
+    .refine((a) => new Set(a).size === a.length, 'Days must be unique.'),
   startTimeLocal: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be HH:mm (24-hour).'),
   durationMinutes: z.number().int().min(5).max(600),
 })

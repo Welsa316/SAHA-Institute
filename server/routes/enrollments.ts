@@ -7,6 +7,7 @@ import { enrollmentCreateSchema, enrollmentRescheduleSchema, idParamSchema } fro
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { generateOccurrenceInstants, sixMonthsLater, CENTRAL_ZONE } from '../lib/schedule.js'
+import { checkPatternWithinHours } from '../lib/hours.js'
 import { notifyStudentScheduled, notifySeriesRescheduled } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
@@ -58,6 +59,15 @@ enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
         `This student already has an active schedule with ${conflicting.teacherName}. One teacher per student — cancel that schedule first, or add this class under ${conflicting.teacherName}.`,
       )
     }
+
+    // Every selected day must be able to hold the class inside that day's
+    // opening hours (weekdays 3-9 PM, weekends 2-6 PM).
+    const hoursProblem = checkPatternWithinHours(
+      input.daysOfWeek,
+      input.startTimeLocal,
+      input.durationMinutes,
+    )
+    if (hoursProblem) throw new HttpError(400, hoursProblem)
 
     const endDate = sixMonthsLater(input.startDate)
     const instants = generateOccurrenceInstants({
@@ -129,6 +139,13 @@ enrollmentsRouter.post('/:id/reschedule', requireAdmin, async (req, res, next) =
     if (enrollment.status !== 'active') {
       throw new HttpError(409, 'This series is cancelled — schedule a new class instead.')
     }
+
+    const hoursProblem = checkPatternWithinHours(
+      input.daysOfWeek,
+      input.startTimeLocal,
+      input.durationMinutes,
+    )
+    if (hoursProblem) throw new HttpError(400, hoursProblem)
 
     const now = new Date()
     const todayCentral = DateTime.now().setZone(CENTRAL_ZONE).toISODate() as string
