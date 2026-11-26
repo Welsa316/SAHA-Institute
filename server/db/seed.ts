@@ -15,9 +15,8 @@ const TEACHER_COLORS = ['#3B82C4', '#E07A5F', '#5B9279', '#9B6BB0', '#D9A441', '
 
 // Ensure exactly one admin user exists, matching ADMIN_EMAIL (used as the
 // username). On first boot the row is inserted from ADMIN_PASSWORD. On
-// subsequent boots in production, if ADMIN_PASSWORD is set the hash is rotated
-// to match it — this lets the password be changed by updating the env var and
-// redeploying. Non-production boots never rotate (they share the live DB).
+// subsequent boots, if ADMIN_PASSWORD is set the hash is rotated to match it —
+// this lets the password be changed by updating the env var and redeploying.
 export async function seedAdmin(): Promise<void> {
   const username = process.env.ADMIN_EMAIL
   const password = process.env.ADMIN_PASSWORD
@@ -37,14 +36,6 @@ export async function seedAdmin(): Promise<void> {
     const passwordHash = await hashPassword(password)
     await db.insert(users).values({ username, passwordHash, role: 'admin' })
     logger.info('seed', 'admin user created', { username })
-    return
-  }
-
-  // Rotation only runs in production. Local/preview servers share the
-  // production database, so rotating from a local .env would silently
-  // overwrite the live admin password with a stale value.
-  if (password && process.env.NODE_ENV !== 'production') {
-    logger.info('seed', 'admin password rotation skipped outside production', { username })
     return
   }
 
