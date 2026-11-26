@@ -89,36 +89,36 @@ export const workshopSignups = pgTable('workshop_signups', {
 // The admin UI keeps them on separate pages (filtered by `program`), but storage
 // stays in a single shape.
 //
-// This table also backs self-service STUDENT ACCOUNTS: a student who registers
-// at /register creates a `program='regular'` row carrying the student's name,
-// the PARENT's email + phone, and a password hash. Login is parent email +
-// password — the email is deliberately NOT unique (migration 0010) because
-// siblings register under the same parent email; the (email, password) pair
-// identifies the student, and registration rejects a duplicate pair.
-// Admin-created roster rows (camp / STEM) leave the credential fields null.
-// New registrations land `approved=false` and wait in the admin's pending
-// queue, where the parent contact info is shown so the team can verify the
-// registration is real. The password hash never leaves the server.
+// This table also backs STUDENT ACCOUNTS: an admin registers a family from the
+// Students tab, which creates one `program='regular'` row per student carrying
+// the student's name, the PARENT's email (+ optional phone), and a password
+// hash. Login is parent email + password — the email is deliberately NOT
+// unique (migration 0010) because siblings share the same parent email; the
+// (email, password) pair identifies the family, and registration rejects a
+// duplicate pair. Admin-created roster rows (camp / STEM) leave the credential
+// fields null. Admin registrations land `approved=true`; older self-service
+// registrations (from before /register was removed) may still be pending in
+// the admin's approval queue. The password hash never leaves the server.
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
   program: programEnum('program').notNull(),
   // Parent display name. Set by admin entry on camp/STEM rows; null on
-  // self-registered accounts (registration collects parent email + phone,
-  // not the parent's name).
+  // family accounts (registration collects parent email + phone, not the
+  // parent's name).
   parentName: text('parent_name'),
   studentName: text('student_name').notNull(),
-  // Nullable — self-registrations don't pick a grade. Admin assigns one later
+  // Nullable — family registrations don't pick a grade. Admin assigns one later
   // on the Students tab; until then the row shows in an "Unassigned" group.
   gradeLevel: gradeLevelEnum('grade_level'),
-  // Parent phone. Required at registration (formatted client-side); optional
-  // on admin-entered camp/STEM rows.
+  // Parent phone. Optional everywhere — family registration and admin-entered
+  // camp/STEM rows alike (formatted client-side when given).
   phoneNumber: text('phone_number'),
-  // Self-registrations land unapproved (false) and sit in a "Pending approval"
-  // section in the admin until a real person is confirmed — a spam/fake-name
-  // gate. Everything admin-created defaults to true.
+  // Legacy self-registrations landed unapproved (false) and sit in a "Pending
+  // approval" section in the admin until a real person is confirmed. Everything
+  // admin-created, family registrations included, is true.
   approved: boolean('approved').notNull().default(true),
-  // ---- Login credentials (self-registered accounts only). parent_email was
+  // ---- Login credentials (family accounts only). parent_email was
   // `username` until migration 0010; NOT unique — see header comment. ----
   parentEmail: text('parent_email'),
   passwordHash: text('password_hash'),

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { and, desc, eq, gte, ne } from 'drizzle-orm'
+import { and, desc, eq, gte, ne, notInArray } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import { db } from '../db/index.js'
 import { enrollments, classInstances, students, teachers } from '../db/schema.js'
@@ -15,12 +15,58 @@ export const enrollmentsRouter: Router = Router()
 
 enrollmentsRouter.use(requireAuth)
 
-// POST /api/enrollments (admin) — create the recurring rule and generate 6
-// months of individual class_instances. Enrollment + instances are written in a
-// single transaction so a partial failure leaves nothing behind.
-enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
+// GET /api/enrollments/students (admin or teacher) — the approved regular
+// students a class can be scheduled for. Teachers enroll students themselves
+// now but can't call the admin-only /api/students, so this is the minimal
+// picker list: id, name, grade. A teacher doesn't see students whose active
+// schedule belongs to another teacher (one teacher per student — the POST would
+// reject them anyway).
+enrollmentsRouter.get('/students', async (_req, res, next) => {
   try {
-    const input = enrollmentCreateSchema.parse(req.body)
+    const user = res.locals.user!
+    const base = and(eq(students.approved, true), eq(students.program, 'regular'))
+    const where =
+      user.role === 'teacher'
+        ? and(
+            base,
+            notInArray(
+              students.id,
+              db
+                .select({ id: enrollments.studentId })
+                .from(enrollments)
+                .where(and(eq(enrollments.status, 'active'), ne(enrollments.teacherId, user.teacherId ?? -1))),
+            ),
+          )
+        : base
+    const rows = await db
+      .select({ id: students.id, studentName: students.studentName, gradeLevel: students.gradeLevel })
+      .from(students)
+      .where(where)
+      .orderBy(students.studentName)
+    res.json({ students: rows })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/enrollments (admin or teacher) — create the recurring rule and
+// generate 6 months of individual class_instances. Enrollment + instances are
+// written in a single transaction so a partial failure leaves nothing behind.
+// A teacher always enrolls under THEMSELVES: teacher_id comes from the token
+// and any body value is ignored. An admin picks the teacher.
+enrollmentsRouter.post('/', async (req, res, next) => {
+  try {
+    const parsed = enrollmentCreateSchema.parse(req.body)
+    const user = res.locals.user!
+    let teacherId: number
+    if (user.role === 'teacher') {
+      if (user.teacherId == null) throw new HttpError(403, 'Your account isn’t linked to a teacher profile.')
+      teacherId = user.teacherId
+    } else {
+      if (parsed.teacherId == null) throw new HttpError(400, 'Pick a teacher.')
+      teacherId = parsed.teacherId
+    }
+    const input = { ...parsed, teacherId }
 
     const [student] = await db
       .select({ id: students.id, approved: students.approved })
@@ -29,8 +75,8 @@ enrollmentsRouter.post('/', requireAdmin, async (req, res, next) => {
       .limit(1)
     if (!student) throw new HttpError(404, 'Student not found.')
     // A student must be approved (by an admin/teacher) before they can be put on
-    // the schedule. Self-registrations land unapproved; admin-added students are
-    // approved by default. This is the authoritative gate — the form also hides
+    // the schedule. Legacy self-registrations landed unapproved; admin-registered
+    // students are approved from the start. This is the authoritative gate — the form also hides
     // unapproved students, but never trust the client.
     if (!student.approved) {
       throw new HttpError(409, 'This student hasn’t been approved yet. Approve them in the Students tab first, then schedule their classes.')

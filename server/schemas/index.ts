@@ -78,14 +78,19 @@ export const studentUpdateSchema = z.object({
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
-// Self-service registration: one FAMILY account. A parent registers one or
-// more students (the "more than one student?" checkbox on /register) under a
-// single parent email + password; every student in the registration shares
-// that login, and the portal shows each student's homework side by side.
+// Admin registration: one FAMILY account. An admin registers one or more
+// students (the "more than one student?" checkbox on the Students tab form)
+// under a single parent email + password; every student in the registration
+// shares that login, and the portal shows each student's homework side by side.
+// Parent phone is optional — a blank field from the form arrives as '' and is
+// stored as null.
 export const studentRegisterSchema = z.object({
   names: z.array(z.string().trim().min(2).max(100)).min(1).max(6),
   parentEmail: z.string().trim().toLowerCase().email().max(200),
-  parentPhone: phoneSchema,
+  parentPhone: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? null : v),
+    phoneSchema.nullable().optional(),
+  ),
   password: z.string().min(6).max(200),
 })
 
@@ -134,7 +139,9 @@ export const idParamSchema = z.object({
 // lib/hours (weekdays 3–9 PM, weekends 2–6 PM).
 export const enrollmentCreateSchema = z.object({
   studentId: z.number().int().positive(),
-  teacherId: z.number().int().positive(),
+  // Admin picks the teacher; for a teacher the route ignores this and uses
+  // the teacher id from their session.
+  teacherId: z.number().int().positive().optional(),
   daysOfWeek: z
     .array(z.number().int().min(1).max(7))
     .min(1, 'Pick at least one day.')

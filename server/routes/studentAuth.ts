@@ -18,14 +18,14 @@ import {
   verifyPassword,
 } from '../lib/auth.js'
 import { requireStudentAuth } from '../middleware/requireStudentAuth.js'
+import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
-import { adminContactEmail, escapeHtml, sendEmail, siteOrigin } from '../lib/email.js'
-import { SESSION_COOKIE_NAME, verifySession } from '../lib/auth.js'
 import { logger } from '../lib/log.js'
 
-// FAMILY accounts. A registration creates one login (parent email + password)
-// covering one or more students — each student is still its own `students`
-// row (own pending-approval entry, own grade, own homework), but every row
+// FAMILY accounts. An admin registers a family from the Students tab, which
+// creates one login (parent email + password) covering one or more students —
+// each student is still its own `students` row (own grade, own homework,
+// own approval flag), but every row
 // from the registration shares the SAME password hash string. That shared
 // hash is the family link: at login we bcrypt-match the password to a row,
 // then the family is "all rows with this email and this exact hash". The
@@ -92,58 +92,18 @@ async function familyOf(sessionRow: typeof students.$inferSelect) {
     .sort((a, b) => a.studentName.localeCompare(b.studentName))
 }
 
-function notifyAdminOfRegistration(args: { names: string[]; parentEmail: string; parentPhone: string; submittedAt: Date }): void {
-  const { names, parentEmail, parentPhone, submittedAt } = args
-  const adminUrl = `${siteOrigin()}/admin/students`
-  const nameList = names.map((n) => `<li style="margin: 4px 0;">${escapeHtml(n)}</li>`).join('')
-  void sendEmail({
-    to: [adminContactEmail()],
-    subject: `New Student Registration (pending) — ${names.join(', ')}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #001B3D; padding: 24px; border-radius: 12px 12px 0 0;">
-          <h2 style="color: white; margin: 0;">New Student Registration — Pending Approval</h2>
-        </div>
-        <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
-          <p style="font-weight: bold; color: #001B3D; margin: 0 0 8px;">Student${names.length > 1 ? 's' : ''}:</p>
-          <ul style="color: #334155; padding-left: 20px; margin: 0 0 16px;">${nameList}</ul>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #001B3D; width: 150px;">Parent email:</td>
-              <td style="padding: 8px 0; color: #334155;">${escapeHtml(parentEmail)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Parent phone:</td>
-              <td style="padding: 8px 0; color: #334155;">${escapeHtml(parentPhone)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #001B3D;">Registered:</td>
-              <td style="padding: 8px 0; color: #334155;">${submittedAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</td>
-            </tr>
-          </table>
-          <p style="color: #334155; margin: 16px 0; line-height: 1.6;">
-            Review in the dashboard — confirm the family is real, assign grades,
-            and approve each student, or delete anything that doesn't look
-            legitimate.
-          </p>
-          <a href="${escapeHtml(adminUrl)}" style="display: inline-block; background: #001B3D; color: white; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: 14px;">
-            Review in Dashboard
-          </a>
-        </div>
-      </div>
-    `,
-  })
-}
-
-// POST /api/student-auth/register — body: { names: [..], parentEmail, parentPhone, password }
-// Creates one pending row per student, all sharing the login. Logs the family
-// in and returns the account.
-studentAuthRouter.post('/register', authLimiter, async (req, res, next) => {
+// POST /api/student-auth/admin-register (admin) — body: { names: [..], parentEmail, parentPhone?, password }
+// Families no longer self-register: an admin fills in the same form from the
+// Students tab. Creates one APPROVED row per student, all sharing the login,
+// and returns the new rows. No student session is set — the admin stays the
+// admin — and no "new registration" email goes out, since the admin is the
+// one who would have received it.
+studentAuthRouter.post('/admin-register', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { names, parentEmail, parentPhone, password } = studentRegisterSchema.parse(req.body)
 
-    // If this email+password already matches an account, that account exists —
-    // direct them to log in rather than creating a colliding family.
+    // If this email+password already matches an account, that family exists —
+    // registering it again would create a colliding family.
     const existing = await credentialRowsByEmail(parentEmail)
     for (const account of existing) {
       if (await verifyPassword(password, account.passwordHash!)) {
@@ -163,23 +123,28 @@ studentAuthRouter.post('/register', authLimiter, async (req, res, next) => {
           program: 'regular' as const,
           studentName: name,
           parentEmail,
-          phoneNumber: parentPhone,
+          phoneNumber: parentPhone ?? null,
           passwordHash,
-          approved: false, // each student pends until a teacher confirms
+          approved: true, // an admin entered them, so they're already vetted
           paid: false,
         })),
       )
       .returning()
 
-    const token = signStudentSession({ studentId: rows[0]!.id, email: parentEmail })
-    res.cookie(STUDENT_COOKIE_NAME, token, sessionCookieOptions)
-
-    const adminToken = req.cookies?.[SESSION_COOKIE_NAME]
-    const byAdmin = adminToken ? verifySession(adminToken) !== null : false
-    if (!byAdmin) notifyAdminOfRegistration({ names, parentEmail, parentPhone, submittedAt: rows[0]!.createdAt })
-
-    logger.info('studentAuth', 'register ok', { ids: rows.map((r) => r.id) })
-    res.status(201).json({ account: accountPayload(rows) })
+    logger.info('studentAuth', 'admin register ok', {
+      ids: rows.map((r) => r.id),
+      by: res.locals.user?.username,
+    })
+    res.status(201).json({
+      students: rows.map((r) => ({
+        id: r.id,
+        studentName: r.studentName,
+        parentEmail: r.parentEmail,
+        phoneNumber: r.phoneNumber,
+        approved: r.approved,
+        gradeLevel: r.gradeLevel,
+      })),
+    })
   } catch (err) {
     next(err)
   }
