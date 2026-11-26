@@ -18,9 +18,10 @@ export function formatPhoneInput(raw) {
 // Display formatter for stored values, which may be legacy free-form entries
 // ("504.555.0303", "5045550303", "+1 504 555 0303"). If we can extract a
 // clean 10-digit US number, format it; otherwise show the original as-is
-// rather than mangling an international or partial number.
+// rather than mangling an international or partial number. Phone is optional,
+// so null / undefined / blank all render as an em dash.
 export function formatPhoneDisplay(value) {
-  if (!value) return '—'
+  if (value == null || String(value).trim() === '') return '—'
   let digits = String(value).replace(/\D/g, '')
   if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1)
   if (digits.length !== 10) return String(value)

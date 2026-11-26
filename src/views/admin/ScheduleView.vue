@@ -4,11 +4,12 @@ import { DateTime } from 'luxon'
 import { useAdminAuth } from '../../composables/useAdminAuth.js'
 import { useSchedule } from '../../composables/useSchedule.js'
 
-const { isAdmin, displayTimezone } = useAdminAuth()
+const { isAdmin, isTeacher, displayTimezone } = useAdminAuth()
 const {
   fetchInstances,
   fetchTeachers,
   fetchStudents,
+  fetchSchedulableStudents,
   createEnrollment,
   cancelInstance,
   rescheduleInstance,
@@ -362,21 +363,49 @@ const rangeLabel = computed(() =>
   view.value === 'week' ? weekRangeLabel.value : monthStart.value.toFormat('LLLL yyyy'),
 )
 
+// Both roles can add classes: admins for any teacher, teachers always under
+// themselves (the server forces teacherId from the token).
+const canEnroll = computed(() => isAdmin.value || isTeacher.value)
+
 // The class form's student + teacher pickers. Loaded independently (one failing
 // must not blank the other) and re-loadable, so a transient hiccup or a session
-// that resolves admin after mount never leaves the form with empty dropdowns.
+// that resolves after mount never leaves the form with empty dropdowns.
+// Admins load the full roster (so pending registrations can be counted) plus
+// the teacher list; teachers get the approved-students list only and no picker.
 const lookupsLoading = ref(false)
 const lookupsError = ref(false)
+const studentsLoaded = ref(false)
 async function loadLookups() {
-  if (!isAdmin.value) return
+  if (!canEnroll.value) return
   lookupsLoading.value = true
   lookupsError.value = false
-  const [t, s] = await Promise.allSettled([fetchTeachers(), fetchStudents()])
-  if (t.status === 'fulfilled') teachers.value = t.value || []
-  if (s.status === 'fulfilled') students.value = s.value || []
-  lookupsError.value = t.status === 'rejected' || s.status === 'rejected'
+  if (isAdmin.value) {
+    const [t, s] = await Promise.allSettled([fetchTeachers(), fetchStudents()])
+    if (t.status === 'fulfilled') teachers.value = t.value || []
+    if (s.status === 'fulfilled') { students.value = s.value || []; studentsLoaded.value = true }
+    lookupsError.value = t.status === 'rejected' || s.status === 'rejected'
+  } else {
+    try {
+      // Everything this endpoint returns is already approved.
+      students.value = ((await fetchSchedulableStudents()) || []).map((s) => ({ ...s, approved: true }))
+      studentsLoaded.value = true
+    } catch {
+      lookupsError.value = true
+    }
+  }
   lookupsLoading.value = false
 }
+
+// What the form still needs before it can be submitted (a teacher needs no
+// teacher list).
+const lookupsMissing = computed(() => {
+  const noStudents = !studentsLoaded.value
+  const noTeachers = isAdmin.value && !teachers.value.length
+  if (noStudents && noTeachers) return 'student and teacher lists'
+  if (noStudents) return 'student list'
+  if (noTeachers) return 'teacher list'
+  return ''
+})
 
 onMounted(async () => {
   try {
@@ -404,15 +433,16 @@ onUnmounted(() => {
   if (nowTimer) clearInterval(nowTimer)
 })
 
-// If the admin session only resolves after mount, or the first load failed,
-// (re)fetch the pickers as soon as we know we're admin.
-watch(isAdmin, (v) => {
-  if (v && (!teachers.value.length || !students.value.length)) loadLookups()
+// If the session only resolves after mount, or the first load failed,
+// (re)fetch the pickers as soon as we know the role.
+watch(canEnroll, (v) => {
+  if (v && lookupsMissing.value) loadLookups()
 })
 
-// ---------- New class form (admin) ----------
+// ---------- New class form (admin + teacher) ----------
 // Only approved students can be scheduled (the server enforces this too); pending
-// registrations are hidden from the picker.
+// registrations are hidden from the picker. Teachers only ever receive approved
+// students, so their pending count is always zero.
 const approvedStudents = computed(() => students.value.filter((s) => s.approved))
 const pendingStudentCount = computed(() => students.value.length - approvedStudents.value.length)
 
@@ -428,7 +458,7 @@ function openForm() {
   focusModal()
   // Belt-and-suspenders: if the initial load missed (race/transient failure),
   // fetch the pickers now so the form is never stuck with empty dropdowns.
-  if (!teachers.value.length || !students.value.length) loadLookups()
+  if (lookupsMissing.value || !students.value.length) loadLookups()
 }
 function closeForm() {
   showForm.value = false
@@ -446,7 +476,7 @@ const formDuration = computed(() =>
 async function submitForm() {
   formError.value = ''
   if (!form.value.studentId) return (formError.value = 'Pick a student.')
-  if (!form.value.teacherId) return (formError.value = 'Pick a teacher.')
+  if (isAdmin.value && !form.value.teacherId) return (formError.value = 'Pick a teacher.')
   if (form.value.days.length === 0) return (formError.value = 'Pick at least one day.')
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(form.value.startTime)) return (formError.value = 'Enter a valid start time.')
   if (!formDuration.value || formDuration.value < 5) return (formError.value = 'Enter a valid duration.')
@@ -456,7 +486,7 @@ async function submitForm() {
   try {
     await createEnrollment({
       studentId: Number(form.value.studentId),
-      teacherId: Number(form.value.teacherId),
+      ...(isAdmin.value ? { teacherId: Number(form.value.teacherId) } : {}),
       daysOfWeek: [...form.value.days].sort((a, b) => a - b),
       startTimeLocal: form.value.startTime,
       durationMinutes: formDuration.value,
@@ -685,14 +715,15 @@ function canCancel(inst) {
           >
             Close a day
           </button>
-          <button
-            type="button"
-            @click="openForm"
-            class="h-9 px-4 rounded-xl bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
-          >
-            + New class
-          </button>
         </template>
+        <button
+          v-if="canEnroll"
+          type="button"
+          @click="openForm"
+          class="h-9 px-4 rounded-xl bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-600 focus:outline-none"
+        >
+          + New class
+        </button>
       </div>
     </div>
 
@@ -933,17 +964,22 @@ function canCancel(inst) {
       <p class="ml-auto font-body text-[11px] text-navy-500">Click a class to reschedule or cancel it.</p>
     </div>
 
-    <!-- New class modal (admin) -->
+    <!-- New class modal (admin + teacher; teachers enroll under themselves) -->
     <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="New recurring class" @keydown.esc="closeForm">
       <div class="absolute inset-0 bg-black/40" @click="closeForm"></div>
       <div ref="modalPanel" tabindex="-1" @keydown="trapTab" class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 md:p-7 max-h-[90vh] overflow-y-auto focus:outline-none">
         <h2 class="font-heading text-xl font-bold text-navy-900 mb-1">New recurring class</h2>
-        <p class="font-body text-xs text-navy-500 mb-5">Generates classes for 6 months. Same start time on every selected weekday.</p>
+        <p class="font-body text-xs text-navy-500 mb-5">
+          Generates classes for 6 months. Same start time on every selected weekday.<span v-if="!isAdmin"> Classes go on your calendar.</span>
+        </p>
         <div v-if="formError" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ formError }}</div>
-        <div v-if="lookupsLoading" class="mb-4 p-3 rounded-lg bg-navy-50 border border-navy-100 text-navy-500 text-sm font-body">Loading students and teachers…</div>
-        <div v-else-if="!students.length || !teachers.length" role="alert" class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm font-body flex items-center justify-between gap-3">
-          <span>Couldn't load the {{ !students.length && !teachers.length ? 'student and teacher lists' : !students.length ? 'student list' : 'teacher list' }}.</span>
+        <div v-if="lookupsLoading" class="mb-4 p-3 rounded-lg bg-navy-50 border border-navy-100 text-navy-500 text-sm font-body">{{ isAdmin ? 'Loading students and teachers…' : 'Loading students…' }}</div>
+        <div v-else-if="lookupsMissing" role="alert" class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm font-body flex flex-wrap items-center justify-between gap-3">
+          <span>Couldn't load the {{ lookupsMissing }}.</span>
           <button type="button" @click="loadLookups" class="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700">Retry</button>
+        </div>
+        <div v-else-if="!approvedStudents.length" class="mb-4 p-3 rounded-lg bg-navy-50 border border-navy-100 text-navy-600 text-sm font-body">
+          {{ isAdmin ? 'No approved students yet. Register the family in the Students tab first.' : 'No students to enroll yet. Ask the office to register the family first.' }}
         </div>
         <form @submit.prevent="submitForm" class="space-y-4">
           <div>
@@ -956,7 +992,7 @@ function canCancel(inst) {
               {{ pendingStudentCount }} student{{ pendingStudentCount === 1 ? '' : 's' }} awaiting approval {{ pendingStudentCount === 1 ? 'is' : 'are' }} hidden — approve them in the Students tab first.
             </p>
           </div>
-          <div>
+          <div v-if="isAdmin">
             <label for="sf-teacher" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Teacher</label>
             <select id="sf-teacher" v-model="form.teacherId" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600">
               <option value="" disabled>Select a teacher…</option>
@@ -979,7 +1015,7 @@ function canCancel(inst) {
               </button>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label for="sf-time" class="block font-body text-xs font-semibold text-navy-700 uppercase tracking-wider mb-1.5">Start (Central)</label>
               <input id="sf-time" v-model="form.startTime" type="time" class="w-full px-3 py-2.5 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" />
@@ -999,7 +1035,7 @@ function canCancel(inst) {
               <input v-if="form.durationChoice === 'custom'" v-model.number="form.customDuration" type="number" min="5" max="600" aria-label="Custom duration in minutes" class="mt-2 w-full px-3 py-2 rounded-lg border border-navy-200 bg-white font-body text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-academic-600" placeholder="minutes" />
             </div>
           </div>
-          <div class="flex gap-3 pt-2">
+          <div class="flex flex-wrap gap-3 pt-2">
             <button type="button" @click="closeForm" class="flex-1 px-4 py-2.5 rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 font-body text-sm font-semibold">Cancel</button>
             <button type="submit" :disabled="formSubmitting" class="flex-1 px-4 py-2.5 rounded-lg bg-[#001B3D] text-white hover:bg-navy-800 font-body text-sm font-bold disabled:opacity-60">{{ formSubmitting ? 'Creating…' : 'Create class' }}</button>
           </div>

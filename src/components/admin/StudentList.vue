@@ -7,12 +7,14 @@ import PageHeader from './PageHeader.vue'
 import GradePill from './GradePill.vue'
 import InlineNotes from './InlineNotes.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
+import RegisterFamilyModal from './RegisterFamilyModal.vue'
 
-// Year-round (regular) tutoring roster. Rows are created by students
-// registering their own accounts at /register (student name + parent email +
-// parent phone + password). New registrations wait in the Pending approval
-// queue — parent contact info is shown there so the team can verify the
-// family is real before approving.
+// Year-round (regular) tutoring roster. Families are registered here by an
+// admin through "Register family" (student name(s) + parent email + optional
+// parent phone + password); those rows arrive already approved. The Pending
+// approval queue only holds older self-registrations from before the public
+// /register page was retired — parent contact info is shown there so the team
+// can verify the family before approving.
 //
 // No payment UI here on purpose: tutoring payments are handled off-platform
 // and not tracked on the site. Homework management lives in each student's
@@ -25,6 +27,8 @@ const props = defineProps({
   emptyMessage: { type: String, default: 'No students enrolled yet.' },
   // Homework management in the detail modal (on for the Students roster).
   allowAssignments: { type: Boolean, default: false },
+  // "Register family" button + modal (on for the regular Students roster only).
+  allowRegister: { type: Boolean, default: false },
 })
 
 const api = useAdminApi()
@@ -128,6 +132,28 @@ function isSaving(id) {
   return rowSaving.value.has(id)
 }
 
+// ---------- Register a family (admin) ----------
+const showRegister = ref(false)
+const registeredNotice = ref(null) // { names, email } after a successful registration
+
+async function onRegistered({ students: created, parentEmail }) {
+  showRegister.value = false
+  registeredNotice.value = {
+    names: created.map((s) => s.studentName),
+    email: parentEmail,
+  }
+  await load()
+  // New rows have no grade yet, so they land in the Unassigned tab.
+  if (created.length && created.every((s) => !s.gradeLevel) && gradeTabs.value.includes('unassigned')) {
+    activeGrade.value = 'unassigned'
+  }
+}
+
+function joinNames(names) {
+  if (names.length <= 1) return names[0] ?? ''
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
 // ---------- Approval ----------
 async function approve(row) {
   await patch(row, { approved: true })
@@ -158,8 +184,8 @@ function formatRegistered(value) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-// Parent contact for a row: registered accounts carry parent email + phone;
-// legacy admin-entered rows may only have a parent name.
+// Parent contact for a row: registered accounts carry a parent email (phone is
+// optional); legacy admin-entered rows may only have a parent name.
 function parentContact(row) {
   return row.parentEmail ?? row.parentName ?? '—'
 }
@@ -264,7 +290,40 @@ function dueBadge(a) {
 
 <template>
   <main>
-    <PageHeader :eyebrow="eyebrow" :title="title" :count="students.length" />
+    <PageHeader :eyebrow="eyebrow" :title="title" :count="students.length">
+      <template v-if="allowRegister" #actions>
+        <button
+          type="button"
+          @click="showRegister = true"
+          class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#001B3D] text-white font-body text-sm font-semibold hover:bg-navy-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Register family
+        </button>
+      </template>
+    </PageHeader>
+
+    <div v-if="registeredNotice" role="status" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+      <svg class="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <p class="flex-1 min-w-0 font-body text-sm text-emerald-800 leading-relaxed break-words">
+        <span class="font-semibold">Registered {{ joinNames(registeredNotice.names) }}.</span>
+        Share <span class="font-semibold break-all">{{ registeredNotice.email }}</span> and the password you set with the family &mdash; they log in at <span class="font-semibold">/login</span>.
+      </p>
+      <button
+        type="button"
+        @click="registeredNotice = null"
+        aria-label="Dismiss"
+        class="p-1 -m-1 rounded-lg text-emerald-700 hover:bg-emerald-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 focus:outline-none"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
     <div v-if="error" role="alert" class="mx-6 md:mx-10 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-body">
       {{ error }}
@@ -276,8 +335,8 @@ function dueBadge(a) {
         <p class="font-body text-sm text-navy-400">{{ emptyMessage }}</p>
       </div>
 
-      <!-- Pending approval — registrations awaiting review. Parent contact is
-           shown so the team can verify the family before approving. -->
+      <!-- Pending approval — older self-registrations awaiting review. Parent
+           contact is shown so the team can verify the family before approving. -->
       <section v-if="pending.length > 0">
         <div class="flex items-center gap-3 mb-3">
           <h2 class="font-heading text-lg font-bold text-amber-700 tracking-tight">Pending approval</h2>
@@ -614,6 +673,13 @@ function dueBadge(a) {
         </div>
       </div>
     </Transition>
+
+    <RegisterFamilyModal
+      v-if="allowRegister"
+      :show="showRegister"
+      @close="showRegister = false"
+      @registered="onRegistered"
+    />
 
     <ConfirmDialog
       :show="toDeleteId !== null"

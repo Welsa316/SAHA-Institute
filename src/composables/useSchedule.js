@@ -47,6 +47,13 @@ export function useSchedule() {
     fetchStudents() {
       return api('/api/students').then((d) => d.students)
     },
+    // Approved regular-tutoring students, readable by admins AND teachers (the
+    // full /api/students roster is admin-only). Feeds the teacher's class form.
+    fetchSchedulableStudents() {
+      return api('/api/enrollments/students').then((d) => d.students)
+    },
+    // Teachers omit teacherId: the server always enrolls under the token's
+    // teacher. Admins must pass it.
     createEnrollment(body) {
       return api('/api/enrollments', { method: 'POST', body: JSON.stringify(body) })
     },
