@@ -88,7 +88,7 @@ onMounted(() => {
           <!-- Highlights row — light cards on a light surface, with amber accents
                on the numeric values so the row reads as "this is the same energy
                as the amber CTA below." -->
-          <div class="grid sm:grid-cols-3 gap-4 md:gap-6 max-w-3xl mx-auto mb-12">
+          <div class="grid sm:grid-cols-2 gap-4 md:gap-6 max-w-2xl mx-auto mb-12">
             <div class="rounded-2xl bg-white border border-navy-100 shadow-sm px-5 py-5 text-left">
               <p class="font-heading text-2xl font-bold text-amber-600 mb-1">{{ t('enroll.workshopsHighlight1Value') }}</p>
               <p class="font-body text-xs uppercase tracking-wider text-navy-500">{{ t('enroll.workshopsHighlight1Label') }}</p>
@@ -96,10 +96,6 @@ onMounted(() => {
             <div class="rounded-2xl bg-white border border-navy-100 shadow-sm px-5 py-5 text-left">
               <p class="font-heading text-2xl font-bold text-amber-600 mb-1">{{ t('enroll.workshopsHighlight2Value') }}</p>
               <p class="font-body text-xs uppercase tracking-wider text-navy-500">{{ t('enroll.workshopsHighlight2Label') }}</p>
-            </div>
-            <div class="rounded-2xl bg-white border border-navy-100 shadow-sm px-5 py-5 text-left">
-              <p class="font-heading text-2xl font-bold text-amber-600 mb-1">{{ t('enroll.workshopsHighlight3Value') }}</p>
-              <p class="font-body text-xs uppercase tracking-wider text-navy-500">{{ t('enroll.workshopsHighlight3Label') }}</p>
             </div>
           </div>
 

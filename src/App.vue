@@ -18,7 +18,7 @@ useHead(() => {
   const title = route.meta?.title || 'SAHA Institute For Learning'
   const description =
     route.meta?.description ||
-    'One-on-one tutoring in academics, Islamic studies, and standardized test prep for students ages 4 to 17. Located in Kenner, Louisiana.'
+    'One-on-one tutoring in academics, Islamic studies, and standardized test prep for students. Located in Kenner, Louisiana.'
   const meta = [
     { name: 'description', content: description },
     { property: 'og:title', content: title },
