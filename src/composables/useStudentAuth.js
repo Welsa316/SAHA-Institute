@@ -2,15 +2,16 @@ import { ref, computed } from 'vue'
 
 // Shared reactive FAMILY-account session state. One login (parent email +
 // password) covers one or more students; `account` is { parentEmail,
-// students: [{id, name, approved, gradeLevel}] }. Used by the auth pages,
-// the portal, and the router guard.
+// students: [{id, name, approved, gradeLevel}] }. Accounts are created by
+// SAHA staff, so the client only logs in and out. Used by the login page, the
+// portal, and the router guard.
 
 const account = ref(null)
 const checking = ref(false)
 const checked = ref(false)
 
 // Carry the HTTP status on the thrown error so callers can map a failure to
-// localized copy by status (401/409/429) instead of surfacing the server's
+// localized copy by status (401/429) instead of surfacing the server's
 // English message string. A network failure has no status (left undefined).
 function httpError(status, message) {
   const err = new Error(message)
@@ -37,20 +38,6 @@ async function ensureChecked() {
   } else if (checking.value) {
     while (checking.value) await new Promise((r) => setTimeout(r, 25))
   }
-}
-
-async function register({ names, parentEmail, parentPhone, password }) {
-  const res = await fetch('/api/student-auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ names, parentEmail, parentPhone, password }),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw httpError(res.status, data.error || 'Could not create your account.')
-  account.value = data.account
-  checked.value = true
-  return data.account
 }
 
 async function login({ email, password }) {
@@ -85,7 +72,6 @@ export function useStudentAuth() {
     isAuthenticated: computed(() => !!account.value),
     fetchSession,
     ensureChecked,
-    register,
     login,
     logout,
   }

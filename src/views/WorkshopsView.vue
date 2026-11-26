@@ -164,7 +164,7 @@ const { sectionRef: finalRef, isVisible: finalVisible } = useIntersectionReveal(
             <p class="font-body text-sm text-navy-600 leading-relaxed rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">{{ t('workshopsPage.chooseWorkshops') }}</p>
             <p class="font-body text-sm text-navy-600 leading-relaxed rounded-xl border border-academic-200 bg-academic-50/60 px-4 py-3">
               {{ t('workshopsPage.chooseTutoring') }}
-              <router-link to="/register" class="font-semibold text-academic-700 hover:text-academic-800 underline underline-offset-2 ms-1">
+              <router-link to="/contact" class="font-semibold text-academic-700 hover:text-academic-800 underline underline-offset-2 ms-1">
                 {{ t('workshopsPage.tutoringCta') }}
               </router-link>
             </p>

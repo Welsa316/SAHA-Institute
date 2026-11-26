@@ -11,7 +11,7 @@ const ORIGIN = 'https://sahainstituteforlearning.com'
 
 // Keep in lockstep with vite.config.js includedRoutes and the server's
 // PRERENDERED_ROUTES set.
-const ROUTES = ['/', '/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/register', '/careers']
+const ROUTES = ['/', '/about', '/summer-camp', '/workshops', '/enroll', '/contact', '/careers']
 
 const today = new Date().toISOString().slice(0, 10)
 const urls = ROUTES.map(

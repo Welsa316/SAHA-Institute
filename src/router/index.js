@@ -7,7 +7,7 @@ import { useStudentAuth } from '../composables/useStudentAuth.js'
 // tags (title/description/canonical/og) are handled by useHead in App.vue.
 
 const BASE_TITLE = 'SAHA Institute For Learning'
-const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep for ages 4 to 17.'
+const BASE_DESC = 'One-on-one tutoring in academics, Islamic studies, and standardized test prep.'
 
 export const routes = [
   // ---------- Public site ----------
@@ -35,7 +35,7 @@ export const routes = [
     component: () => import('../views/SummerCamp.vue'),
     meta: {
       title: `Summer Camp & STEM 2026 | ${BASE_TITLE}`,
-      description: 'Full-month summer camp June 1-30 for ages 4-17. STEM block for ages 9-17. Daily schedule, weekly lunch menus, and pricing.',
+      description: 'Full-month summer camp June 1-30. STEM block for ages 9-17. Daily schedule, weekly lunch menus, and pricing.',
     },
   },
   {
@@ -73,19 +73,15 @@ export const routes = [
     redirect: { name: 'Enroll', query: { signup: '1' } },
   },
 
-  // ---------- Student accounts (self-service) ----------
-  // /register + /login share one component (mode keyed off route name).
-  // /portal is the logged-in view, guarded by the student session.
+  // ---------- Student accounts ----------
+  // Families no longer sign themselves up: SAHA staff create the account from
+  // the admin Students tab. /login is the family sign-in, /portal the
+  // logged-in view guarded by the student session. Old /register links land on
+  // Contact so an enrolment enquiry still has somewhere to go.
   // `bare: true` hides the public Navbar/Footer (full-screen flows).
   {
     path: '/register',
-    name: 'StudentRegister',
-    component: () => import('../views/StudentAuthView.vue'),
-    meta: {
-      bare: true,
-      title: `Create a Student Account | ${BASE_TITLE}`,
-      description: 'Create a SAHA Institute student account to register for one-on-one tutoring.',
-    },
+    redirect: { name: 'Contact' },
   },
   {
     path: '/login',

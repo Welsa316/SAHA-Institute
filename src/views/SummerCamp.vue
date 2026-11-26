@@ -190,7 +190,7 @@ const timelineEntries = computed(() =>
         :class="finalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
       >
         <router-link
-          to="/register"
+          to="/contact"
           class="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white text-[#001B3D] font-body text-sm font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors duration-300 shadow-xl shadow-black/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus:outline-none"
         >
           {{ t('summerCamp.registerCta') }}

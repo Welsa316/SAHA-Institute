@@ -15,10 +15,6 @@ export default {
     // "make an account" or "enroll in tutoring." Both ambiguities were flagged
     // in user feedback against the previous "Enroll Now" / "Sign Up" wording.
     enroll: 'Summer Signups',
-    // Year-round tutoring entry point in the nav. "Register" reads as
-    // permanent enrollment (which is what tutoring is) without colliding
-    // with "Summer Signups" (events) or "Programs" (info anchor).
-    register: 'Register',
     saha: 'SAHA',
     tagline: 'Institute for Learning',
     openMenu: 'Open menu',
@@ -28,7 +24,7 @@ export default {
     badge: 'Est. 2020 · Academic Excellence',
     heading1: 'Where Curiosity',
     heading2: 'Meets Clarity',
-    subtitle: 'One-on-one tutoring in academics, Islamic studies, and test prep for ages 4–17.',
+    subtitle: 'One-on-one tutoring in academics, Islamic studies, and test prep.',
     cta1: 'Explore Programs',
     cta2: 'Get in Touch',
     callUs: 'Or call us: (504) 373-9778',
@@ -54,13 +50,13 @@ export default {
     heading: 'Crafted for',
     headingHighlight: 'growth',
     subtitle: 'Academics, Quran studies, and standardized test prep. All one-on-one.',
-    ageBadge: 'Ages 4–17 · Pre-K through High School',
+    ageBadge: 'Pre-K through High School',
     oneOnOne: 'All classes are one-on-one',
-    // CTA under the program cards leading to /register (student account). "Sign
-    // Up for Tutoring" is unambiguous here because the parent has just read the
-    // prices and program descriptions — they know what they're signing up for.
-    signUpCta: 'Sign Up for Tutoring',
-    signUpHint: 'Quick form. Our team follows up within a day.',
+    // CTA under the program cards leading to /contact. There's no online
+    // sign-up: our team sets up the family account after that first
+    // conversation, so the label asks for contact rather than promising a form.
+    signUpCta: 'Contact Us to Enroll',
+    signUpHint: 'Our team follows up within a day and sets everything up for you.',
     items: [
       {
         title: 'Academics',
@@ -103,7 +99,7 @@ export default {
     badge: 'Upcoming Event',
     heading1: 'Summer Camp',
     heading2: '& STEM 2026',
-    description: 'A full month of learning, fun, and discovery for kids ages 4 to 17. Swimming, scavenger hunts, bowling, arts & crafts, STEM activities, and more.',
+    description: 'A full month of learning, fun, and discovery for kids. Swimming, scavenger hunts, bowling, arts & crafts, STEM activities, and more.',
     date: 'June 1 - June 30, 2026',
     schedule: 'Mon-Thu 7 AM - 5 PM, Fri 7 AM - 1 PM',
     price1: '$400',
@@ -162,14 +158,14 @@ export default {
     summerHeading1: 'Summer Camp',
     summerHeading2: '& STEM',
     summerImageAlt: 'SAHA Summer Camp & STEM 2026 flyer',
-    summerDescription: 'A full month of learning, fun, and discovery for kids ages 4 to 17. Quran, academics, arts, outdoor play, and an afternoon STEM block.',
+    summerDescription: 'A full month of learning, fun, and discovery for kids. Quran, academics, arts, outdoor play, and an afternoon STEM block.',
     summerDate: 'June 1 - June 30, 2026',
     summerSchedule: 'Mon-Thu 7 AM - 5 PM, Fri 7 AM - 1 PM',
     summerPricing: '$400/child with lunch · $250/child BYO · $20 registration',
     summerCallCta: 'Call to Sign Up',
     summerDetailsCta: 'See full details',
     summerClosedBadge: 'Camp enrollment closed',
-    summerClosedDescription: 'Summer Camp 2026 has wrapped — a full month of Quran, academics, arts, and outdoor play for kids 4 to 17. The STEM program continues through July, with expert-led workshops on the way. See what camp looked like, and call to get on next summer’s list early.',
+    summerClosedDescription: 'Summer Camp 2026 has wrapped — a full month of Quran, academics, arts, and outdoor play. The STEM program continues through July, with expert-led workshops on the way. See what camp looked like, and call to get on next summer’s list early.',
     summerRecapCta: 'See the 2026 recap',
     summerAskCta: 'Ask about next summer',
     workshopsLineupCta: 'See the full July lineup & daily schedule',
@@ -181,44 +177,22 @@ export default {
     workshopsHighlight1Label: 'Tue / Wed / Thu',
     workshopsHighlight2Value: '90 min',
     workshopsHighlight2Label: '10:30 AM - 12:00 PM',
-    workshopsHighlight3Value: 'Ages 4-17',
-    workshopsHighlight3Label: 'Mixed by topic',
     workshopsCta: 'Sign Up for Workshops',
     workshopsCtaHint: 'Our team will follow up to confirm.',
   },
   studentAuth: {
-    registerHeading: 'Create your account',
-    registerSubtitle: 'Enter the student\'s name, a parent\'s contact info, and a password to log in with.',
     loginHeading: 'Welcome back',
     loginSubtitle: 'Log in with your parent email and password.',
-    nameLabel: 'Student Name',
-    nameLabelN: 'Student {n} Name',
-    namePlaceholder: 'Student\'s full name',
-    multipleLabel: 'Registering more than one student?',
-    multipleHint: 'All students share this one login — their homework shows up together on one dashboard.',
-    addStudent: 'Add another student',
-    removeStudent: 'Remove this student',
-    nameAdded: 'Added a student name field.',
-    nameRemoved: 'Removed a student name field.',
     emailLabel: 'Parent Email',
     emailPlaceholder: 'parent@example.com',
-    emailHint: 'One account covers the whole family — you\'ll log in with this email.',
-    phoneLabel: 'Parent Phone Number',
     passwordLabel: 'Password',
     passwordPlaceholder: 'Your password',
-    passwordHintRegister: 'At least 6 characters',
-    registerSubmit: 'Create Account',
     loginSubmit: 'Log In',
     submitting: 'Please wait…',
-    haveAccount: 'Already have an account?',
-    noAccount: 'New to SAHA?',
-    loginLink: 'Log in',
-    registerLink: 'Create one',
+    noAccount: 'New to SAHA? Our team sets up family accounts for you.',
+    contactLink: 'Contact us to enroll',
     errors: {
-      nameRequired: 'Please enter the student\'s name.',
-      phoneRequired: 'Please enter a full 10-digit phone number.',
       invalidCredentials: 'Invalid email or password.',
-      accountExists: 'An account with this email and password already exists. Please log in instead.',
       rateLimited: 'Too many attempts. Please try again in an hour.',
       generic: 'Something went wrong. Please try again.',
     },
@@ -246,7 +220,7 @@ export default {
     heroHeading: 'Summer Camp',
     heroHighlight: '& STEM 2026',
     heroDate: 'June 1 - June 30, 2026',
-    heroSubtitle: 'A full month of learning, faith, and play. Open to kids ages 4 to 17, with a dedicated STEM track for ages 9 and up.',
+    heroSubtitle: 'A full month of learning, faith, and play, with a dedicated STEM track for ages 9 and up.',
     callCta: 'Call to Sign Up',
     contactCta: 'Send a Message',
     overviewBadge: 'Overview',
@@ -305,7 +279,7 @@ export default {
     // and its workshops haven't started yet, so neither belongs to the "wrapped"
     // framing. The recap covers camp only.
     closedBadge: 'Camp enrollment closed — Summer 2026',
-    recapSubtitle: 'That’s a wrap on a full month of learning, faith, and play. The STEM program carries on through July — scroll through what our campers ages 4–17 were up to in June.',
+    recapSubtitle: 'That’s a wrap on a full month of learning, faith, and play. The STEM program carries on through July — scroll through what our campers were up to in June.',
     askCta: 'Ask About Next Summer',
     recapBadge: 'The Recap',
     recapHeading: 'One month. A summer’s worth of memories.',
@@ -351,8 +325,8 @@ export default {
       'Fake snow & winter wonderland builds',
     ],
     finalHeadingClosed: 'See you next summer',
-    finalSubtitleClosed: 'Camp 2026 is wrapped, the STEM program runs through July — and tutoring runs all year. Register your student, or call to hear about next summer first.',
-    registerCta: 'Register for Tutoring',
+    finalSubtitleClosed: 'Camp 2026 is wrapped, the STEM program runs through July — and tutoring runs all year. Get in touch to enroll your student, or call to hear about next summer first.',
+    registerCta: 'Contact Us About Tutoring',
   },
   campGallery: {
     comingSoon: 'Photos coming soon',
@@ -403,7 +377,7 @@ export default {
     chooseHeading: 'Afternoons, your student’s way',
     chooseWorkshops: 'Option 1 — Summer workshops: hands-on projects, creative builds, and fun learning experiences.',
     chooseTutoring: 'Option 2 — One-on-one tutoring: personalized sessions to help your student grow and succeed.',
-    tutoringCta: 'Register for tutoring',
+    tutoringCta: 'Contact us to enroll',
     finalHeading: 'Save your student’s spot',
     finalSubtitle: 'Workshops fill up fast. Sign up online in two minutes, or call us with any questions.',
   },
@@ -439,7 +413,7 @@ export default {
     items: [
       {
         q: 'What does enrollment look like?',
-        a: 'Create a student account on our Register page — it takes about a minute. Our team reviews every registration, and once it\'s approved we set up a short meeting with the parents to talk through goals, subjects, and the right teacher. Classes are only scheduled after that conversation, so every schedule starts with a plan.',
+        a: 'Call us or send a message through our Contact page. We set up a short meeting with the parents to talk through goals, subjects, and the right teacher, and our team creates your family account so you can log in and follow homework. Classes are only scheduled after that conversation, so every schedule starts with a plan.',
       },
       {
         q: 'How do we pick a time slot?',
@@ -496,7 +470,7 @@ export default {
     subtitle: 'Book a free consultation and we\'ll find the right program for your child.',
     button1: 'Schedule a Consultation', // retained for any consumer; CallToAction now uses signUpButton
     button2: 'Call Us Today',
-    signUpButton: 'Register for Tutoring',
+    signUpButton: 'Contact Us to Enroll',
   },
   footer: {
     brand: 'SAHA Institute For Learning',
@@ -507,6 +481,7 @@ export default {
     phoneCall: 'Call',
     phoneText: 'Text / WhatsApp',
     hours: 'Mon–Fri 3:15 – 9:00 PM · Sat–Sun 2:00 – 6:00 PM',
+    familyLogin: 'Family Login',
     copyright: '© 2026 SAHA Institute For Learning. All rights reserved.',
   },
   about: {
@@ -522,7 +497,7 @@ export default {
     missionP3Start: 'In 2020, Anila decided to bridge that gap. She founded SAHA to create a',
     missionP3Bold: 'comfortable, supportive space',
     missionP3End: 'where every student, regardless of background, could receive the personalized attention they deserve.',
-    missionP4: 'Today, SAHA serves students ages 4 through 17 across academics, Islamic studies, and standardized test preparation. Every class is one-on-one, because we believe every student\'s journey is unique.',
+    missionP4: 'Today, SAHA serves students across academics, Islamic studies, and standardized test preparation. Every class is one-on-one, because we believe every student\'s journey is unique.',
     teamHeading: 'Meet the',
     teamHighlight: 'Team',
     ctaHeading: 'Ready to get started?',

@@ -20,12 +20,10 @@ const mobileOpen = ref(false)
 
 // Nav links — Home was dropped (the logo lock-up handles home navigation) and
 // the old "Sign Up" link was rolled into the amber Summer Signups CTA on the
-// right. "Register" is the year-round tutoring entry point — distinct verb
-// from "Summer Signups" so the two don't visually conflate (events vs.
-// permanent student account).
+// right. Tutoring enquiries go through Contact; SAHA staff set up family
+// accounts, so there is no self-service sign-up link here.
 const navLinks = computed(() => [
   { name: t('nav.programs'), to: '/#programs' },
-  { name: t('nav.register'), to: '/register' },
   { name: t('nav.about'), to: '/about' },
   { name: t('nav.contact'), to: '/contact' },
 ])
