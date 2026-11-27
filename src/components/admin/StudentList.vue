@@ -16,9 +16,14 @@ import RegisterFamilyModal from './RegisterFamilyModal.vue'
 // /register page was retired — parent contact info is shown there so the team
 // can verify the family before approving.
 //
-// No payment UI here on purpose: tutoring payments are handled off-platform
-// and not tracked on the site. Homework management lives in each student's
-// detail modal.
+// Tutoring PAYMENTS are still handled off-platform and not tracked here —
+// there is no paid/unpaid toggle on this roster. What the detail modal does
+// carry is the payment REMINDER cycle: one anchor date ("billing starts here")
+// plus a cadence, from which the server computes every future due date and
+// emails the parent a few days ahead. Setting no anchor (the default) means
+// that family gets no payment reminders at all.
+//
+// Homework management also lives in each student's detail modal.
 
 const props = defineProps({
   endpoint: { type: String, required: true }, // /api/students
@@ -29,6 +34,9 @@ const props = defineProps({
   allowAssignments: { type: Boolean, default: false },
   // "Register family" button + modal (on for the regular Students roster only).
   allowRegister: { type: Boolean, default: false },
+  // Payment-reminder cycle controls in the detail modal (regular roster only —
+  // camp/STEM are one-time payments with their own paid toggle).
+  allowBillingReminders: { type: Boolean, default: false },
 })
 
 const api = useAdminApi()
@@ -205,6 +213,38 @@ async function approve(row) {
 async function setGrade(row, gradeLevel) {
   if (!gradeLevel) return
   await patch(row, { gradeLevel })
+}
+
+// ---------- Payment reminder cycle ----------
+// The anchor is the only date entered; the server computes the due dates from
+// it and returns the next one as `billingNextDueDate`, so this never does the
+// cycle maths itself.
+async function setBillingAnchor(row, value) {
+  const anchor = value || null
+  await patch(row, {
+    billingAnchorDate: anchor,
+    // Default a new cycle to biweekly so turning reminders on is one action.
+    ...(anchor && !row.billingCadence ? { billingCadence: 'biweekly' } : {}),
+  })
+}
+
+async function setBillingCadence(row, cadence) {
+  if (!cadence) return
+  await patch(row, { billingCadence: cadence })
+}
+
+async function stopBillingReminders(row) {
+  await patch(row, { billingAnchorDate: null })
+}
+
+function formatDueDate(iso) {
+  if (!iso) return '—'
+  // Parse as a plain calendar date; `new Date('YYYY-MM-DD')` is UTC midnight
+  // and would render as the previous day west of Greenwich.
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  })
 }
 
 async function confirmDelete() {
@@ -603,6 +643,68 @@ function dueBadge(a) {
             <p class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1.5">Notes</p>
             <p v-if="detailRow.notes" class="font-body text-sm text-navy-700 whitespace-pre-wrap break-words leading-relaxed">{{ detailRow.notes }}</p>
             <p v-else class="font-body text-sm text-navy-300 italic">No notes yet.</p>
+          </div>
+
+          <!-- Payment reminders. One anchor date + a cadence; the server
+               computes every due date from it and emails the parent ahead of
+               each one. No anchor = no reminders for this family. -->
+          <div v-if="allowBillingReminders" class="mb-6 pt-5 border-t border-navy-100">
+            <div class="flex items-baseline justify-between gap-3 mb-2">
+              <p class="font-body text-[10px] tracking-wider uppercase font-bold text-navy-500">Payment reminders</p>
+              <span
+                :class="detailRow.billingAnchorDate
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-navy-50 text-navy-500 border-navy-200'"
+                class="font-body text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+              >{{ detailRow.billingAnchorDate ? 'On' : 'Off' }}</span>
+            </div>
+
+            <p v-if="!detailRow.parentEmail" role="alert" class="mb-2.5 font-body text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+              This student has no parent email on file, so no reminder can be delivered.
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label :for="`billing-anchor-${detailRow.id}`" class="block font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1">Billing starts</label>
+                <input
+                  :id="`billing-anchor-${detailRow.id}`"
+                  type="date"
+                  :value="detailRow.billingAnchorDate ?? ''"
+                  :disabled="isSaving(detailRow.id)"
+                  @change="(e) => setBillingAnchor(detailRow, e.target.value)"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-navy-200 text-navy-700 text-sm font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label :for="`billing-cadence-${detailRow.id}`" class="block font-body text-[10px] tracking-wider uppercase font-bold text-navy-500 mb-1">Billed</label>
+                <select
+                  :id="`billing-cadence-${detailRow.id}`"
+                  :value="detailRow.billingCadence ?? 'biweekly'"
+                  :disabled="isSaving(detailRow.id) || !detailRow.billingAnchorDate"
+                  @change="(e) => setBillingCadence(detailRow, e.target.value)"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-navy-200 text-navy-700 text-sm font-body focus:outline-none focus:ring-2 focus:ring-academic-400/40 disabled:opacity-50"
+                >
+                  <option value="biweekly">Every 2 weeks</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="detailRow.billingAnchorDate" class="mt-2.5 flex items-baseline justify-between gap-3 flex-wrap">
+              <p class="font-body text-xs text-navy-600">
+                Next payment due <strong class="text-navy-800">{{ formatDueDate(detailRow.billingNextDueDate) }}</strong>.
+                The parent is emailed a few days before each one.
+              </p>
+              <button
+                type="button"
+                :disabled="isSaving(detailRow.id)"
+                @click="stopBillingReminders(detailRow)"
+                class="font-body text-xs font-bold text-red-600 hover:text-red-700 hover:underline disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 focus:outline-none rounded"
+              >Turn off</button>
+            </div>
+            <p v-else class="mt-2.5 font-body text-xs text-navy-500">
+              Set the date this family's billing cycle starts to turn reminders on.
+            </p>
           </div>
 
           <!-- Homework -->

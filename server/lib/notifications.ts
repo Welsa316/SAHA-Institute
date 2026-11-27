@@ -349,3 +349,93 @@ export async function sendTeacherReset(args: {
   )
   return sendEmail({ to: [args.email], subject: 'Reset your SAHA password', html })
 }
+
+
+// ---------- Clock-driven reminders (→ parent / teacher, AWAITED) ----------
+// Like the teacher account links above, these return the delivery result
+// instead of swallowing it. The scheduler in lib/reminders.ts claims a reminder
+// in the database BEFORE calling these and hands the claim back when the send
+// fails, so it has to be told the truth about whether the mail went out.
+
+// Parent, ~24h before a single class.
+export async function sendClassReminderEmail(args: {
+  to: string
+  studentName: string
+  teacherName: string
+  startsAtUtc: Date
+  durationMinutes: number
+}): Promise<boolean> {
+  const when = DateTime.fromJSDate(args.startsAtUtc).setZone(CENTRAL)
+  const html = layout('Class reminder', `
+    <p>A quick reminder that <strong>${escapeHtml(args.studentName)}</strong> has tutoring tomorrow:</p>
+    <table style="border-collapse: collapse; margin: 8px 0;">
+      <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">When</td><td style="padding: 4px 0;">${escapeHtml(when.toFormat("EEEE, LLLL d 'at' h:mm a"))} Central</td></tr>
+      <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Teacher</td><td style="padding: 4px 0;">${escapeHtml(args.teacherName)}</td></tr>
+      <tr><td style="padding: 4px 16px 4px 0; font-weight: bold;">Length</td><td style="padding: 4px 0;">${args.durationMinutes} minutes</td></tr>
+    </table>
+    <p>If you need to cancel or move this class, please let us know as soon as you can.</p>`)
+  logger.info('notify', 'class reminder', { to: args.to })
+  return sendEmail({
+    to: [args.to],
+    subject: `Reminder: ${args.studentName}'s class is ${when.toFormat('EEEE')} at ${when.toFormat('h:mm a')}`,
+    html,
+  })
+}
+
+// Teacher, morning-of, listing the whole day in order.
+export async function sendTeacherDailyDigestEmail(args: {
+  to: string
+  teacherName: string
+  localDate: string
+  classes: { startsAtUtc: Date; durationMinutes: number; studentName: string }[]
+}): Promise<boolean> {
+  const count = args.classes.length
+  const rows = args.classes
+    .map((c) => {
+      const t = DateTime.fromJSDate(c.startsAtUtc).setZone(CENTRAL)
+      return `<tr>
+        <td style="padding: 8px 16px 8px 0; white-space: nowrap; font-weight: bold;">${escapeHtml(t.toFormat('h:mm a'))}</td>
+        <td style="padding: 8px 16px 8px 0;">${escapeHtml(c.studentName)}</td>
+        <td style="padding: 8px 0; color: #64748b;">${c.durationMinutes} min</td>
+      </tr>`
+    })
+    .join('')
+  const html = layout('Your classes today', `
+    <p>Good morning${args.teacherName ? ` ${escapeHtml(firstName(args.teacherName))}` : ''},</p>
+    <p>You have <strong>${count} ${count === 1 ? 'class' : 'classes'}</strong> on ${escapeHtml(fmtDate(args.localDate))}:</p>
+    <table style="border-collapse: collapse; margin: 12px 0; width: 100%;">${rows}</table>
+    <p style="font-size: 13px; color: #64748b;">All times Central. Cancellations you make in the dashboard won't appear in an email already sent.</p>`)
+  logger.info('notify', 'teacher daily digest', { to: args.to, classes: count })
+  return sendEmail({
+    to: [args.to],
+    subject: `Your schedule for ${DateTime.fromISO(args.localDate, { zone: CENTRAL }).toFormat('EEEE, LLL d')} — ${count} ${count === 1 ? 'class' : 'classes'}`,
+    html,
+  })
+}
+
+// Parent, a few days before a recurring tuition due date. Deliberately carries
+// NO amount: the site doesn't track what a family owes, and inventing a figure
+// in a billing email would be worse than leaving it out.
+export async function sendPaymentReminderEmail(args: {
+  to: string
+  studentName: string
+  dueDate: string
+  cadence: 'biweekly' | 'monthly'
+  daysAway: number
+}): Promise<boolean> {
+  const due = DateTime.fromISO(args.dueDate, { zone: CENTRAL })
+  const timing =
+    args.daysAway === 0 ? 'today' : args.daysAway === 1 ? 'tomorrow' : `in ${args.daysAway} days`
+  const cadenceWord = args.cadence === 'biweekly' ? 'every two weeks' : 'monthly'
+  const html = layout('Payment reminder', `
+    <p>Hello,</p>
+    <p><strong>${escapeHtml(args.studentName)}</strong>'s next tuition payment is due <strong>${escapeHtml(timing)}</strong> — ${escapeHtml(due.toFormat('EEEE, LLLL d'))}.</p>
+    <p>Tuition for ${escapeHtml(args.studentName)} is billed ${escapeHtml(cadenceWord)}. If you've already sent this payment, thank you — no action needed.</p>
+    <p>Questions about your balance, or need to arrange a different date? Reply to this email or call us at (504) 667-3625.</p>`)
+  logger.info('notify', 'payment reminder', { to: args.to, dueDate: args.dueDate, daysAway: args.daysAway })
+  return sendEmail({
+    to: [args.to],
+    subject: `${args.studentName}'s tuition is due ${args.daysAway === 0 ? 'today' : due.toFormat('LLLL d')}`,
+    html,
+  })
+}

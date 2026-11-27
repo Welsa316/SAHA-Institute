@@ -11,6 +11,7 @@ import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { notifyStudentApproved } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
+import { nextDueDate, todayCentral } from '../lib/billing.js'
 
 // One factory backs both /api/summer-camp and /api/stem-program. The two programs share
 // storage and schema; only the `program` enum value differs.
@@ -32,9 +33,27 @@ const publicColumns = {
   paid: students.paid,
   paidFrom: students.paidFrom,
   paidUntil: students.paidUntil,
+  billingAnchorDate: students.billingAnchorDate,
+  billingCadence: students.billingCadence,
   notes: students.notes,
   createdAt: students.createdAt,
   updatedAt: students.updatedAt,
+}
+
+// `billingNextDueDate` is computed, not stored: the next tuition due date
+// implied by the student's anchor + cadence. Derived here (from the same
+// lib/billing.ts the reminder scheduler uses) rather than in the client, so the
+// date the admin reads can never disagree with the date that triggers the
+// email. Null whenever reminders are off for this student.
+function decorate<T extends { billingAnchorDate: string | null; billingCadence: 'biweekly' | 'monthly' }>(
+  row: T,
+): T & { billingNextDueDate: string | null } {
+  return {
+    ...row,
+    billingNextDueDate: row.billingAnchorDate
+      ? nextDueDate(row.billingAnchorDate, row.billingCadence, todayCentral())
+      : null,
+  }
 }
 
 export function studentsRouter(program: Program): Router {
@@ -52,7 +71,7 @@ export function studentsRouter(program: Program): Router {
         .from(students)
         .where(eq(students.program, program))
         .orderBy(asc(students.gradeLevel), asc(students.studentName))
-      res.json({ students: rows })
+      res.json({ students: rows.map(decorate) })
     } catch (err) {
       next(err)
     }
@@ -73,11 +92,13 @@ export function studentsRouter(program: Program): Router {
           paid: input.paid ?? false,
           paidFrom: input.paidFrom ?? null,
           paidUntil: input.paidUntil ?? null,
+          billingAnchorDate: input.billingAnchorDate ?? null,
+          ...(input.billingCadence ? { billingCadence: input.billingCadence } : {}),
           notes: input.notes ?? null,
         })
         .returning(publicColumns)
       logger.info('student', 'created', { id: row.id, program, user: res.locals.user?.username })
-      res.status(201).json({ student: row })
+      res.status(201).json({ student: decorate(row) })
     } catch (err) {
       next(err)
     }
@@ -120,7 +141,7 @@ export function studentsRouter(program: Program): Router {
       if (!row) throw new HttpError(404, 'Student not found.')
       if (wasUnapproved && row.approved) notifyStudentApproved(id)
       logger.info('student', 'updated', { id, program, fields: Object.keys(patch), user: res.locals.user?.username })
-      res.json({ student: row })
+      res.json({ student: decorate(row) })
     } catch (err) {
       next(err)
     }

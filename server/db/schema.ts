@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, date, integer, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, boolean, timestamp, date, integer, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
 
@@ -13,6 +13,12 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'teacher'])
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['active', 'cancelled'])
 export const classInstanceStatusEnum = pgEnum('class_instance_status', ['scheduled', 'cancelled'])
 export const cancelTypeEnum = pgEnum('cancel_type', ['student_off', 'series_cancelled', 'day_closed'])
+
+// Billing cadence for year-round tutoring students. The client's pricing is
+// $30/hr "biweekly or monthly" for Academics and $250/month for Islamic
+// Studies, so both cases are representable; biweekly is the default and the
+// only one the reminder flow was asked for.
+export const billingCadenceEnum = pgEnum('billing_cadence', ['biweekly', 'monthly'])
 
 // ---------- teachers ----------
 // One row per teaching staff member. `color` colour-codes this teacher's classes
@@ -128,6 +134,15 @@ export const students = pgTable('students', {
   paid: boolean('paid').notNull().default(false),
   paidFrom: date('paid_from'),
   paidUntil: date('paid_until'),
+  // ---- Recurring tuition cycle (regular/tutoring students only) ----
+  // The ONE date an admin sets: "billing starts here." Every later due date is
+  // computed forward from it by `billing_cadence`, so nothing needs re-entering
+  // per cycle. NULL (the default) means this student gets no payment
+  // reminders — so adding these columns left every existing row silent.
+  // Distinct from paid/paid_from/paid_until above, which stay vestigial for
+  // tutoring: this drives reminders, not a record of payment received.
+  billingAnchorDate: date('billing_anchor_date'),
+  billingCadence: billingCadenceEnum('billing_cadence').notNull().default('biweekly'),
   notes: text('notes'),
   // Reserved for future student-facing schedule display (migration 0012). Not
   // used yet — all display currently happens in the logged-in user's timezone.
@@ -197,6 +212,31 @@ export const classInstances = pgTable('class_instances', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ---------- reminder_log (the idempotency ledger) ----------
+// One row per reminder actually sent. The scheduler CLAIMS a reminder by
+// inserting here first and only emails when the insert succeeds, so the unique
+// index on (kind, ref_key) is what guarantees a family never gets the same
+// reminder twice — across restarts, redeploys replaying an hour, or a second
+// app instance. `refKey` identifies the exact thing reminded about:
+//   class_24h        -> `inst:<classInstanceId>`
+//   teacher_daily    -> `t:<teacherId>:<YYYY-MM-DD>`  (Central local date)
+//   payment_cycle    -> `s:<studentId>:<YYYY-MM-DD>`  (the due date)
+// Rows are history: never updated, never deleted by the app.
+
+export const reminderLog = pgTable(
+  'reminder_log',
+  {
+    id: serial('id').primaryKey(),
+    kind: text('kind').notNull(),
+    refKey: text('ref_key').notNull(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    kindRefIdx: uniqueIndex('reminder_log_kind_ref_idx').on(t.kind, t.refKey),
+    sentAtIdx: index('reminder_log_sent_at_idx').on(t.sentAt),
+  }),
+)
+
 // ---------- Inferred row types for use in route handlers and the frontend ----------
 
 export type User = typeof users.$inferSelect
@@ -224,3 +264,8 @@ export type NewStudent = typeof students.$inferInsert
 
 export type Program = (typeof programEnum.enumValues)[number]
 export type GradeLevel = (typeof gradeLevelEnum.enumValues)[number]
+
+export type ReminderLog = typeof reminderLog.$inferSelect
+export type NewReminderLog = typeof reminderLog.$inferInsert
+
+export type BillingCadence = (typeof billingCadenceEnum.enumValues)[number]

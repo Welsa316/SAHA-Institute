@@ -53,6 +53,11 @@ const phoneSchema = z
 
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
+// Recurring tuition cadence for tutoring students. Pricing is $30/hr
+// "biweekly or monthly" for Academics and $250/month for Islamic Studies, so
+// both are representable; biweekly is the default.
+export const billingCadenceSchema = z.enum(['biweekly', 'monthly'])
+
 export const studentCreateSchema = z.object({
   parentName: z.string().trim().min(2).max(100),
   studentName: z.string().trim().min(2).max(100),
@@ -63,6 +68,11 @@ export const studentCreateSchema = z.object({
   paid: z.boolean().optional(),
   paidFrom: isoDateSchema.nullable().optional(),
   paidUntil: isoDateSchema.nullable().optional(),
+  // Recurring tuition cycle (tutoring students). `billingAnchorDate` is the one
+  // date an admin sets — "billing starts here" — and every due date is computed
+  // forward from it. Null switches payment reminders off for this student.
+  billingAnchorDate: isoDateSchema.nullable().optional(),
+  billingCadence: billingCadenceSchema.optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 
@@ -75,6 +85,11 @@ export const studentUpdateSchema = z.object({
   paid: z.boolean().optional(),
   paidFrom: isoDateSchema.nullable().optional(),
   paidUntil: isoDateSchema.nullable().optional(),
+  // Recurring tuition cycle (tutoring students). `billingAnchorDate` is the one
+  // date an admin sets — "billing starts here" — and every due date is computed
+  // forward from it. Null switches payment reminders off for this student.
+  billingAnchorDate: isoDateSchema.nullable().optional(),
+  billingCadence: billingCadenceSchema.optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
 })
 

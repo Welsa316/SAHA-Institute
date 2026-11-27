@@ -7,6 +7,7 @@ import { dirname, join, sep } from 'path'
 
 import { runMigrations } from './db/migrate.js'
 import { seedAdmin } from './db/seed.js'
+import { startReminderScheduler } from './lib/reminders.js'
 import { logger } from './lib/log.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -150,6 +151,11 @@ async function start(): Promise<void> {
       // reset, remove). Env-based seeding is retired: it would resurrect a
       // removed teacher on every boot and duplicate UI-created ones. The
       // TEACHER*_ env vars are now inert and can be deleted from the host.
+
+      // Clock-driven reminders (class reminders + tuition reminders). Needs the
+      // DB, so it only starts when one is configured. Sends are gated on
+      // RESEND_API_KEY, so this stays inert in local/preview.
+      startReminderScheduler()
     } else {
       logger.warn('boot', 'DATABASE_URL is not set — DB-backed routes will 500 until configured')
     }
