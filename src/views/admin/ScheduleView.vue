@@ -473,6 +473,21 @@ const formDuration = computed(() =>
   form.value.durationChoice === 'custom' ? Number(form.value.customDuration) : Number(form.value.durationChoice),
 )
 
+// Confirmation shown on the board after a class is created.
+const createdNotice = ref(null) // { studentName, days, time, first }
+
+// First upcoming Central-time occurrence of a weekly pattern starting today
+// (today counts only if its start time is still ahead).
+function firstOccurrence(days, startTime) {
+  const [h, m] = startTime.split(':').map(Number)
+  const now = DateTime.now().setZone('America/Chicago')
+  for (let i = 0; i < 7; i++) {
+    const day = now.plus({ days: i }).set({ hour: h, minute: m, second: 0, millisecond: 0 })
+    if (days.includes(day.weekday) && day > now) return day
+  }
+  return null
+}
+
 async function submitForm() {
   formError.value = ''
   if (!form.value.studentId) return (formError.value = 'Pick a student.')
@@ -483,6 +498,9 @@ async function submitForm() {
   const fitsProblem = hoursProblem(form.value.days, form.value.startTime, formDuration.value)
   if (fitsProblem) return (formError.value = fitsProblem)
   formSubmitting.value = true
+  const studentName = approvedStudents.value.find((s) => s.id === Number(form.value.studentId))?.studentName ?? 'the student'
+  const days = [...form.value.days].sort((a, b) => a - b)
+  const startTime = form.value.startTime
   try {
     await createEnrollment({
       studentId: Number(form.value.studentId),
@@ -493,6 +511,22 @@ async function submitForm() {
       startDate: DateTime.now().setZone(tz.value).toFormat('yyyy-MM-dd'),
     })
     closeForm()
+    // Jump the board to the first upcoming class. When the picked weekdays have
+    // already passed this week, the series starts next week and the board the
+    // user is looking at would stay empty, as if nothing happened.
+    const first = firstOccurrence(days, startTime)
+    if (first) {
+      const shown = first.setZone(tz.value)
+      weekStart.value = shown.startOf('week')
+      monthStart.value = shown.startOf('month')
+      instances.value = []
+    }
+    createdNotice.value = {
+      studentName,
+      days: days.map((d) => WEEKDAY_LABELS[d - 1]).join(', '),
+      time: DateTime.fromFormat(startTime, 'HH:mm').toFormat('h:mm a'),
+      first: first ? first.toFormat('EEE, MMM d') : null,
+    }
     await reload()
   } catch (err) {
     formError.value = err?.message || 'Could not create the class.'
@@ -728,6 +762,23 @@ function canCancel(inst) {
     </div>
 
     <div v-if="error" role="alert" class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-body">{{ error }}</div>
+
+    <div v-if="createdNotice" role="status" class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-body flex items-start justify-between gap-3">
+      <p class="min-w-0">
+        <span class="font-semibold">Class created for {{ createdNotice.studentName }}</span>
+        &mdash; {{ createdNotice.days }} at {{ createdNotice.time }}<span v-if="createdNotice.first">, first class {{ createdNotice.first }}</span>.
+      </p>
+      <button
+        type="button"
+        @click="createdNotice = null"
+        aria-label="Dismiss"
+        class="shrink-0 p-1 -m-1 rounded text-emerald-700 hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 focus:outline-none"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
     <!-- Week board: time gutter + five floating day cards. `isolate` contains
          the gutter/now-line z-indexes so they never paint over the app chrome
