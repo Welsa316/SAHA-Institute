@@ -31,6 +31,10 @@ const submitting = ref(false)
 const error = ref('')
 const liveMsg = ref('')
 
+// A validation message describes the form as it was submitted; once the admin
+// edits anything it's stale, so it clears instead of lingering over fixed input.
+watch(form, () => { if (error.value && !submitting.value) error.value = '' }, { deep: true })
+
 // Fresh form every time the modal opens.
 watch(
   () => props.show,
@@ -230,7 +234,7 @@ const labelClass = 'block font-body text-[10px] tracking-wider uppercase font-bo
               inputmode="tel"
               autocomplete="off"
               :disabled="submitting"
-              placeholder="(504) 373-9778"
+              placeholder="(504) 555-0123"
               :class="inputClass"
             />
           </div>

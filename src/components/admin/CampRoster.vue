@@ -291,7 +291,7 @@ useModalA11y(() => addOpen.value, addPanel, () => { addOpen.value = false })
                 type="tel"
                 inputmode="tel"
                 :disabled="addSaving"
-                placeholder="(504) 373-9778"
+                placeholder="(504) 555-0123"
                 class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-navy-100 text-navy-800 text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400"
               />
             </div>

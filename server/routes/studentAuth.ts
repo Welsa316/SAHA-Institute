@@ -5,6 +5,7 @@ import { db } from '../db/index.js'
 import { assignments, students } from '../db/schema.js'
 import {
   studentRegisterSchema,
+  studentAddSiblingSchema,
   studentLoginSchema,
   assignmentStudentUpdateSchema,
   idParamSchema,
@@ -34,7 +35,7 @@ import { logger } from '../lib/log.js'
 // Different families CAN share an email in principle (a legacy case from the
 // earlier per-student-password model); the password still disambiguates.
 // Registering again with an email+password that already matches an account
-// is rejected — that account exists; log in instead.
+// is rejected — add more children to that family with admin-add-sibling.
 
 export const studentAuthRouter: Router = Router()
 
@@ -109,7 +110,7 @@ studentAuthRouter.post('/admin-register', requireAuth, requireAdmin, async (req,
       if (await verifyPassword(password, account.passwordHash!)) {
         throw new HttpError(
           409,
-          'An account with this parent email and password already exists. Please log in instead.',
+          'This family is already registered with this email and password. To add a child, open one of their students and use Add a sibling.',
         )
       }
     }
@@ -144,6 +145,59 @@ studentAuthRouter.post('/admin-register', requireAuth, requireAdmin, async (req,
         approved: r.approved,
         gradeLevel: r.gradeLevel,
       })),
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/student-auth/admin-add-sibling (admin) — body: { studentId, name }
+// Adds a child to the family `studentId` belongs to. The new row copies that
+// student's email, phone and the family's shared password hash — the hash is
+// the family link, so the sibling appears in the same portal login without the
+// admin ever needing the password.
+const MAX_FAMILY_SIZE = 6
+studentAuthRouter.post('/admin-add-sibling', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { studentId, name } = studentAddSiblingSchema.parse(req.body)
+
+    const [source] = await db.select().from(students).where(eq(students.id, studentId)).limit(1)
+    if (!source || source.program !== 'regular') throw new HttpError(404, 'Student not found.')
+    if (!source.parentEmail || !source.passwordHash) {
+      throw new HttpError(409, 'This student has no family login to add a sibling to.')
+    }
+
+    const family = await familyOf(source)
+    if (family.length >= MAX_FAMILY_SIZE) {
+      throw new HttpError(409, `This family already has ${MAX_FAMILY_SIZE} students, the most one login can hold.`)
+    }
+    if (family.some((r) => r.studentName.trim().toLowerCase() === name.toLowerCase())) {
+      throw new HttpError(409, `${name} is already in this family.`)
+    }
+
+    const [row] = await db
+      .insert(students)
+      .values({
+        program: 'regular',
+        studentName: name,
+        parentEmail: source.parentEmail,
+        phoneNumber: source.phoneNumber,
+        passwordHash: source.passwordHash,
+        approved: true,
+        paid: false,
+      })
+      .returning()
+
+    logger.info('studentAuth', 'admin add sibling ok', { id: row.id, siblingOf: studentId, by: res.locals.user?.username })
+    res.status(201).json({
+      student: {
+        id: row.id,
+        studentName: row.studentName,
+        parentEmail: row.parentEmail,
+        phoneNumber: row.phoneNumber,
+        approved: row.approved,
+        gradeLevel: row.gradeLevel,
+      },
     })
   } catch (err) {
     next(err)

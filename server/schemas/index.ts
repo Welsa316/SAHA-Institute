@@ -94,6 +94,14 @@ export const studentRegisterSchema = z.object({
   password: z.string().min(6).max(200),
 })
 
+// Admin adds a child to an EXISTING family: the new row copies the family's
+// login (email + shared password hash) and phone from `studentId`, so the
+// admin never needs to know the family's password.
+export const studentAddSiblingSchema = z.object({
+  studentId: z.number().int().positive(),
+  name: z.string().trim().min(2).max(100),
+})
+
 export const studentLoginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   password: z.string().min(1).max(200),

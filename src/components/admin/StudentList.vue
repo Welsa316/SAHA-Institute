@@ -149,6 +149,48 @@ async function onRegistered({ students: created, parentEmail }) {
   }
 }
 
+// ---------- Add a sibling to an existing family (admin) ----------
+// The server copies the family's login from the open student, so the admin
+// never needs the family's password.
+const siblingName = ref('')
+const siblingSaving = ref(false)
+const siblingError = ref('')
+const siblingAdded = ref('')
+
+watch(
+  () => detailRow.value?.id,
+  () => {
+    siblingName.value = ''
+    siblingError.value = ''
+    siblingAdded.value = ''
+  },
+)
+watch(siblingName, () => { siblingError.value = '' })
+
+async function addSibling() {
+  const name = siblingName.value.trim()
+  siblingAdded.value = ''
+  if (name.length < 2) {
+    siblingError.value = 'Enter the sibling\'s name (at least 2 characters).'
+    return
+  }
+  siblingSaving.value = true
+  try {
+    const data = await api.post('/api/student-auth/admin-add-sibling', {
+      studentId: detailRow.value.id,
+      name,
+    })
+    siblingAdded.value = data.student?.studentName ?? name
+    siblingName.value = ''
+    siblingError.value = ''
+    await load()
+  } catch (err) {
+    siblingError.value = err.message
+  } finally {
+    siblingSaving.value = false
+  }
+}
+
 function joinNames(names) {
   if (names.length <= 1) return names[0] ?? ''
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
@@ -652,6 +694,37 @@ function dueBadge(a) {
                 </button>
               </div>
             </form>
+          </div>
+
+          <div v-if="allowRegister && detailRow.parentEmail" class="mb-6">
+            <h3 class="font-body text-[10px] tracking-[0.2em] uppercase font-bold text-navy-500 mb-1">Add a sibling</h3>
+            <p class="font-body text-xs text-navy-400 mb-3">
+              Joins this family's login ({{ detailRow.parentEmail }}). The family uses the same email and password as now.
+            </p>
+            <form @submit.prevent="addSibling" class="flex flex-wrap gap-2" novalidate>
+              <label for="sibling-name" class="sr-only">Sibling's full name</label>
+              <input
+                id="sibling-name"
+                v-model="siblingName"
+                type="text"
+                autocomplete="off"
+                maxlength="100"
+                :disabled="siblingSaving"
+                placeholder="Sibling's full name"
+                class="flex-1 min-w-[12rem] px-3 py-2 rounded-lg bg-white border border-navy-200 text-navy-800 font-body text-sm placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-academic-400/40 focus:border-academic-400 disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                :disabled="siblingSaving"
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#001B3D] text-white font-body text-xs font-bold uppercase tracking-wider hover:bg-navy-800 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-academic-400 focus:outline-none"
+              >
+                {{ siblingSaving ? 'Adding…' : 'Add sibling' }}
+              </button>
+            </form>
+            <p v-if="siblingError" role="alert" class="mt-2 font-body text-xs text-red-700">{{ siblingError }}</p>
+            <p v-else-if="siblingAdded" role="status" class="mt-2 font-body text-xs text-emerald-700">
+              Added {{ siblingAdded }}. They now show in this family's portal.
+            </p>
           </div>
 
           <div class="flex justify-between items-center pt-4 border-t border-navy-100">
