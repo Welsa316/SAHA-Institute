@@ -7,6 +7,7 @@ import { requireAuth } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { centralDateRangeToUtc, centralDateTimeToUtc } from '../lib/schedule.js'
 import { checkWithinHours } from '../lib/hours.js'
+import { assertTeacherFree } from '../lib/teacherConflicts.js'
 import { notifyCancellation, notifyAdminOfTeacherCancellation, notifyClassRescheduled } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
@@ -141,11 +142,19 @@ instancesRouter.post('/:id/reschedule', async (req, res, next) => {
     if (instant.getTime() < Date.now()) throw new HttpError(400, 'Pick a time in the future.')
 
     const oldStartsAtUtc = inst.startsAtUtc
-    const [updated] = await db
-      .update(classInstances)
-      .set({ startsAtUtc: instant, updatedAt: new Date() })
-      .where(and(eq(classInstances.id, id), eq(classInstances.status, 'scheduled')))
-      .returning()
+    const [updated] = await db.transaction(async (tx) => {
+      await assertTeacherFree(
+        tx,
+        inst.teacherId,
+        [{ start: instant, durationMinutes: inst.durationMinutes }],
+        { excludeInstanceId: id, who: user.role === 'teacher' ? 'you' : 'teacher' },
+      )
+      return tx
+        .update(classInstances)
+        .set({ startsAtUtc: instant, updatedAt: new Date() })
+        .where(and(eq(classInstances.id, id), eq(classInstances.status, 'scheduled')))
+        .returning()
+    })
     if (!updated) throw new HttpError(409, 'This class is already cancelled.')
 
     notifyClassRescheduled({ studentId: inst.studentId, oldStartsAtUtc, newStartsAtUtc: instant })

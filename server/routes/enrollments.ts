@@ -8,6 +8,7 @@ import { requireAuth, requireAdmin } from '../middleware/requireAuth.js'
 import { HttpError } from '../middleware/errorHandler.js'
 import { generateOccurrenceInstants, sixMonthsLater, CENTRAL_ZONE } from '../lib/schedule.js'
 import { checkPatternWithinHours } from '../lib/hours.js'
+import { assertTeacherFree } from '../lib/teacherConflicts.js'
 import { notifyStudentScheduled, notifySeriesRescheduled } from '../lib/notifications.js'
 import { logger } from '../lib/log.js'
 
@@ -124,6 +125,12 @@ enrollmentsRouter.post('/', async (req, res, next) => {
     })
 
     const enrollment = await db.transaction(async (tx) => {
+      await assertTeacherFree(
+        tx,
+        input.teacherId,
+        instants.map((start) => ({ start, durationMinutes: input.durationMinutes })),
+        { who: user.role === 'teacher' ? 'you' : 'teacher' },
+      )
       const [row] = await tx
         .insert(enrollments)
         .values({
@@ -205,6 +212,14 @@ enrollmentsRouter.post('/:id/reschedule', requireAdmin, async (req, res, next) =
     }).filter((d) => d.getTime() >= now.getTime())
 
     const result = await db.transaction(async (tx) => {
+      // This series' own future classes are being replaced, so they don't
+      // count as clashes; every other class on the teacher's calendar does.
+      await assertTeacherFree(
+        tx,
+        enrollment.teacherId,
+        instants.map((start) => ({ start, durationMinutes: input.durationMinutes })),
+        { excludeEnrollmentId: id },
+      )
       await tx
         .update(enrollments)
         .set({
