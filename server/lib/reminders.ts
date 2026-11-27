@@ -109,12 +109,20 @@ async function claimAndSend(kind: string, refKey: string, send: () => Promise<bo
 // because this module is where the reminder flow is read from.
 export { nextDueDate }
 
+// What one job did, for the tick line at the bottom of this file. Counts live
+// here and in that single line, nowhere else. Each job used to log its own and
+// only when it had something to report, which meant an idle tick logged
+// nothing at all — leaving "ran, found nothing" and "never fired" identical
+// from the outside. For a job whose whole purpose is to email people
+// unattended, that is the one failure you cannot afford to be quiet.
+type JobSummary = Record<string, number | string>
+
 // ---------- Job 1: class reminder to the parent, ~24h ahead ----------
 // Queries a WINDOW UP TO NOW+24h rather than a one-hour slice. That is
 // deliberate: if the process is down for a few hours, the next tick still
 // catches every class inside the window instead of skipping the ones whose
 // slice was missed.
-async function runClassReminders(now: DateTime): Promise<void> {
+async function runClassReminders(now: DateTime): Promise<JobSummary> {
   const rows = await db
     .select({
       instanceId: classInstances.id,
@@ -153,14 +161,12 @@ async function runClassReminders(now: DateTime): Promise<void> {
     )
     if (ok) sent += 1
   }
-  if (rows.length > 0) {
-    logger.info('reminders', 'class reminders', { candidates: rows.length, sent, noEmail: skipped })
-  }
+  return { candidates: rows.length, sent, noEmail: skipped }
 }
 
 // ---------- Job 2: daily digest to each teacher ----------
-async function runTeacherDigests(now: DateTime): Promise<void> {
-  if (now.hour < digestHour()) return
+async function runTeacherDigests(now: DateTime): Promise<JobSummary> {
+  if (now.hour < digestHour()) return { held: `before ${digestHour()}:00` }
 
   const dayStart = now.startOf('day')
   const dayEnd = dayStart.plus({ days: 1 })
@@ -231,13 +237,11 @@ async function runTeacherDigests(now: DateTime): Promise<void> {
     )
     if (ok) sent += 1
   }
-  if (byTeacher.size > 0) {
-    logger.info('reminders', 'teacher digests', { teachers: byTeacher.size, sent, dayOver: stale, date: localDate })
-  }
+  return { teachers: byTeacher.size, sent, dayOver: stale, date: localDate }
 }
 
 // ---------- Job 3: recurring tuition reminder to the parent ----------
-async function runPaymentReminders(now: DateTime): Promise<void> {
+async function runPaymentReminders(now: DateTime): Promise<JobSummary> {
   const todayIso = now.startOf('day').toISODate() as string
   const lead = paymentLeadDays()
 
@@ -286,9 +290,7 @@ async function runPaymentReminders(now: DateTime): Promise<void> {
     )
     if (ok) sent += 1
   }
-  if (due > 0) {
-    logger.info('reminders', 'payment reminders', { enrolled: rows.length, due, sent, lead })
-  }
+  return { enrolled: rows.length, due, sent, lead }
 }
 
 // ---------- The tick ----------
@@ -301,20 +303,31 @@ export async function runRemindersOnce(reference?: DateTime): Promise<void> {
   }
   ticking = true
   const now = (reference ?? DateTime.now()).setZone(CENTRAL)
+  const startedAt = Date.now()
   try {
     // Each job is isolated: one failing (a bad row, a transient DB error) must
     // not stop the other two from running.
-    const jobs: [string, Promise<void>][] = [
+    const jobs: [string, Promise<JobSummary>][] = [
       ['class', runClassReminders(now)],
       ['teacherDigest', runTeacherDigests(now)],
       ['payment', runPaymentReminders(now)],
     ]
     const results = await Promise.allSettled(jobs.map(([, p]) => p))
+    const summary: Record<string, JobSummary | string> = {}
     results.forEach((res, i) => {
-      if (res.status === 'rejected') {
-        logger.error('reminders', `${jobs[i][0]} job failed`, { message: String((res.reason as Error)?.message ?? res.reason) })
+      const name = jobs[i][0]
+      if (res.status === 'fulfilled') {
+        summary[name] = res.value
+        return
       }
+      // 'failed', never a row of zeroes. A job that crashed and a job with
+      // nothing to do must not read the same way at a glance.
+      summary[name] = 'failed'
+      logger.error('reminders', `${name} job failed`, { message: String((res.reason as Error)?.message ?? res.reason) })
     })
+    // The heartbeat, unconditional on purpose: a tick that sent nothing still
+    // says so, so from here on silence means the tick did not run.
+    logger.info('reminders', 'tick', { ...summary, ms: Date.now() - startedAt })
   } finally {
     ticking = false
   }
